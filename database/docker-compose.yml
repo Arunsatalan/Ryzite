@@ -1,0 +1,55 @@
+version: '3.8'
+
+services:
+  # ==========================================================================
+  # PostgreSQL Database Service
+  # ==========================================================================
+  postgres:
+    image: postgres:16-alpine
+    container_name: ryzite-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ryzite_admin}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-ryzite_secure_password_2026}
+      POSTGRES_DB: ${POSTGRES_DB:-ryzite_db}
+      PGDATA: /var/lib/postgresql/data/pgdata
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./schema.sql:/docker-entrypoint-initdb.d/01-schema.sql:ro
+      - ./seeds.sql:/docker-entrypoint-initdb.d/02-seeds.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-ryzite_admin} -d ${POSTGRES_DB:-ryzite_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - ryzite-network
+
+  # ==========================================================================
+  # Optional: pgAdmin 4 Web GUI Interface
+  # Access at http://localhost:5050
+  # ==========================================================================
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: ryzite-pgadmin
+    restart: unless-stopped
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL:-admin@ryzite.com}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD:-admin123}
+    ports:
+      - "5050:80"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - ryzite-network
+
+volumes:
+  postgres_data:
+    driver: local
+
+networks:
+  ryzite-network:
+    driver: bridge

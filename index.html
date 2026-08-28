@@ -1,0 +1,45 @@
+<!doctype html>
+<html lang="en" class="scroll-smooth">
+  <head>
+    <script>
+      // Safeguard against getter-only window.fetch assignment in restricted iframe/browser environments
+      (function() {
+        try {
+          var _rawFetch = typeof window !== 'undefined' && window.fetch ? window.fetch.bind(window) : undefined;
+          var _activeFetch = _rawFetch;
+          Object.defineProperty(window, 'fetch', {
+            get: function() {
+              return _activeFetch || _rawFetch;
+            },
+            set: function(newFetch) {
+              _activeFetch = newFetch;
+            },
+            configurable: true,
+            enumerable: true
+          });
+        } catch (e) {
+          // Ignore if already configurable or locked
+        }
+      })();
+    </script>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Ryzite | Software Development & Digital Marketing Agency</title>
+    <meta name="description" content="We Build Software That Drives Growth. Empowering startups and enterprises with innovative, scalable, and secure custom software, mobile apps, AI automation, and cloud solutions." />
+    <meta name="keywords" content="Ryzite, software development, AI automation, web applications, mobile apps, digital marketing, cloud solutions, DevOps, custom software agency" />
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:ital,wght@0,300;0,400;0,500;0,600;0,700;0,800;1,400;1,600;1,700&family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap" rel="stylesheet">
+    <meta property="og:title" content="Ryzite | Software Development & Digital Marketing Agency" />
+    <meta property="og:description" content="Empowering startups and enterprises with innovative, scalable and secure software solutions." />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1200&auto=format&fit=crop" />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="theme-color" content="#0052FF" />
+  </head>
+  <body class="bg-[#F8FAFC] text-[#0F172A] font-sans antialiased selection:bg-[#0052FF] selection:text-white min-h-screen">
+    <div id="root"></div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>
+

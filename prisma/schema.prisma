@@ -1,0 +1,205 @@
+// Prisma Schema for Ryzite Software Development & Digital Marketing Agency
+// Database: PostgreSQL
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  EDITOR
+  VIEWER
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  IN_DISCUSSION
+  PROPOSAL_SENT
+  WON
+  LOST
+}
+
+enum ServiceCategory {
+  WEB_DEV
+  MOBILE_DEV
+  AI_AUTOMATION
+  CLOUD_DEVOPS
+  CONSULTING
+}
+
+enum ProjectMockupType {
+  DARK_DASHBOARD
+  MOBILE_CARDS
+  BOT_INTERFACE
+  ANALYTICS_SUITE
+}
+
+model User {
+  id            String      @id @default(uuid())
+  email         String      @unique
+  name          String
+  passwordHash  String
+  role          Role        @default(ADMIN)
+  avatar        String?
+  lastLogin     DateTime?
+  createdAt     DateTime    @default(now())
+  updatedAt     DateTime    @updatedAt
+  auditLogs     AuditLog[]
+  blogPosts     BlogPost[]
+}
+
+model Service {
+  id               String          @id @default(uuid())
+  slug             String          @unique
+  title            String
+  category         ServiceCategory
+  shortDescription String
+  fullDescription  String          @db.Text
+  iconName         String
+  features         String[]
+  deliverables     String[]
+  techStack        String[]
+  timeline         String
+  startingPrice    String
+  order            Int             @default(0)
+  featured         Boolean         @default(true)
+  active           Boolean         @default(true)
+  createdAt        DateTime        @default(now())
+  updatedAt        DateTime        @updatedAt
+  leads            Lead[]
+}
+
+model Project {
+  id              String            @id @default(uuid())
+  slug            String            @unique
+  title           String
+  client          String
+  category        String
+  description     String
+  longDescription String            @db.Text
+  heroImage       String
+  mockupType      ProjectMockupType @default(DARK_DASHBOARD)
+  metrics         Json              // Array of { label: string, value: string, trend?: string }
+  techStack       String[]
+  challenges      String[]
+  solutions       String[]
+  testimonial     Json?             // { quote, author, role, avatar }
+  liveUrl         String?
+  order           Int               @default(0)
+  featured        Boolean           @default(true)
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+}
+
+model BlogPost {
+  id              String      @id @default(uuid())
+  slug            String      @unique
+  title           String
+  excerpt         String
+  content         String      @db.Text
+  category        String
+  tags            String[]
+  coverImage      String
+  metaTitle       String
+  metaDescription String
+  aeoDirectAnswer String      @db.Text
+  schemaData      Json?
+  readTime        String      @default("5 min read")
+  published       Boolean     @default(true)
+  publishedAt     DateTime    @default(now())
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  authorId        String
+  author          User        @relation(fields: [authorId], references: [id])
+}
+
+model PageMetadata {
+  id              String      @id @default(uuid())
+  pageKey         String      @unique // e.g., 'home', 'services', 'portfolio', 'about', 'contact'
+  title           String
+  description     String
+  ogImage         String?
+  canonicalUrl    String?
+  siteName        String?     @default("Ryzite Software & AI Agency")
+  twitterHandle   String?     @default("@ryzite_agency")
+  themeColor      String?     @default("#0f172a")
+  keywords        String[]
+  serpSnippet     Json?       // { pageTitle, metaDescription, sitelinks, starRating, reviewCount, aiOverviewAnswer, aiKeyTakeaways }
+  focusKeywords   Json?       // Array of focus keywords & current rankings
+  structuredJson  Json?
+  updatedAt       DateTime    @updatedAt
+}
+
+model SeoKeyword {
+  id              String      @id @default(uuid())
+  keyword         String      @unique
+  searchVolume    String
+  difficulty      String      @default("Medium")
+  targetPage      String      @default("/")
+  targetPosition  String
+  currentDensity  Decimal     @default(0.00) @db.Decimal(4, 2)
+  status          String      @default("OPTIMIZED")
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+model SeoAuditLog {
+  id              String      @id @default(uuid())
+  score           Int
+  grade           String
+  passedChecks    Int
+  totalChecks     Int
+  checks          Json        // Array of check objects { id, category, title, status, impact, recommendation }
+  titlePixelWidth Int
+  descPixelWidth  Int
+  createdAt       DateTime    @default(now())
+}
+
+model Lead {
+  id              String      @id @default(uuid())
+  name            String
+  email           String
+  company         String?
+  serviceSelected String
+  budget          String
+  timeline        String
+  message         String      @db.Text
+  status          LeadStatus  @default(NEW)
+  notes           String?     @db.Text
+  source          String?     @default("Website Consultation Form")
+  ipAddress       String?
+  userAgent       String?
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+  serviceId       String?
+  service         Service?    @relation(fields: [serviceId], references: [id])
+}
+
+model SiteAnalytics {
+  id          String      @id @default(uuid())
+  eventName   String
+  path        String
+  referrer    String?
+  userAgent   String?
+  ipHash      String?
+  metadata    Json?
+  createdAt   DateTime    @default(now())
+}
+
+model AuditLog {
+  id          String      @id @default(uuid())
+  userId      String
+  user        User        @relation(fields: [userId], references: [id])
+  action      String
+  entity      String
+  entityId    String?
+  details     Json?
+  createdAt   DateTime    @default(now())
+}
