@@ -1,0 +1,225 @@
+# RYZITE PLATFORM AUDIT REPORT
+
+## A. Public Website Full Inventory
+
+### 1. Header / Navigation
+- **Logo:** "RYZITE" text + SVG icon (Hardcoded).
+- **Navigation Items:** Home, Services (Dropdown), Solutions (Dropdown), Portfolio, About Us, Blog. 
+  - *Data Source:* `navLinks` array in `Navbar.tsx` (Hardcoded).
+  - *Dropdown Data:* Services dropdown uses `services` prop (from `HomePageClient` state). Solutions dropdown uses `INITIAL_SOLUTIONS` from `initialData.ts` (Hardcoded).
+- **CTA Button:** "Get in Touch" (Hardcoded). Opens Consultation Modal.
+- **Admin Control:** PARTIAL. (Only the Services dropdown items can be manipulated via local React state).
+
+### 2. Hero Section
+- **Eyebrow:** "SOFTWARE SOLUTIONS THAT SCALE"
+- **Main H1:** "We Build Software That Drives Growth"
+- **Description:** "Empowering startups and enterprises..."
+- **Primary CTA:** "Explore Our Services" (Links to `/services`)
+- **Secondary CTA:** "Book a Free Consultation" (Opens Modal)
+- **Source:** Hardcoded in `Hero.tsx`.
+- **Admin Control:** NO.
+
+### 3. Trusted Clients / Logos
+- **Clients:** PineGen AI, QRBook, DINEFY, BotLoop, Vinasai
+- **Source:** `TRUSTED_CLIENTS` array in `initialData.ts`.
+- **Admin Control:** NO.
+
+### 4. Services Preview Section (SolutionsGrid.tsx)
+- **Eyebrow:** "WHAT WE DO"
+- **Section Title:** "End-to-End Software Solutions"
+- **Description:** "We design, develop and deliver..."
+- **Cards Source:** Rendered from `services` prop, which is initialized with `INITIAL_SERVICES` in `HomePageClient.tsx`.
+- **Fields Rendered:** Title, Short Description, Icon, Tech Stack (Tags), Timeline, Link.
+- **Admin Control:** PARTIAL. (Admin dashboard updates the `HomePageClient` state, but changes are lost on page refresh because they don't persist to a database or trigger a re-fetch).
+
+### 5. Solutions Section
+- **Source:** The Solutions pages and dropdowns use `INITIAL_SOLUTIONS` from `initialData.ts`. The Home page doesn't render full solution cards, only links to them in the Navbar and SolutionsGrid header.
+- **Admin Control:** NO.
+
+### 6. Why Choose Us Section
+- **Eyebrow:** "WHY CHOOSE RYZITE"
+- **Heading:** "We don’t just build software, We build relationships."
+- **Pillars:** Quality First, Agile & Transparent, On-time Delivery, Long-term Support.
+- **Source:** Hardcoded arrays in `WhyChooseUs.tsx`.
+- **Admin Control:** NO.
+
+### 7. Statistics / Counters
+- **Stats:** 25+ Projects, 15+ Happy Clients, 98% CSAT, 3+ Years Exp.
+- **Source:** Hardcoded `stats` array in `WhyChooseUs.tsx`.
+- **Admin Control:** NO.
+
+### 8. Portfolio / Case Studies Section
+- **Heading:** "Our Software Stories"
+- **Filters:** Categories hardcoded (AI Platform, Digital Business Card, etc).
+- **Cards Source:** `projects` state initialized from `INITIAL_PROJECTS` in `HomePageClient.tsx`.
+- **Fields Rendered:** Client, Title, Description, Solutions (bullets), Hero Image.
+- **Admin Control:** PARTIAL. (Local state only).
+
+### 9. GEO / AEO / Knowledge Graph Section
+- **Heading:** "Direct Entity Fact Sheet & Answer Engine Summary"
+- **Content:** Direct answer paragraph, matrix (Core Frameworks, AI Specialization, Delivery Model, HQ), JSON-LD snippet.
+- **Source:** Hardcoded completely in `AeoDirectAnswer.tsx`.
+- **Admin Control:** NO.
+
+### 10. About Preview Section
+- **Heading:** "Engineering Precision Meets Product Mastery"
+- **Principles:** 4 hardcoded principles (Performance, CI/CD, Security, Direct Access).
+- **Source:** Hardcoded in `AboutSection.tsx`.
+- **Admin Control:** NO.
+
+### 11. CTA Sections (LeadGenBanner)
+- **Heading:** "Let’s Build Something Amazing Together"
+- **Guarantees:** Free Discovery, Strict NDA.
+- **Source:** Hardcoded in `LeadGenBanner.tsx`.
+- **Admin Control:** NO.
+
+### 12. FAQ Section
+- **Source:** `FAQ_ITEMS` from `initialData.ts` mapped in `FaqSection.tsx`.
+- **Admin Control:** NO.
+
+### 13. Blog Preview Section
+- **Heading:** "Latest from the Ryzite Engineering Blog"
+- **Cards Source:** `blogs` state initialized from `INITIAL_BLOGS` in `HomePageClient.tsx`.
+- **Admin Control:** PARTIAL. (Local state only).
+
+### 14. Contact / Start Project Section (ConsultationWizardModal)
+- **Source:** Form logic, steps, and UI are hardcoded. It uses the `services` array for the dropdown selection.
+- **Admin Control:** NO.
+
+### 15. Footer
+- **Source:** Hardcoded text, links, social icons, newsletter logic. Uses `services` state for the services link list.
+- **Admin Control:** NO.
+
+---
+
+## B. Admin Dashboard Full Inventory
+
+### 1. Admin Navigation
+- **Tabs:** CRM (Leads), Services CMS, Projects, Blogs, SEO, Analytics.
+- **Functionality:** Driven by local state `activeTab`.
+
+### 2. Leads / CRM
+- **Status:** MISSING/BROKEN.
+- **Features:** Tries to fetch from `/api/leads`, but the API route doesn't exist, resulting in a 404 HTML response which crashes the JSON parser.
+
+### 3. Services CMS
+- **Status:** PARTIAL.
+- **Features:** Renders list of services passed via props from `HomePageClient`. Has a form to create a new service, but it only captures Title and Description. Saving updates the `HomePageClient` state, but does not use an API or Database.
+
+### 4. Projects CMS
+- **Status:** PARTIAL.
+- **Features:** Displays projects passed via props. Edit/Delete logic updates local state only.
+
+### 5. Blog CMS
+- **Status:** PARTIAL.
+- **Features:** Displays blogs passed via props. Edit/Delete logic updates local state only.
+
+### 6. SEO Module
+- **Status:** PARTIALLY CONNECTED (to memory store).
+- **Features:** Page selector (Home, Services, Solutions, Portfolio, About, Blog, dynamic routes). Fetches from and saves to `/api/seo`, which updates the in-memory `store.service.ts`. Includes a SERP simulator and Schema JSON generator.
+
+### 7. Analytics
+- **Status:** MISSING/BROKEN.
+- **Features:** Tries to fetch from `/api/analytics/summary`, but the API route doesn't exist (returns 404).
+
+---
+
+## C. Backend / API / Data Inventory
+
+### API Routes
+- `/api/seo` (GET, PUT) - Connects to `store.service.ts`.
+- `/api/services` (GET, POST) - Connects to `store.service.ts`. (Not actually used by the frontend).
+- Missing Routes: `/api/leads`, `/api/analytics/summary`, `/api/projects`, `/api/blogs`.
+
+### Data Store
+- `server/services/store.service.ts`: An in-memory class containing arrays initialized from `initialData.ts`. Data is lost when the Next.js server restarts.
+
+### Database
+- Prisma schema exists but is currently disconnected from the actual application logic for these features.
+
+### State Management
+- `HomePageClient.tsx` holds `services`, `projects`, and `blogs` in React `useState`, initialized statically from `initialData.ts`. It does not fetch from the API.
+
+---
+
+## D. Already Connected
+- **Nothing** is fully connected end-to-end (Database -> Server -> Client).
+
+---
+
+## E. Partially Connected
+- **Admin Dashboard to Home Page State:** The Admin modal updates the Home Page's local React state via props (`onUpdateServices`, etc.), which temporarily updates the UI until a page refresh.
+- **Admin SEO to Memory Store:** The SEO form successfully reads/writes to `store.service.ts` via the `/api/seo` route.
+
+---
+
+## F. Public Content Currently Hardcoded
+- `Navbar.tsx` (Links, Logo)
+- `Hero.tsx` (All text, CTAs, Client logos)
+- `SolutionsGrid.tsx` (Header text)
+- `WhyChooseUs.tsx` (All text, pillars, stats)
+- `FeaturedProjects.tsx` (Header text, filters)
+- `AeoDirectAnswer.tsx` (All text, matrix, JSON-LD)
+- `AboutSection.tsx` (All text, principles)
+- `LeadGenBanner.tsx` (All text)
+- `FaqSection.tsx` (Header text)
+- `data/initialData.ts` (FAQ_ITEMS, INITIAL_SOLUTIONS, TRUSTED_CLIENTS)
+- `Footer.tsx` (Company info, links, text)
+- `app/page.tsx` (SEO Metadata)
+
+---
+
+## G. Admin Features That Exist But Are Not Connected
+- **Services/Projects/Blogs APIs:** The APIs and `store.service.ts` methods exist, but `HomePageClient.tsx` does not fetch from them.
+- **SEO Saved Data:** The Admin SEO tab saves data to `store.service.ts`, but the public pages (e.g., `app/page.tsx`) do not consume this data; they use hardcoded metadata exports.
+
+---
+
+## H. Completely Missing Admin Controls
+- **Hero & Landing Text CMS:** No way to edit headers, descriptions, or CTAs.
+- **FAQ CMS:** FAQs are strictly driven by `initialData.ts`.
+- **Solutions CMS:** Solutions are driven by `initialData.ts` and not present in the Admin Dashboard.
+- **AEO / About CMS:** No way to edit the company fact sheet or about principles.
+- **Leads & Analytics APIs:** The UI expects them, but the backend routes are missing.
+- **Site Settings:** No global controls for logos, contact emails, social links, or footer text.
+
+---
+
+## I. SEO Current Status
+- **Home Page (`app/page.tsx`):** Uses a hardcoded `export const metadata` object.
+- **Other Pages (`app/about/page.tsx`, etc.):** Most likely also using hardcoded exports or defaults.
+- **Structured Data:** The `HomePageClient` renders a `<SeoStructuredData>` component, but passes `DEFAULT_PAGE_METADATA` directly from `initialData.ts`, ignoring anything saved in the Admin Dashboard.
+
+---
+
+## J. SEO Missing Controls
+- **Server-Side Rendering (SSR) Integration:** Next.js Server Components need to fetch the SEO config from the database (or store) using the `generateMetadata` function to inject proper `<head>` tags before the page reaches the client.
+- **Sitemap & Robots:** No dynamic `sitemap.xml` or `robots.txt` generators.
+
+---
+
+## K. Mock / Temporary Data Risks
+- **Volatile State:** Because `HomePageClient` relies on local `useState` for CMS data, opening the site in a new tab reveals the original hardcoded data, hiding any changes made in the Admin Dashboard.
+- **Memory Store:** `store.service.ts` loses all saved SEO data and any API-submitted changes the moment the Node process restarts.
+- **Broken Endpoints:** The Admin Dashboard crashes or throws console errors due to missing `/api/leads` and `/api/analytics` endpoints returning 404 HTML pages that fail JSON parsing.
+
+---
+
+## L. Developer-Controlled Features
+The following must remain in code and should NOT be moved to the Admin CMS:
+- **Tailwind CSS & Layouts:** Component structures, grids, and responsive behaviors.
+- **Animations & SVG Splashes:** Complex visual effects (e.g., Liquid Wave Dividers).
+- **Consultation Wizard Logic:** Multi-step form state machine and validation rules.
+- **Next.js Routing & Data Fetching Logic:** Server vs Client component boundaries.
+- **Database Schema (Prisma):** Models and relationships must be managed via migrations.
+- **Metadata Generation Engine:** The logic inside `generateMetadata` that maps DB fields to HTML tags.
+
+---
+
+## M. Recommended Connection Plan
+1. **Database Migration:** Move `INITIAL_*` arrays from `initialData.ts` into a PostgreSQL database via Prisma.
+2. **API Completion:** Build out missing API routes (`/api/leads`, `/api/analytics/summary`, `/api/projects`, `/api/blogs`, `/api/faqs`, `/api/solutions`) to interface with Prisma.
+3. **Server Component Refactor:** Refactor `app/page.tsx` (and other routes) to be Server Components that fetch data directly from Prisma, passing the static data as props to the Client Components (removing the need for `useState` initialization).
+4. **Metadata Refactor:** Implement Next.js `generateMetadata()` in `page.tsx` files to fetch SEO data from Prisma based on the current route.
+5. **Admin Dashboard Refactor:** Update `AdminDashboard.tsx` to perform real `fetch` mutations against the new API routes, removing its reliance on passing state up to `HomePageClient`.
+6. **Global Settings Model:** Create a new Prisma model for global site settings (Hero text, Footer links, AEO facts) and build a corresponding Admin tab.

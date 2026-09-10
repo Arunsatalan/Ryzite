@@ -1,0 +1,906 @@
+// Prisma Schema for Ryzite Software Development & Digital Marketing Agency
+// Database: PostgreSQL
+// Version: Production Architecture Phase 2 Backend
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// ENUMS
+// ==========================================
+
+enum Role {
+  SUPER_ADMIN
+  ADMIN
+  EDITOR
+  VIEWER
+}
+
+enum LeadStatus {
+  NEW
+  CONTACTED
+  IN_DISCUSSION
+  PROPOSAL_SENT
+  WON
+  LOST
+}
+
+enum ContentStatus {
+  DRAFT
+  PUBLISHED
+  SCHEDULED
+  ARCHIVED
+}
+
+enum ServiceCategory {
+  WEB_DEV
+  MOBILE_DEV
+  AI_AUTOMATION
+  CLOUD_DEVOPS
+  CONSULTING
+}
+
+enum ProjectMockupType {
+  DARK_DASHBOARD
+  MOBILE_CARDS
+  BOT_INTERFACE
+  ANALYTICS_SUITE
+}
+
+enum SectionKey {
+  HERO
+  CLIENTS
+  SERVICES
+  WHY_CHOOSE_US
+  STATS
+  PORTFOLIO
+  AEO
+  ABOUT
+  CTA
+  FAQ
+  BLOG
+  FINAL_CTA
+}
+
+enum MenuKey {
+  HEADER
+  FOOTER_COMPANY
+  FOOTER_SERVICES
+  FOOTER_LEGAL
+}
+
+// ==========================================
+// ADMIN USER & AUDIT
+// ==========================================
+
+model User {
+  id           String      @id @default(uuid())
+  email        String      @unique
+  name         String
+  passwordHash String
+  role         Role        @default(ADMIN)
+  avatar       String?
+  lastLogin    DateTime?
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  auditLogs    AuditLog[]
+  blogPosts    BlogPost[]
+}
+
+model AuditLog {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  action    String
+  entity    String
+  entityId  String?
+  details   Json?
+  createdAt DateTime @default(now())
+
+  @@index([userId, createdAt])
+  @@index([entity, entityId, createdAt])
+}
+
+// ==========================================
+// SITE SETTINGS & SOCIAL LINKS
+// ==========================================
+
+model SiteSettings {
+  id              String       @id @default(uuid())
+  siteName        String       @default("Ryzite Software & AI Agency")
+  legalName       String       @default("Ryzite Global Inc.")
+  tagline         String       @default("We Build Software That Drives Growth")
+  siteUrl         String       @default("https://ryzite.com")
+  contactEmail    String       @default("contact@ryzite.com")
+  phone           String       @default("+1-800-555-0199")
+  whatsapp        String?
+  addressLine1    String       @default("100 Innovation Way")
+  addressLine2    String?      @default("Suite 400")
+  city            String       @default("San Francisco")
+  region          String       @default("CA")
+  country         String       @default("USA")
+  postalCode      String       @default("94105")
+  businessHours   String       @default("Mon - Fri: 9:00 AM - 6:00 PM PST")
+  defaultCtaLabel String       @default("Book Discovery Call")
+  defaultCtaUrl   String       @default("#contact")
+  defaultOgImage  MediaAsset?  @relation("DefaultOgImage", fields: [defaultOgImageId], references: [id], onDelete: SetNull)
+  defaultOgImageId String?
+  logo            MediaAsset?  @relation("LogoAsset", fields: [logoId], references: [id], onDelete: SetNull)
+  logoId          String?
+  darkLogo        MediaAsset?  @relation("DarkLogoAsset", fields: [darkLogoId], references: [id], onDelete: SetNull)
+  darkLogoId      String?
+  socialLinks     SocialLink[]
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+}
+
+model SocialLink {
+  id             String       @id @default(uuid())
+  platform       String
+  label          String
+  url            String
+  iconKey        String
+  displayOrder   Int          @default(0)
+  enabled        Boolean      @default(true)
+  siteSettingsId String
+  siteSettings   SiteSettings @relation(fields: [siteSettingsId], references: [id], onDelete: Cascade)
+
+  @@index([siteSettingsId, enabled, displayOrder])
+}
+
+// ==========================================
+// MEDIA ASSETS
+// ==========================================
+
+model MediaAsset {
+  id               String       @id @default(uuid())
+  filename         String
+  originalFilename String
+  storageKey       String
+  url              String
+  mimeType         String
+  width            Int?
+  height           Int?
+  fileSize         Int?
+  altText          String?
+  title            String?
+  caption          String?
+  createdAt        DateTime     @default(now())
+  updatedAt        DateTime     @updatedAt
+
+  siteSettingsOg   SiteSettings[] @relation("DefaultOgImage")
+  siteSettingsLogo SiteSettings[] @relation("LogoAsset")
+  siteSettingsDark SiteSettings[] @relation("DarkLogoAsset")
+  homePageHero     HomePage[]     @relation("HomePageHeroImage")
+  servicesHero     Service[]      @relation("ServiceHeroImage")
+  solutionsHero    Solution[]     @relation("SolutionHeroImage")
+  projectsHero     Project[]      @relation("ProjectHeroImage")
+  projectMedia     ProjectMedia[]
+  blogCover        BlogPost[]     @relation("BlogCoverImage")
+  authorAvatars    Author[]       @relation("AuthorAvatar")
+  clientsLogo      Client[]       @relation("ClientLogo")
+}
+
+// ==========================================
+// HOME PAGE & SECTION SETTINGS
+// ==========================================
+
+model HomePage {
+  id                  String        @id @default(uuid())
+  heroEyebrow         String        @default("NEXT-GEN SOFTWARE & AI AGENCY")
+  heroTitle           String        @default("We Build Software That Drives Growth")
+  heroHighlightedText String        @default("Drives Growth")
+  heroDescription     String        @db.Text
+  primaryCtaLabel     String        @default("Schedule Architecture Call")
+  primaryCtaUrl       String        @default("#contact")
+  secondaryCtaLabel   String        @default("Explore Services")
+  secondaryCtaUrl     String        @default("#services")
+  heroImage           MediaAsset?   @relation("HomePageHeroImage", fields: [heroImageId], references: [id], onDelete: SetNull)
+  heroImageId         String?
+  servicesEyebrow     String        @default("OUR CAPABILITIES")
+  servicesTitle       String        @default("Engineering Excellence Across the Stack")
+  servicesDescription String        @db.Text
+  portfolioEyebrow    String        @default("PROVEN OUTCOMES")
+  portfolioTitle      String        @default("Case Studies & Client Results")
+  portfolioDescription String       @db.Text
+  aboutEyebrow        String        @default("WHY RYZITE")
+  aboutTitle          String        @default("Architected for Speed & Reliability")
+  aboutDescription    String        @db.Text
+  faqEyebrow          String        @default("FREQUENTLY ASKED QUESTIONS")
+  faqTitle            String        @default("Everything You Need to Know")
+  faqDescription      String        @db.Text
+  blogEyebrow         String        @default("ENGINEERING INSIGHTS")
+  blogTitle           String        @default("Latest Tech & AEO Architecture")
+  blogDescription     String        @db.Text
+  finalCtaEyebrow     String        @default("READY TO BUILD?")
+  finalCtaTitle       String        @default("Let's Architect Your Next Solution")
+  finalCtaDescription String        @db.Text
+  finalCtaLabel       String        @default("Get Free Scope Estimate")
+  finalCtaUrl         String        @default("#contact")
+  sections            HomeSection[]
+  homeFaqs            HomeFaq[]
+  createdAt           DateTime      @default(now())
+  updatedAt           DateTime      @updatedAt
+}
+
+model HomeSection {
+  id           String     @id @default(uuid())
+  homePageId   String
+  homePage     HomePage   @relation(fields: [homePageId], references: [id], onDelete: Cascade)
+  sectionKey   SectionKey
+  enabled      Boolean    @default(true)
+  displayOrder Int        @default(0)
+
+  @@unique([homePageId, sectionKey])
+  @@index([homePageId, enabled, displayOrder])
+}
+
+model Client {
+  id           String      @id @default(uuid())
+  name         String
+  slug         String      @unique
+  websiteUrl   String?
+  logoId       String?
+  logo         MediaAsset? @relation("ClientLogo", fields: [logoId], references: [id], onDelete: SetNull)
+  logoUrl      String?
+  description  String?
+  enabled      Boolean     @default(true)
+  displayOrder Int         @default(0)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+
+  @@index([enabled, displayOrder])
+}
+
+model CompanyPrinciple {
+  id           String   @id @default(uuid())
+  badge        String
+  title        String
+  description  String   @db.Text
+  iconKey      String
+  enabled      Boolean  @default(true)
+  displayOrder Int      @default(0)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@index([enabled, displayOrder])
+}
+
+model Statistic {
+  id             String   @id @default(uuid())
+  value          String
+  label          String
+  supportingText String?
+  iconKey        String
+  enabled        Boolean  @default(true)
+  displayOrder   Int      @default(0)
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  @@index([enabled, displayOrder])
+}
+
+// ==========================================
+// MASTER TECHNOLOGIES
+// ==========================================
+
+model Technology {
+  id         String   @id @default(uuid())
+  name       String
+  slug       String   @unique
+  iconUrl    String?
+  iconKey    String?
+  websiteUrl String?
+  enabled    Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  serviceTechnologies  ServiceTechnology[]
+  solutionTechnologies SolutionTechnology[]
+  projectTechnologies  ProjectTechnology[]
+}
+
+// ==========================================
+// SERVICES
+// ==========================================
+
+model Service {
+  id               String               @id @default(uuid())
+  slug             String               @unique
+  title            String
+  category         ServiceCategory
+  categoryName     String?
+  shortDescription String
+  fullDescription  String               @db.Text
+  iconName         String
+  timeline         String
+  startingPrice    String
+  heroImageId      String?
+  heroImage        MediaAsset?          @relation("ServiceHeroImage", fields: [heroImageId], references: [id], onDelete: SetNull)
+  heroImageUrl     String?
+  status           ContentStatus        @default(PUBLISHED)
+  featured         Boolean              @default(true)
+  displayOrder     Int                  @default(0)
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  publishedAt      DateTime             @default(now())
+
+  features         ServiceFeature[]
+  deliverables     ServiceDeliverable[]
+  technologies     ServiceTechnology[]
+  solutions        SolutionService[]
+  projects         ProjectService[]
+  serviceFaqs      ServiceFaq[]
+  leads            Lead[]
+  seoMetadata      SeoMetadata?
+
+  @@index([status, displayOrder])
+  @@index([status, featured, displayOrder])
+}
+
+model ServiceFeature {
+  id           String   @id @default(uuid())
+  serviceId    String
+  service      Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  title        String
+  description  String?  @db.Text
+  iconKey      String?
+  displayOrder Int      @default(0)
+
+  @@index([serviceId, displayOrder])
+}
+
+model ServiceDeliverable {
+  id           String   @id @default(uuid())
+  serviceId    String
+  service      Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  title        String
+  description  String?  @db.Text
+  displayOrder Int      @default(0)
+
+  @@index([serviceId, displayOrder])
+}
+
+model ServiceTechnology {
+  serviceId    String
+  service      Service    @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  technologyId String
+  technology   Technology @relation(fields: [technologyId], references: [id], onDelete: Cascade)
+  displayOrder Int        @default(0)
+
+  @@id([serviceId, technologyId])
+  @@index([serviceId, displayOrder])
+}
+
+// ==========================================
+// SOLUTIONS
+// ==========================================
+
+model Solution {
+  id               String               @id @default(uuid())
+  slug             String               @unique
+  title            String
+  subtitle         String?
+  category         String
+  shortDescription String
+  fullDescription  String               @db.Text
+  problem          String?              @db.Text
+  solution         String?              @db.Text
+  iconKey          String
+  heroImageId      String?
+  heroImage        MediaAsset?          @relation("SolutionHeroImage", fields: [heroImageId], references: [id], onDelete: SetNull)
+  status           ContentStatus        @default(PUBLISHED)
+  featured         Boolean              @default(true)
+  displayOrder     Int                  @default(0)
+  createdAt        DateTime             @default(now())
+  updatedAt        DateTime             @updatedAt
+  publishedAt      DateTime             @default(now())
+
+  benefits         SolutionBenefit[]
+  services         SolutionService[]
+  technologies     SolutionTechnology[]
+  solutionFaqs     SolutionFaq[]
+  seoMetadata      SeoMetadata?
+
+  @@index([status, displayOrder])
+  @@index([status, featured, displayOrder])
+}
+
+model SolutionBenefit {
+  id           String   @id @default(uuid())
+  solutionId   String
+  solution     Solution @relation(fields: [solutionId], references: [id], onDelete: Cascade)
+  title        String
+  description  String?  @db.Text
+  iconKey      String?
+  displayOrder Int      @default(0)
+
+  @@index([solutionId, displayOrder])
+}
+
+model SolutionService {
+  solutionId   String
+  solution     Solution @relation(fields: [solutionId], references: [id], onDelete: Cascade)
+  serviceId    String
+  service      Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  displayOrder Int      @default(0)
+
+  @@id([solutionId, serviceId])
+  @@index([solutionId, displayOrder])
+  @@index([serviceId])
+}
+
+model SolutionTechnology {
+  solutionId   String
+  solution     Solution   @relation(fields: [solutionId], references: [id], onDelete: Cascade)
+  technologyId String
+  technology   Technology @relation(fields: [technologyId], references: [id], onDelete: Cascade)
+  displayOrder Int        @default(0)
+
+  @@id([solutionId, technologyId])
+  @@index([solutionId, displayOrder])
+}
+
+// ==========================================
+// PROJECTS / CASE STUDIES
+// ==========================================
+
+model ProjectCategory {
+  id           String    @id @default(uuid())
+  name         String
+  slug         String    @unique
+  displayOrder Int       @default(0)
+  enabled      Boolean   @default(true)
+  projects     Project[]
+}
+
+model Project {
+  id               String            @id @default(uuid())
+  slug             String            @unique
+  title            String
+  clientName       String
+  categoryId       String?
+  categoryRef      ProjectCategory?  @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  category         String            // Legacy string fallback
+  shortDescription String
+  fullDescription  String            @db.Text
+  challenge        String?           @db.Text
+  solution         String?           @db.Text
+  results          String?           @db.Text
+  heroImageId      String?
+  heroImageRef     MediaAsset?       @relation("ProjectHeroImage", fields: [heroImageId], references: [id], onDelete: SetNull)
+  heroImage        String            // Fallback URL string
+  mockupType       ProjectMockupType @default(DARK_DASHBOARD)
+  testimonial      Json?             // { quote, author, role, avatar }
+  websiteUrl       String?
+  githubUrl        String?
+  status           ContentStatus     @default(PUBLISHED)
+  featured         Boolean           @default(true)
+  displayOrder     Int               @default(0)
+  createdAt        DateTime          @default(now())
+  updatedAt        DateTime          @updatedAt
+  publishedAt      DateTime          @default(now())
+
+  metrics          ProjectMetric[]
+  highlights       ProjectHighlight[]
+  mediaGallery     ProjectMedia[]
+  services         ProjectService[]
+  technologies     ProjectTechnology[]
+  seoMetadata      SeoMetadata?
+
+  @@index([status, featured, displayOrder])
+  @@index([status, publishedAt])
+}
+
+model ProjectMetric {
+  id           String   @id @default(uuid())
+  projectId    String
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  label        String
+  value        String
+  trend        String?
+  description  String?
+  displayOrder Int      @default(0)
+
+  @@index([projectId, displayOrder])
+}
+
+model ProjectHighlight {
+  id           String   @id @default(uuid())
+  projectId    String
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  title        String
+  description  String?  @db.Text
+  displayOrder Int      @default(0)
+
+  @@index([projectId, displayOrder])
+}
+
+model ProjectMedia {
+  projectId    String
+  project      Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  mediaId      String
+  media        MediaAsset @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  caption      String?
+  displayOrder Int        @default(0)
+
+  @@id([projectId, mediaId])
+  @@index([projectId, displayOrder])
+}
+
+model ProjectService {
+  projectId    String
+  project      Project @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  serviceId    String
+  service      Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  displayOrder Int     @default(0)
+
+  @@id([projectId, serviceId])
+  @@index([projectId, displayOrder])
+}
+
+model ProjectTechnology {
+  projectId    String
+  project      Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  technologyId String
+  technology   Technology @relation(fields: [technologyId], references: [id], onDelete: Cascade)
+  displayOrder Int        @default(0)
+
+  @@id([projectId, technologyId])
+  @@index([projectId, displayOrder])
+}
+
+// ==========================================
+// BLOG ECOSYSTEM
+// ==========================================
+
+model Author {
+  id          String      @id @default(uuid())
+  name        String
+  slug        String      @unique
+  bio         String?     @db.Text
+  role        String?
+  avatarId    String?
+  avatarRef   MediaAsset? @relation("AuthorAvatar", fields: [avatarId], references: [id], onDelete: SetNull)
+  avatarUrl   String?
+  email       String?
+  linkedinUrl String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  blogPosts   BlogPost[]
+}
+
+model BlogCategory {
+  id           String     @id @default(uuid())
+  name         String
+  slug         String     @unique
+  description  String?
+  enabled      Boolean    @default(true)
+  displayOrder Int        @default(0)
+  blogPosts    BlogPost[]
+}
+
+model BlogPost {
+  id                 String           @id @default(uuid())
+  slug               String           @unique
+  title              String
+  excerpt            String
+  content            String           @db.Text
+  aeoDirectAnswer    String           @db.Text
+  featuredImageId    String?
+  featuredImage      MediaAsset?      @relation("BlogCoverImage", fields: [featuredImageId], references: [id], onDelete: SetNull)
+  coverImage         String           // Fallback URL string
+  authorId           String?
+  authorRef          Author?          @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  userId             String?
+  userRef            User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
+  authorName         String?
+  categoryId         String?
+  categoryRef        BlogCategory?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  category           String           // Fallback category string
+  status             ContentStatus    @default(PUBLISHED)
+  featured           Boolean          @default(false)
+  readingTimeMinutes Int              @default(5)
+  readTime           String           @default("5 min read")
+  publishedAt        DateTime         @default(now())
+  scheduledAt        DateTime?
+  createdAt          DateTime         @default(now())
+  updatedAt          DateTime         @updatedAt
+
+  tags               BlogPostTag[]
+  relatedFrom        RelatedBlogPost[] @relation("SourcePost")
+  relatedTo          RelatedBlogPost[] @relation("TargetPost")
+  seoMetadata        SeoMetadata?
+
+  @@index([status, publishedAt])
+  @@index([categoryId, status, publishedAt])
+  @@index([authorId, status, publishedAt])
+  @@index([status, featured, publishedAt])
+}
+
+model BlogTag {
+  id        String        @id @default(uuid())
+  name      String
+  slug      String        @unique
+  blogPosts BlogPostTag[]
+}
+
+model BlogPostTag {
+  postId String
+  post   BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tagId  String
+  tag    BlogTag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([postId, tagId])
+  @@index([tagId])
+}
+
+model RelatedBlogPost {
+  postId        String
+  post          BlogPost @relation("SourcePost", fields: [postId], references: [id], onDelete: Cascade)
+  relatedPostId String
+  relatedPost   BlogPost @relation("TargetPost", fields: [relatedPostId], references: [id], onDelete: Cascade)
+  displayOrder  Int      @default(0)
+
+  @@id([postId, relatedPostId])
+}
+
+// ==========================================
+// FAQ REPOSITORY
+// ==========================================
+
+model Faq {
+  id           String        @id @default(uuid())
+  question     String
+  answer       String        @db.Text
+  enabled      Boolean       @default(true)
+  displayOrder Int           @default(0)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+
+  serviceFaqs  ServiceFaq[]
+  solutionFaqs SolutionFaq[]
+  homeFaqs     HomeFaq[]
+
+  @@index([enabled, displayOrder])
+}
+
+model ServiceFaq {
+  serviceId    String
+  service      Service @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  faqId        String
+  faq          Faq     @relation(fields: [faqId], references: [id], onDelete: Cascade)
+  displayOrder Int     @default(0)
+
+  @@id([serviceId, faqId])
+  @@index([serviceId, displayOrder])
+}
+
+model SolutionFaq {
+  solutionId   String
+  solution     Solution @relation(fields: [solutionId], references: [id], onDelete: Cascade)
+  faqId        String
+  faq          Faq      @relation(fields: [faqId], references: [id], onDelete: Cascade)
+  displayOrder Int      @default(0)
+
+  @@id([solutionId, faqId])
+  @@index([solutionId, displayOrder])
+}
+
+model HomeFaq {
+  homePageId   String
+  homePage     HomePage @relation(fields: [homePageId], references: [id], onDelete: Cascade)
+  faqId        String
+  faq          Faq      @relation(fields: [faqId], references: [id], onDelete: Cascade)
+  displayOrder Int      @default(0)
+
+  @@id([homePageId, faqId])
+  @@index([homePageId, displayOrder])
+}
+
+// ==========================================
+// NAVIGATION MENUS
+// ==========================================
+
+model NavigationMenu {
+  id        String           @id @default(uuid())
+  key       MenuKey          @unique
+  label     String
+  items     NavigationItem[]
+}
+
+model NavigationItem {
+  id           String           @id @default(uuid())
+  menuId       String
+  menu         NavigationMenu   @relation(fields: [menuId], references: [id], onDelete: Cascade)
+  parentId     String?
+  parent       NavigationItem?  @relation("SubItems", fields: [parentId], references: [id], onDelete: Cascade)
+  children     NavigationItem[] @relation("SubItems")
+  label        String
+  url          String
+  external     Boolean          @default(false)
+  openNewTab   Boolean          @default(false)
+  enabled      Boolean          @default(true)
+  displayOrder Int              @default(0)
+
+  @@index([menuId, enabled, displayOrder])
+  @@index([parentId, displayOrder])
+}
+
+// ==========================================
+// AEO & COMPANY KNOWLEDGE PROFILE
+// ==========================================
+
+model CompanyProfile {
+  id                 String   @id @default(uuid())
+  shortDescription   String   @db.Text
+  directAnswer       String   @db.Text
+  coreFrameworks     String[]
+  aiSpecialization   String
+  deliveryModel      String
+  headquartersLabel  String
+  verificationLabel  String?
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+}
+
+// ==========================================
+// SEO METADATA & STATIC PAGES
+// ==========================================
+
+model SeoMetadata {
+  id              String      @id @default(uuid())
+  metaTitle       String
+  metaDescription String      @db.Text
+  canonicalUrl    String?
+  ogTitle         String?
+  ogDescription   String?     @db.Text
+  ogImageId       String?
+  ogImageUrl      String?
+  robotsIndex     Boolean     @default(true)
+  robotsFollow    Boolean     @default(true)
+  breadcrumbLabel String?
+  serpSnippet     Json?
+  focusKeywords   Json?
+  structuredJson  Json?
+
+  serviceId       String?     @unique
+  service         Service?    @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  solutionId      String?     @unique
+  solution        Solution?   @relation(fields: [solutionId], references: [id], onDelete: Cascade)
+  projectId       String?     @unique
+  project         Project?    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  blogPostId      String?     @unique
+  blogPost        BlogPost?   @relation(fields: [blogPostId], references: [id], onDelete: Cascade)
+  staticPageId    String?     @unique
+  staticPage      StaticPage? @relation(fields: [staticPageId], references: [id], onDelete: Cascade)
+
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+}
+
+model StaticPage {
+  id          String       @id @default(uuid())
+  pageKey     String       @unique // e.g. 'home', 'services', 'solutions', 'portfolio', 'about', 'blog', 'contact'
+  route       String       @unique // e.g. '/', '/services', '/solutions', '/portfolio', '/about', '/blog', '/contact'
+  title       String
+  h1          String?
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+  seoMetadata SeoMetadata?
+}
+
+model SeoKeyword {
+  id             String   @id @default(uuid())
+  keyword        String   @unique
+  searchVolume   String
+  difficulty     String   @default("Medium")
+  targetPage     String   @default("/")
+  targetPosition String
+  currentDensity Decimal  @default(0.00) @db.Decimal(4, 2)
+  status         String   @default("OPTIMIZED")
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model SeoAuditLog {
+  id              String   @id @default(uuid())
+  score           Int
+  grade           String
+  passedChecks    Int
+  totalChecks     Int
+  checks          Json
+  titlePixelWidth Int
+  descPixelWidth  Int
+  createdAt       DateTime @default(now())
+}
+
+// ==========================================
+// REDIRECTS
+// ==========================================
+
+model Redirect {
+  id              String   @id @default(uuid())
+  sourcePath      String   @unique
+  destinationPath String
+  statusCode      Int      @default(301)
+  active          Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@index([active, sourcePath])
+}
+
+// ==========================================
+// LEADS & SUBSCRIBERS
+// ==========================================
+
+model Lead {
+  id              String     @id @default(uuid())
+  name            String
+  email           String
+  company         String?
+  serviceSelected String
+  serviceId       String?
+  service         Service?   @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  budget          String
+  timeline        String
+  message         String     @db.Text
+  status          LeadStatus @default(NEW)
+  notes           String?    @db.Text
+  source          String?    @default("Website Consultation Form")
+  ipAddress       String?
+  userAgent       String?
+  createdAt       DateTime   @default(now())
+  updatedAt       DateTime   @updatedAt
+
+  @@index([status, createdAt])
+  @@index([createdAt])
+  @@index([email])
+}
+
+model NewsletterSubscriber {
+  id             String    @id @default(uuid())
+  email          String    @unique
+  status         String    @default("ACTIVE")
+  subscribedAt   DateTime  @default(now())
+  unsubscribedAt DateTime?
+  source         String?   @default("Website Footer")
+
+  @@index([status, subscribedAt])
+}
+
+// ==========================================
+// ANALYTICS
+// ==========================================
+
+model SiteAnalytics {
+  id        String   @id @default(uuid())
+  eventName String
+  path      String
+  referrer  String?
+  userAgent String?
+  ipHash    String?
+  metadata  Json?
+  createdAt DateTime @default(now())
+}
+
+model WebVitalSample {
+  id        String   @id @default(uuid())
+  pathname  String
+  metric    String
+  value     Float
+  rating    String
+  visitorId String?
+  createdAt DateTime @default(now())
+
+  @@index([metric, createdAt])
+  @@index([pathname, metric, createdAt])
+}
