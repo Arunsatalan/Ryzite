@@ -1,5 +1,6 @@
 import { 
-  ServiceItem, 
+  ServiceItem,
+  SolutionItem, 
   ProjectItem, 
   BlogPost, 
   LeadItem, 
@@ -617,3 +618,209 @@ export const FAQ_ITEMS = [
     answer: 'Absolutely. Every deployment includes 30 to 60 days of hypercare warranty, followed by flexible monthly SLA support tiers covering 24/7 server monitoring, security patches, performance tuning, and feature iterations.'
   }
 ];
+
+export const INITIAL_SOLUTIONS: SolutionItem[] = [
+  {
+    id: 'sol-saas',
+    slug: 'enterprise-saas-web-apps',
+    title: 'Enterprise SaaS & Web Apps',
+    subtitle: 'High-concurrency React & Next.js web applications built for enterprise speed and security.',
+    category: 'Full-Stack Web',
+    description: 'Custom multi-tenant SaaS architecture, high-speed Core Web Vitals optimization, and robust GraphQL/REST backend services.',
+    fullDescription: 'Our Enterprise SaaS & Web Apps solution delivers resilient, reactive web platforms engineered for heavy concurrent user volume. We implement state-of-the-art server-side rendering, sub-100ms API response rates, role-based authorization, and automated deployment pipelines.',
+    iconName: 'Monitor',
+    benefits: [
+      '95+ Core Web Vitals Lighthouse score guaranteed',
+      'Multi-tenant database schema & workspace isolation',
+      'Real-time WebSockets & event-driven background queues',
+      'SOC2 & GDPR compliance ready codebases'
+    ],
+    features: [
+      'Next.js App Router Architecture with Server Components',
+      'TypeScript Strict Mode type safety',
+      'Tailwind CSS design system with Dark/Light mode',
+      'Stripe & Chargebee Subscription Billing engine',
+      'Automated Cypress & Playwright E2E testing'
+    ],
+    architectureHighlights: [
+      'Edge Node Caching with Cloudflare Workers',
+      'Prisma ORM with PostgreSQL Connection Pooling',
+      'Redis Cache Layer for zero-latency session state'
+    ],
+    useCases: [
+      'B2B SaaS Marketplaces & Portals',
+      'Fintech Dashboards & Transaction Processing',
+      'Healthcare Patient Management & Telehealth Platforms'
+    ],
+    techStack: ['Next.js 15', 'React 19', 'TypeScript', 'Node.js', 'PostgreSQL', 'Tailwind CSS', 'Redis', 'Docker'],
+    relatedCaseStudySlug: 'pinegen-ai',
+    metaTitle: 'Enterprise SaaS & Web Application Solutions | Ryzite',
+    metaDescription: 'Architect custom high-concurrency SaaS applications and web portals with Next.js, TypeScript, and microservices built by Ryzite.'
+  },
+  {
+    id: 'sol-ai',
+    slug: 'ai-automation-llm-workflows',
+    title: 'AI Automation & LLM Workflows',
+    subtitle: 'Autonomous AI agents, vector RAG pipelines, and conversational voice automation.',
+    category: 'Artificial Intelligence',
+    description: 'Transform customer support, internal search, and complex operational workflows with custom Gemini and OpenAI AI agents.',
+    fullDescription: 'Harness state-of-the-art LLMs, multi-agent orchestrations, and vector embeddings (Pinecone, Qdrant) to turn raw unstructured enterprise data into real-time actionable intelligence. We build custom RAG pipelines, voice call bots, and automated document extraction engines.',
+    iconName: 'Cpu',
+    benefits: [
+      'Reduce customer support resolution times by up to 80%',
+      'Eliminate manual data entry with OCR and AI vision processing',
+      'Sub-second voice bot audio latency over phone and web',
+      'Enterprise data privacy with zero model training on client input'
+    ],
+    features: [
+      'Gemini 2.5/3.7 & OpenAI GPT-4o Agent Integration',
+      'LangChain & LlamaIndex Vector Knowledge Bases',
+      'Real-time Audio WebSockets with Twilio & WebRTC',
+      'Cost-controlled token usage & hallucination guardrails',
+      'Admin analytics dashboard for prompt accuracy tracking'
+    ],
+    architectureHighlights: [
+      'Milvus / Pinecone High-dimensional Vector Databases',
+      'FastAPI Python Microservices with Async Workers',
+      'Streamed Response Buffers for smooth UI typing effects'
+    ],
+    useCases: [
+      '24/7 Restaurant & Hospitality Phone Booking Bots',
+      'Internal Knowledge Base RAG Search for 500+ Employee Teams',
+      'Automated Contract Parsing & Financial Document Scoring'
+    ],
+    techStack: ['Gemini Live API', 'OpenAI', 'Python', 'FastAPI', 'Pinecone', 'LangChain', 'Redis'],
+    relatedCaseStudySlug: 'dinefy-ai-call-bot',
+    metaTitle: 'AI Automation & LLM Workflow Solutions | Ryzite',
+    metaDescription: 'Deploy autonomous AI agents, RAG pipelines, and conversational voice bots tailored for your enterprise with Ryzite.'
+  },
+  {
+    id: 'sol-mobile',
+    slug: 'mobile-applications',
+    title: 'High-Performance Mobile Apps',
+    subtitle: 'Native iOS & Android apps with offline data sync, NFC, and biometrics.',
+    category: 'Mobile Engineering',
+    description: 'Engaging cross-platform React Native and Native mobile applications designed for 5-star user retention and seamless app store releases.',
+    fullDescription: 'Deliver fluid mobile experiences across iOS and Android. Our mobile engineering pod builds cross-platform React Native & Flutter apps equipped with offline-first SQLite database synchronization, push notifications, Apple Pay / Google Pay, biometrics security, and App Store Optimization (ASO).',
+    iconName: 'Smartphone',
+    benefits: [
+      'Single codebase running natively on iOS and Android',
+      'Instant offline responsiveness with local data caching',
+      'Biometric authentication (FaceID / TouchID) integration',
+      'Complete App Store & Google Play submission management'
+    ],
+    features: [
+      'React Native & Flutter Native Engine Architecture',
+      'Hardware NFC & Dynamic QR Code Scanning',
+      'Stripe & Apple In-App Purchase Monetization',
+      'Push Notifications with Firebase Cloud Messaging',
+      'Real-time GPS Tracking & Geofencing'
+    ],
+    architectureHighlights: [
+      'WatermelonDB / SQLite local state sync layer',
+      'GraphQL subscriptions for zero-lag live updates',
+      'Automated Fastlane App Store CI/CD build scripts'
+    ],
+    useCases: [
+      'Digital Contactless NFC Card & Lead Capture Systems',
+      'E-commerce & On-Demand Delivery Mobile Apps',
+      'Field Operations & Asset Inspection Dashboards'
+    ],
+    techStack: ['React Native', 'Flutter', 'Swift', 'Kotlin', 'Firebase', 'GraphQL', 'Stripe'],
+    relatedCaseStudySlug: 'qrbook',
+    metaTitle: 'High-Performance Mobile Application Development | Ryzite',
+    metaDescription: 'Build native and cross-platform mobile apps for iOS & Android with fluid performance, NFC, biometrics, and offline sync.'
+  },
+  {
+    id: 'sol-cloud',
+    slug: 'cloud-devops-modernization',
+    title: 'Cloud Infrastructure & DevOps',
+    subtitle: 'Automated Terraform IaC, Kubernetes clusters, and zero-downtime CI/CD.',
+    category: 'DevOps & Infrastructure',
+    description: 'Hardened cloud architecture on AWS, GCP, and Azure designed for 99.99% uptime, auto-scaling, and SOC2 compliance.',
+    fullDescription: 'Modernize legacy server stacks into scalable Kubernetes container clusters. We automate infrastructure using Terraform, implement zero-downtime blue-green release pipelines, configure 24/7 Datadog monitoring, and audit infrastructure for SOC2 Type II compliance.',
+    iconName: 'Cloud',
+    benefits: [
+      'Achieve 99.99% SLA availability for core API services',
+      'Reduce monthly cloud infrastructure spend by 30%+',
+      'Zero downtime deployments with automated canary rollouts',
+      'Automated disaster recovery & multi-region failover'
+    ],
+    features: [
+      'Infrastructure as Code (Terraform, Pulumi)',
+      'Amazon EKS & Google GKE Kubernetes Management',
+      'GitHub Actions & GitLab CI/CD Pipeline Automation',
+      'Prometheus, Grafana & Datadog APM Observability',
+      'Cloudflare DDoS Mitigation & WAF Configuration'
+    ],
+    architectureHighlights: [
+      'Multi-AZ VPC Isolation with Private Subnets',
+      'Automated Secret Rotation with AWS Secrets Manager',
+      'Stateless Horizontal Container Auto-scaling'
+    ],
+    useCases: [
+      'Fintech SOC2 Type II Security Hardening',
+      'High-traffic E-commerce Flash Sale Auto-scaling',
+      'Legacy Monolith to Kubernetes Microservices Migration'
+    ],
+    techStack: ['AWS', 'Google Cloud Platform', 'Docker', 'Kubernetes', 'Terraform', 'GitHub Actions', 'Datadog'],
+    relatedCaseStudySlug: 'botloop',
+    metaTitle: 'Cloud Infrastructure & DevOps Modernization | Ryzite',
+    metaDescription: 'Scale your infrastructure with Kubernetes, Terraform, zero-downtime CI/CD pipelines, and cloud security hardening by Ryzite.'
+  },
+  {
+    id: 'sol-consulting',
+    slug: 'software-architecture-consulting',
+    title: 'Software Architecture Consulting',
+    subtitle: 'Principal technical advisory, code security audits, and fractional CTO leadership.',
+    category: 'Technical Advisory',
+    description: 'Expert architectural guidance, technology selection, and due diligence for funded startups and scaling enterprises.',
+    fullDescription: 'Avoid costly technical debt and architectural dead ends. Our veteran Principal Architects assist CTOs and founders with legacy codebase audits, system architecture blueprints, VC due diligence preparation, and technology stack selection.',
+    iconName: 'ShieldCheck',
+    benefits: [
+      'Identify critical security vulnerabilities & bottleneck bottlenecks',
+      'Comprehensive 40+ page architectural blueprint & roadmap',
+      'Fractional CTO guidance for VC Seed to Series B funding rounds',
+      'Clear team skill gap assessment and engineering hiring guidelines'
+    ],
+    features: [
+      'Full Codebase & Database Query Audit',
+      'System Architecture & ERD Diagram Blueprinting',
+      'Security & Data Privacy Compliance Review',
+      'Tech Stack Cost-Benefit & Scalability Analysis',
+      'Executive Board & VC Pitch Technical Briefings'
+    ],
+    architectureHighlights: [
+      'Clean Architecture & Domain-Driven Design (DDD)',
+      'Event-Driven Microservice Decoupling',
+      'Zero-Trust Identity & Access Management Schemas'
+    ],
+    useCases: [
+      'Pre-acquisition Technical Due Diligence Audits',
+      'Monolith Refactoring Strategy for Scaling Tech Teams',
+      'CTO Advisory for AI & Cloud Architecture Adoption'
+    ],
+    techStack: ['System Architecture', 'Security Standards', 'Microservices', 'Clean Architecture', 'DDD'],
+    relatedCaseStudySlug: 'pinegen-ai',
+    metaTitle: 'Software Architecture & Fractional CTO Consulting | Ryzite',
+    metaDescription: 'Get expert software architecture blueprints, codebase audits, and fractional CTO advisory from Principal Architects at Ryzite.'
+  }
+];
+
+// Helper functions for static generation and server metadata lookup
+export function getServiceBySlug(slug: string): ServiceItem | undefined {
+  return INITIAL_SERVICES.find(s => s.slug === slug);
+}
+
+export function getSolutionBySlug(slug: string): SolutionItem | undefined {
+  return INITIAL_SOLUTIONS.find(s => s.slug === slug);
+}
+
+export function getProjectBySlug(slug: string): ProjectItem | undefined {
+  return INITIAL_PROJECTS.find(p => p.slug === slug);
+}
+
+export function getBlogBySlug(slug: string): BlogPost | undefined {
+  return INITIAL_BLOGS.find(b => b.slug === slug);
+}
+

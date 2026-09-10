@@ -1,12 +1,11 @@
+'use client';
+
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { 
-  ArrowRight, 
-  Sparkles, 
   Mail, 
-  Phone, 
   MapPin, 
   Check, 
-  ShieldCheck,
   Github,
   Twitter,
   Linkedin
@@ -14,15 +13,15 @@ import {
 import { ServiceItem } from '../types';
 
 interface FooterProps {
-  services: ServiceItem[];
-  onSelectService: (service: ServiceItem) => void;
-  onNavigate: (sectionId: string) => void;
-  onOpenConsultation: () => void;
-  onOpenAdmin: () => void;
+  services?: ServiceItem[];
+  onSelectService?: (service: ServiceItem) => void;
+  onNavigate?: (sectionId: string) => void;
+  onOpenConsultation?: () => void;
+  onOpenAdmin?: () => void;
 }
 
 export const Footer: React.FC<FooterProps> = ({
-  services,
+  services = [],
   onSelectService,
   onNavigate,
   onOpenConsultation,
@@ -44,16 +43,15 @@ export const Footer: React.FC<FooterProps> = ({
   return (
     <footer id="main-footer" className="bg-[#06162B] text-white pt-20 pb-12 relative overflow-hidden border-t border-slate-800">
       
-      {/* Background ambient liquid splash */}
-      <div className="max-w-340 mx-auto px-6 sm:px-10 lg:px-16 relative z-10 text-left">
+      <div className="max-w-7xl mx-auto px-6 sm:px-10 lg:px-16 relative z-10 text-left">
         
         {/* Top Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-12 gap-12 pb-16 border-b border-blue-900/80">
           
           {/* Brand Col */}
           <div className="lg:col-span-4 space-y-5">
-            <div className="flex items-center gap-2.5">
-              <div className="w-9 h-9 bg-[#0052FF] flex items-center justify-center">
+            <Link href="/" className="flex items-center gap-2.5 inline-flex">
+              <div className="w-9 h-9 bg-[#0052FF] flex items-center justify-center rounded-xl">
                 <svg viewBox="0 0 24 24" className="w-5 h-5 fill-white" xmlns="http://www.w3.org/2000/svg">
                   <path d="M5 4h6.5a5.5 5.5 0 0 1 3.9 9.38L19 20h-4l-3.2-5.5H8v5.5H5V4zm3 3v4.5h3.5a2.25 2.25 0 0 0 0-4.5H8z"/>
                 </svg>
@@ -61,7 +59,7 @@ export const Footer: React.FC<FooterProps> = ({
               <span className="text-2xl font-black tracking-tight text-white font-display">
                 RYZITE
               </span>
-            </div>
+            </Link>
 
             <p className="text-sm text-blue-200/80 leading-relaxed max-w-sm">
               We Build Software That Drives Growth. Empowering startups and enterprises with scalable web apps, mobile solutions, AI automation, and zero-downtime cloud infrastructure.
@@ -69,10 +67,10 @@ export const Footer: React.FC<FooterProps> = ({
 
             <div className="flex items-center gap-3 pt-2">
               <a 
-                href="https://twitter.com/ryzite" 
+                href="https://twitter.com/ryzite_agency" 
                 target="_blank" 
                 rel="noreferrer" 
-                className="w-9 h-9 border border-slate-600 hover:border-[#0052FF] text-blue-200 hover:text-white flex items-center justify-center transition-colors"
+                className="w-9 h-9 rounded-full bg-blue-900/50 hover:bg-[#0052FF] text-blue-200 hover:text-white flex items-center justify-center transition-colors"
               >
                 <Twitter className="w-4 h-4" />
               </a>
@@ -103,14 +101,22 @@ export const Footer: React.FC<FooterProps> = ({
             <ul className="space-y-2.5">
               {services.map((srv) => (
                 <li key={srv.id}>
-                  <button
-                    onClick={() => onSelectService(srv)}
-                    className="text-sm text-blue-100 hover:text-cyan-300 transition-colors text-left"
+                  <Link
+                    href={`/services/${srv.slug}`}
+                    className="text-sm text-blue-100 hover:text-cyan-300 transition-colors text-left block"
                   >
                     {srv.title}
-                  </button>
+                  </Link>
                 </li>
               ))}
+              <li>
+                <Link
+                  href="/solutions"
+                  className="text-sm text-cyan-300 font-bold hover:underline transition-colors text-left block"
+                >
+                  View All Solutions →
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -121,33 +127,38 @@ export const Footer: React.FC<FooterProps> = ({
             </h4>
             <ul className="space-y-2.5 text-sm text-blue-100">
               <li>
-                <button onClick={() => onNavigate('hero')} className="hover:text-cyan-300 transition-colors">
+                <Link href="/" className="hover:text-cyan-300 transition-colors">
                   Home
-                </button>
+                </Link>
               </li>
               <li>
-                <button onClick={() => onNavigate('portfolio')} className="hover:text-cyan-300 transition-colors">
+                <Link href="/services" className="hover:text-cyan-300 transition-colors">
+                  Services
+                </Link>
+              </li>
+              <li>
+                <Link href="/solutions" className="hover:text-cyan-300 transition-colors">
+                  Solutions
+                </Link>
+              </li>
+              <li>
+                <Link href="/portfolio" className="hover:text-cyan-300 transition-colors">
                   Portfolio & Case Studies
-                </button>
+                </Link>
               </li>
               <li>
-                <button onClick={() => onNavigate('about')} className="hover:text-cyan-300 transition-colors">
+                <Link href="/about" className="hover:text-cyan-300 transition-colors">
                   About Us
-                </button>
+                </Link>
               </li>
               <li>
-                <button onClick={() => onNavigate('blog')} className="hover:text-cyan-300 transition-colors">
+                <Link href="/blog" className="hover:text-cyan-300 transition-colors">
                   Engineering Blog
-                </button>
+                </Link>
               </li>
               <li>
                 <button onClick={onOpenConsultation} className="hover:text-cyan-300 transition-colors text-cyan-300 font-bold">
                   Book Consultation →
-                </button>
-              </li>
-              <li>
-                <button onClick={onOpenAdmin} className="hover:text-white text-slate-400 text-xs mt-2 block">
-                  ⚙️ Admin CMS & CRM
                 </button>
               </li>
             </ul>

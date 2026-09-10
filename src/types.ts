@@ -22,6 +22,25 @@ export interface ServiceItem {
   featured: boolean;
 }
 
+export interface SolutionItem {
+  id: string;
+  slug: string;
+  title: string;
+  subtitle: string;
+  category: string;
+  description: string;
+  fullDescription: string;
+  iconName: string;
+  benefits: string[];
+  features: string[];
+  architectureHighlights: string[];
+  useCases: string[];
+  techStack: string[];
+  relatedCaseStudySlug?: string;
+  metaTitle: string;
+  metaDescription: string;
+}
+
 export interface ProjectItem {
   id: string;
   slug: string;
@@ -125,6 +144,7 @@ export interface SeoAuditCheck {
 }
 
 export interface PageMetadataConfig {
+  pageKey?: string;
   title: string;
   description: string;
   canonicalUrl: string;

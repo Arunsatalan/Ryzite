@@ -1,10 +1,11 @@
 import React from 'react';
+import Link from 'next/link';
 import { ArrowRight, Sparkles } from 'lucide-react';
 import { TRUSTED_CLIENTS } from '../data/initialData';
 
 interface HeroProps {
-  onExploreServices: () => void;
-  onBookConsultation: () => void;
+  onExploreServices?: () => void;
+  onBookConsultation?: () => void;
   onSelectClient?: (clientName: string) => void;
 }
 
@@ -37,7 +38,6 @@ export const Hero: React.FC<HeroProps> = ({
               We Build Software <br />
               That <span className="text-[#0052FF] relative inline-block">
                 Drives Growth
-                {/* Liquid underline accent */}
                 <svg className="absolute -bottom-2 left-0 w-full h-3 text-[#38BDF8] opacity-70" viewBox="0 0 200 12" fill="none">
                   <path d="M2 9C50 3 150 3 198 9" stroke="currentColor" strokeWidth="4" strokeLinecap="round" />
                 </svg>
@@ -51,14 +51,14 @@ export const Hero: React.FC<HeroProps> = ({
 
             {/* Dual CTA Buttons */}
             <div className="flex flex-wrap items-center justify-center gap-4 pt-1">
-              <button
+              <Link
                 id="hero-explore-services-btn"
-                onClick={onExploreServices}
+                href="/services"
                 className="inline-flex items-center gap-2 px-7 py-3.5 bg-[#0052FF] hover:bg-[#0040cc] active:scale-[0.98] text-white text-base font-bold rounded-full shadow-xl shadow-blue-600/30 transition-all duration-200 group"
               >
                 <span>Explore Our Services</span>
                 <ArrowRight className="w-4 h-4 transition-transform group-hover:translate-x-1" />
-              </button>
+              </Link>
 
               <button
                 id="hero-book-consultation-btn"
@@ -77,10 +77,10 @@ export const Hero: React.FC<HeroProps> = ({
               
               <div className="flex flex-wrap items-center justify-center gap-x-7 gap-y-4">
                 {TRUSTED_CLIENTS.map((client, idx) => (
-                  <button
+                  <Link
                     key={idx}
                     id={`client-trust-${client.name.toLowerCase().replace(/\s+/g, '-')}`}
-                    onClick={() => onSelectClient?.(client.name)}
+                    href="/portfolio"
                     className="flex items-center gap-1.5 text-slate-700 hover:text-[#0052FF] transition-colors group cursor-pointer focus:outline-none"
                     title={`View ${client.name} case study`}
                   >
@@ -90,7 +90,7 @@ export const Hero: React.FC<HeroProps> = ({
                     <span className="text-sm font-bold tracking-tight text-[#001F54] group-hover:text-[#0052FF]">
                       {client.name}
                     </span>
-                  </button>
+                  </Link>
                 ))}
               </div>
             </div>

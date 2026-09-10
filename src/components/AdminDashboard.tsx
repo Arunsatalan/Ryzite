@@ -56,6 +56,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [leadFilter, setLeadFilter] = useState<string>('ALL');
   
   // SEO state
+  const [selectedSeoPage, setSelectedSeoPage] = useState<string>('home');
   const [seoConfig, setSeoConfig] = useState<PageMetadataConfig | null>(null);
   const [seoSaved, setSeoSaved] = useState(false);
   const [showSerpModal, setShowSerpModal] = useState(false);
@@ -74,10 +75,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   useEffect(() => {
     if (isOpen) {
       fetchLeads();
-      fetchSeo();
+      fetchSeo(selectedSeoPage);
       fetchAnalytics();
     }
   }, [isOpen]);
+
+  useEffect(() => {
+    if (isOpen) {
+      fetchSeo(selectedSeoPage);
+    }
+  }, [selectedSeoPage]);
 
   const fetchLeads = async () => {
     setLoadingLeads(true);
@@ -92,9 +99,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   };
 
-  const fetchSeo = async () => {
+  const fetchSeo = async (pageKey: string = 'home') => {
     try {
-      const res = await fetch('/api/seo');
+      const res = await fetch(`/api/seo?pageKey=${pageKey}`);
       const data = await res.json();
       setSeoConfig(data);
     } catch (err) {
@@ -152,7 +159,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     const configToSave = updatedConfig || seoConfig;
     if (!configToSave) return;
     try {
-      const res = await fetch('/api/seo', {
+      const res = await fetch(`/api/seo?pageKey=${selectedSeoPage}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(configToSave)
@@ -580,22 +587,56 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <p className="text-xs text-slate-500">Configure real-time Google search snippets, AI Overviews, rich stars rating, and JSON-LD schema.</p>
                 </div>
 
-                <div className="flex items-center gap-2">
-                  <button
-                    id="open-serp-optimizer-modal-btn"
-                    onClick={() => setShowSerpModal(true)}
-                    className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md shadow-blue-500/20"
-                  >
-                    <Search className="w-4 h-4" />
-                    <span>Launch SERP Simulator</span>
-                  </button>
-                  <button
-                    onClick={() => handleSaveSeo()}
-                    className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow"
-                  >
-                    {seoSaved ? <Check className="w-4 h-4 text-emerald-300" /> : <Save className="w-4 h-4" />}
-                    <span>{seoSaved ? 'Saved!' : 'Save Changes'}</span>
-                  </button>
+                <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3">
+                  <div className="flex items-center gap-2">
+                    <label className="text-xs font-bold text-slate-700">Select Page:</label>
+                    <select
+                      value={selectedSeoPage}
+                      onChange={(e) => setSelectedSeoPage(e.target.value)}
+                      className="px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs font-semibold text-slate-800 shadow-sm"
+                    >
+                      <optgroup label="Main Pages">
+                        <option value="home">Home Page</option>
+                        <option value="services">Services Page</option>
+                        <option value="solutions">Solutions Page</option>
+                        <option value="portfolio">Portfolio Page</option>
+                        <option value="about">About Us Page</option>
+                        <option value="blog">Blog Page</option>
+                      </optgroup>
+                      {services.length > 0 && (
+                        <optgroup label="Service Pages">
+                          {services.map(s => <option key={s.id} value={`service-${s.slug}`}>{s.title}</option>)}
+                        </optgroup>
+                      )}
+                      {projects.length > 0 && (
+                        <optgroup label="Case Studies">
+                          {projects.map(p => <option key={p.id} value={`portfolio-${p.slug}`}>{p.title}</option>)}
+                        </optgroup>
+                      )}
+                      {blogs.length > 0 && (
+                        <optgroup label="Blog Posts">
+                          {blogs.map(b => <option key={b.id} value={`blog-${b.slug}`}>{b.title}</option>)}
+                        </optgroup>
+                      )}
+                    </select>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <button
+                      id="open-serp-optimizer-modal-btn"
+                      onClick={() => setShowSerpModal(true)}
+                      className="px-4 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow-md shadow-blue-500/20"
+                    >
+                      <Search className="w-4 h-4" />
+                      <span>Launch SERP Simulator</span>
+                    </button>
+                    <button
+                      onClick={() => handleSaveSeo()}
+                      className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 shadow"
+                    >
+                      {seoSaved ? <Check className="w-4 h-4 text-emerald-300" /> : <Save className="w-4 h-4" />}
+                      <span>{seoSaved ? 'Saved!' : 'Save Changes'}</span>
+                    </button>
+                  </div>
                 </div>
               </div>
 

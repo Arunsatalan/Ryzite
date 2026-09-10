@@ -14,7 +14,14 @@ class StoreService {
   private projects: ProjectItem[] = [...INITIAL_PROJECTS];
   private blogs: BlogPost[] = [...INITIAL_BLOGS];
   private leads: LeadItem[] = [...INITIAL_LEADS];
-  private pageMetadata: PageMetadataConfig = { ...DEFAULT_PAGE_METADATA };
+  private pageMetadata: Record<string, PageMetadataConfig> = { 
+    'home': { ...DEFAULT_PAGE_METADATA, pageKey: 'home' },
+    'services': { ...DEFAULT_PAGE_METADATA, pageKey: 'services', title: 'Services | Ryzite' },
+    'solutions': { ...DEFAULT_PAGE_METADATA, pageKey: 'solutions', title: 'Solutions | Ryzite' },
+    'portfolio': { ...DEFAULT_PAGE_METADATA, pageKey: 'portfolio', title: 'Portfolio | Ryzite' },
+    'about': { ...DEFAULT_PAGE_METADATA, pageKey: 'about', title: 'About Us | Ryzite' },
+    'blog': { ...DEFAULT_PAGE_METADATA, pageKey: 'blog', title: 'Blog | Ryzite' },
+  };
   private analyticsEvents: Array<{
     id: string;
     eventName: string;
@@ -189,13 +196,20 @@ class StoreService {
   }
 
   // --- SEO Metadata Methods ---
-  getSeoMetadata(): PageMetadataConfig {
-    return this.pageMetadata;
+  getSeoMetadata(pageKey: string = 'home'): PageMetadataConfig {
+    if (!this.pageMetadata[pageKey]) {
+      this.pageMetadata[pageKey] = { ...DEFAULT_PAGE_METADATA, pageKey, title: `${pageKey} | Ryzite` };
+    }
+    return this.pageMetadata[pageKey];
   }
 
-  updateSeoMetadata(data: Partial<PageMetadataConfig>): PageMetadataConfig {
-    this.pageMetadata = { ...this.pageMetadata, ...data };
-    return this.pageMetadata;
+  updateSeoMetadata(pageKey: string, data: Partial<PageMetadataConfig>): PageMetadataConfig {
+    const key = pageKey || 'home';
+    if (!this.pageMetadata[key]) {
+      this.pageMetadata[key] = { ...DEFAULT_PAGE_METADATA, pageKey: key };
+    }
+    this.pageMetadata[key] = { ...this.pageMetadata[key], ...data };
+    return this.pageMetadata[key];
   }
 
   // --- Analytics Methods ---

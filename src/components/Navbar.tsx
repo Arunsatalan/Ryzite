@@ -1,4 +1,7 @@
+'use client';
+
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { 
   ChevronDown, 
   ArrowRight, 
@@ -9,27 +12,27 @@ import {
   Cpu, 
   Cloud, 
   ShieldCheck, 
-  Sparkles,
-  ExternalLink
+  Sparkles 
 } from 'lucide-react';
 import { ServiceItem } from '../types';
+import { INITIAL_SOLUTIONS } from '../data/initialData';
 
 interface NavbarProps {
-  services: ServiceItem[];
-  onSelectService: (service: ServiceItem) => void;
-  onOpenConsultation: () => void;
-  onOpenAdmin: () => void;
-  activeSection: string;
-  onNavigate: (sectionId: string) => void;
+  services?: ServiceItem[];
+  onSelectService?: (service: ServiceItem) => void;
+  onOpenConsultation?: () => void;
+  onOpenAdmin?: () => void;
+  activeSection?: string;
+  onNavigate?: (sectionId: string) => void;
   onSectionChange?: (sectionId: string) => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
-  services,
+  services = [],
   onSelectService,
   onOpenConsultation,
   onOpenAdmin,
-  activeSection,
+  activeSection = 'hero',
   onNavigate,
   onSectionChange
 }) => {
@@ -46,33 +49,6 @@ export const Navbar: React.FC<NavbarProps> = ({
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  useEffect(() => {
-    const sectionMap = [
-      ['hero-section', 'hero'],
-      ['services-section', 'services'],
-      ['portfolio-section', 'portfolio'],
-      ['about-us-section', 'about'],
-      ['blog-section', 'blog']
-    ] as const;
-    const sections = sectionMap
-      .map(([id, section]) => ({ element: document.getElementById(id), section }))
-      .filter((item): item is { element: HTMLElement; section: string } => Boolean(item.element));
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visibleSection = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
-        if (visibleSection) {
-          const match = sections.find((item) => item.element === visibleSection.target);
-          if (match) onSectionChange?.(match.section);
-        }
-      },
-      { rootMargin: '-35% 0px -55% 0px', threshold: [0, 0.2, 0.5] }
-    );
-    sections.forEach((item) => observer.observe(item.element));
-    return () => observer.disconnect();
-  }, [onSectionChange]);
-
   const getServiceIcon = (iconName: string) => {
     switch (iconName) {
       case 'Monitor': return <Monitor className="w-5 h-5 text-[#0052FF]" />;
@@ -85,12 +61,12 @@ export const Navbar: React.FC<NavbarProps> = ({
   };
 
   const navLinks = [
-    { label: 'Home', id: 'hero' },
-    { label: 'Services', id: 'services', hasDropdown: 'services' },
-    { label: 'Solutions', id: 'solutions', hasDropdown: 'solutions' },
-    { label: 'Portfolio', id: 'portfolio' },
-    { label: 'About Us', id: 'about' },
-    { label: 'Blog', id: 'blog' },
+    { label: 'Home', href: '/', id: 'hero' },
+    { label: 'Services', href: '/services', id: 'services', hasDropdown: 'services' },
+    { label: 'Solutions', href: '/solutions', id: 'solutions', hasDropdown: 'solutions' },
+    { label: 'Portfolio', href: '/portfolio', id: 'portfolio' },
+    { label: 'About Us', href: '/about', id: 'about' },
+    { label: 'Blog', href: '/blog', id: 'blog' },
   ];
 
   return (
@@ -106,13 +82,12 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className="site-nav-shell flex items-center justify-between gap-5 px-5 sm:px-7 py-2.5">
           
           {/* Brand Logo */}
-          <button 
+          <Link 
             id="brand-logo-btn"
-            onClick={() => onNavigate('hero')}
+            href="/"
             className="flex items-center gap-2.5 group focus:outline-none"
           >
             <div className="relative w-9 h-9 rounded-xl bg-[#0052FF] flex items-center justify-center shadow-md shadow-blue-500/25 group-hover:scale-105 transition-transform">
-              {/* Stylized Neo R icon */}
               <svg viewBox="0 0 24 24" className="w-5 h-5 fill-white" xmlns="http://www.w3.org/2000/svg">
                 <path d="M5 4h6.5a5.5 5.5 0 0 1 3.9 9.38L19 20h-4l-3.2-5.5H8v5.5H5V4zm3 3v4.5h3.5a2.25 2.25 0 0 0 0-4.5H8z"/>
               </svg>
@@ -121,7 +96,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             <span className="text-xl sm:text-2xl font-extrabold tracking-tight text-[#0052FF] font-display">
               RYZITE
             </span>
-          </button>
+          </Link>
 
           {/* Desktop Navigation Links */}
           <nav className="hidden lg:flex items-center gap-7">
@@ -134,16 +109,16 @@ export const Navbar: React.FC<NavbarProps> = ({
                     onMouseEnter={() => setServicesDropdownOpen(true)}
                     onMouseLeave={() => setServicesDropdownOpen(false)}
                   >
-                    <button
+                    <Link
                       id="nav-services-dropdown-btn"
-                      onClick={() => onNavigate('services')}
+                      href="/services"
                       className={`flex items-center gap-1 text-sm font-semibold transition-colors py-2 ${
                         activeSection === 'services' ? 'text-[#0052FF]' : 'text-[#0F172A] hover:text-[#0052FF]'
                       }`}
                     >
                       <span>Services</span>
                       <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${servicesDropdownOpen ? 'rotate-180 text-[#0052FF]' : 'text-slate-400'}`} />
-                    </button>
+                    </Link>
 
                     {/* Services Dropdown Mega Menu */}
                     {servicesDropdownOpen && (
@@ -151,15 +126,13 @@ export const Navbar: React.FC<NavbarProps> = ({
                         <div className="bg-white rounded-2xl shadow-xl shadow-blue-900/10 border border-slate-100 p-4 grid grid-cols-1 gap-2">
                           <div className="px-3 py-1.5 border-b border-slate-100 mb-1 flex items-center justify-between">
                             <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Enterprise Services</span>
-                            <span className="text-xs text-[#0052FF] font-medium">Custom Scope</span>
+                            <Link href="/services" className="text-xs text-[#0052FF] font-medium hover:underline">View All</Link>
                           </div>
                           {services.map((srv) => (
-                            <button
+                            <Link
                               key={srv.id}
-                              onClick={() => {
-                                onSelectService(srv);
-                                setServicesDropdownOpen(false);
-                              }}
+                              href={`/services/${srv.slug}`}
+                              onClick={() => setServicesDropdownOpen(false)}
                               className="w-full text-left p-3 rounded-xl hover:bg-blue-50/70 transition-colors flex items-start gap-3.5 group/item"
                             >
                               <div className="p-2.5 rounded-lg bg-blue-100/50 group-hover/item:bg-[#0052FF] group-hover/item:text-white transition-colors">
@@ -172,7 +145,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                                 </div>
                                 <p className="text-xs text-slate-500 line-clamp-1 mt-0.5">{srv.shortDescription}</p>
                               </div>
-                            </button>
+                            </Link>
                           ))}
                         </div>
                       </div>
@@ -189,41 +162,35 @@ export const Navbar: React.FC<NavbarProps> = ({
                     onMouseEnter={() => setSolutionsDropdownOpen(true)}
                     onMouseLeave={() => setSolutionsDropdownOpen(false)}
                   >
-                    <button
+                    <Link
                       id="nav-solutions-dropdown-btn"
-                      onClick={() => onNavigate('solutions')}
+                      href="/solutions"
                       className={`flex items-center gap-1 text-sm font-semibold transition-colors py-2 ${
                         activeSection === 'solutions' ? 'text-[#0052FF]' : 'text-[#0F172A] hover:text-[#0052FF]'
                       }`}
                     >
                       <span>Solutions</span>
                       <ChevronDown className={`w-4 h-4 transition-transform duration-200 ${solutionsDropdownOpen ? 'rotate-180 text-[#0052FF]' : 'text-slate-400'}`} />
-                    </button>
+                    </Link>
 
                     {/* Solutions Quick Popover */}
                     {solutionsDropdownOpen && (
                       <div className="absolute top-full left-1/2 -translate-x-1/2 w-80 pt-3 animate-in fade-in slide-in-from-top-2 duration-200">
                         <div className="bg-white rounded-2xl shadow-xl shadow-blue-900/10 border border-slate-100 p-3 space-y-1">
-                          <div className="px-3 py-1.5 border-b border-slate-100 mb-1">
+                          <div className="px-3 py-1.5 border-b border-slate-100 mb-1 flex items-center justify-between">
                             <span className="text-xs font-bold text-slate-400 uppercase tracking-wider">Industry Solutions</span>
+                            <Link href="/solutions" className="text-xs text-[#0052FF] font-medium hover:underline">Explore All</Link>
                           </div>
-                          {[
-                            { title: 'Generative AI & Agentic RAG', desc: 'Enterprise LLM ingestion pipelines' },
-                            { title: 'Contactless NFC & QR Systems', desc: 'Real-time card and event hubs' },
-                            { title: 'Hospitality & Voice Call AI', desc: 'Autonomous restaurant reservation bots' },
-                            { title: 'High-Concurrency Fintech Portals', desc: 'Zero-downtime microservices' }
-                          ].map((item, idx) => (
-                            <button
-                              key={idx}
-                              onClick={() => {
-                                onNavigate('portfolio');
-                                setSolutionsDropdownOpen(false);
-                              }}
+                          {INITIAL_SOLUTIONS.map((sol) => (
+                            <Link
+                              key={sol.id}
+                              href={`/solutions/${sol.slug}`}
+                              onClick={() => setSolutionsDropdownOpen(false)}
                               className="w-full text-left p-2.5 rounded-xl hover:bg-blue-50/70 transition-colors block"
                             >
-                              <div className="text-xs font-bold text-slate-900 hover:text-[#0052FF]">{item.title}</div>
-                              <div className="text-[11px] text-slate-500">{item.desc}</div>
-                            </button>
+                              <div className="text-xs font-bold text-slate-900 hover:text-[#0052FF]">{sol.title}</div>
+                              <div className="text-[11px] text-slate-500 line-clamp-1">{sol.subtitle}</div>
+                            </Link>
                           ))}
                         </div>
                       </div>
@@ -233,16 +200,16 @@ export const Navbar: React.FC<NavbarProps> = ({
               }
 
               return (
-                <button
+                <Link
                   key={link.id}
                   id={`nav-link-${link.id}`}
-                  onClick={() => onNavigate(link.id)}
+                  href={link.href}
                   className={`text-sm font-semibold transition-colors py-2 ${
                     activeSection === link.id ? 'text-[#0052FF]' : 'text-[#0F172A] hover:text-[#0052FF]'
                   }`}
                 >
                   {link.label}
-                </button>
+                </Link>
               );
             })}
           </nav>
@@ -278,12 +245,10 @@ export const Navbar: React.FC<NavbarProps> = ({
         <div className="lg:hidden bg-white border-b border-slate-200 px-4 pt-3 pb-6 space-y-3 shadow-2xl animate-in fade-in duration-200">
           <div className="flex flex-col space-y-2">
             {navLinks.map((link) => (
-              <button
+              <Link
                 key={link.id}
-                onClick={() => {
-                  onNavigate(link.id);
-                  setMobileMenuOpen(false);
-                }}
+                href={link.href}
+                onClick={() => setMobileMenuOpen(false)}
                 className={`text-left px-4 py-2.5 rounded-xl font-semibold text-sm transition-colors ${
                   activeSection === link.id 
                     ? 'bg-blue-50 text-[#0052FF]' 
@@ -291,14 +256,14 @@ export const Navbar: React.FC<NavbarProps> = ({
                 }`}
               >
                 {link.label}
-              </button>
+              </Link>
             ))}
           </div>
 
           <div className="pt-3 border-t border-slate-100 flex flex-col gap-2">
             <button
               onClick={() => {
-                onOpenConsultation();
+                onOpenConsultation?.();
                 setMobileMenuOpen(false);
               }}
               className="flex items-center justify-center gap-2 w-full py-3 text-sm font-bold text-white bg-[#0052FF] rounded-xl shadow-md shadow-blue-500/20"

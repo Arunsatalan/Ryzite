@@ -1,4 +1,5 @@
 import React from 'react';
+import Link from 'next/link';
 import { 
   Monitor, 
   Smartphone, 
@@ -13,8 +14,8 @@ import { ServiceItem } from '../types';
 
 interface SolutionsGridProps {
   services: ServiceItem[];
-  onSelectService: (service: ServiceItem) => void;
-  onExploreAll: () => void;
+  onSelectService?: (service: ServiceItem) => void;
+  onExploreAll?: () => void;
 }
 
 export const SolutionsGrid: React.FC<SolutionsGridProps> = ({
@@ -83,6 +84,23 @@ export const SolutionsGrid: React.FC<SolutionsGridProps> = ({
           <p className="text-slate-600 max-w-2xl text-sm sm:text-base leading-relaxed">
             We design, develop and deliver custom software solutions that help businesses automate, innovate and grow in the digital era.
           </p>
+
+          <div className="flex items-center gap-3 pt-2">
+            <Link
+              href="/services"
+              className="px-5 py-2 text-xs sm:text-sm font-bold text-white bg-[#0052FF] hover:bg-[#0040cc] rounded-full shadow-sm hover:shadow transition-all inline-flex items-center gap-1.5"
+            >
+              <span>View All Services</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+            <Link
+              href="/solutions"
+              className="px-5 py-2 text-xs sm:text-sm font-bold text-[#0052FF] bg-blue-50 hover:bg-blue-100 border border-blue-200 rounded-full transition-all inline-flex items-center gap-1.5"
+            >
+              <span>Explore Solutions</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
         </div>
 
         {/* Alternating service stories */}
@@ -113,7 +131,9 @@ export const SolutionsGrid: React.FC<SolutionsGridProps> = ({
 
                 {/* Title */}
                 <h3 className="text-2xl sm:text-3xl font-extrabold text-[#0F172A] group-hover:text-[#0052FF] transition-colors leading-tight font-display max-w-md">
-                  {service.title}
+                  <Link href={`/services/${service.slug}`} className="hover:text-[#0052FF]">
+                    {service.title}
+                  </Link>
                 </h3>
 
                 {/* Short Description */}
@@ -140,15 +160,14 @@ export const SolutionsGrid: React.FC<SolutionsGridProps> = ({
                   )}
                 </div>
 
-                <div className="pt-5 mt-5 border-t border-slate-100 flex items-center gap-7">
+                <div className="pt-5 mt-5 border-t border-slate-100 flex items-center justify-between">
                   <span className="text-xs font-semibold text-slate-500 flex items-center gap-2">◷ {service.timeline}</span>
-                  <button
-                    type="button"
-                    onClick={() => onSelectService(service)}
+                  <Link
+                    href={`/services/${service.slug}`}
                     className="text-xs sm:text-sm font-bold text-[#0052FF] flex items-center gap-1.5 hover:translate-x-1 transition-transform focus:outline-none focus-visible:ring-2 focus-visible:ring-[#0052FF] rounded"
                   >
                     <span>Learn More</span><ArrowRight className="w-3.5 h-3.5" />
-                  </button>
+                  </Link>
                 </div>
               </div>
 
@@ -168,13 +187,13 @@ export const SolutionsGrid: React.FC<SolutionsGridProps> = ({
             </div>
           </div>
 
-          <button
+          <Link
             id="solutions-custom-scope-btn"
-            onClick={onExploreAll}
+            href="/solutions"
             className="px-5 py-2 text-xs font-bold text-[#0052FF] bg-white hover:bg-blue-50 border border-[#0052FF]/30 rounded-full shadow-sm hover:shadow transition-all"
           >
-            Calculate Custom Project Scope & Cost →
-          </button>
+            Explore All Solutions →
+          </Link>
         </div>
 
       </div>
