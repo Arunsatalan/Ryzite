@@ -5,27 +5,47 @@ import { Footer } from '@/components/Footer';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { INITIAL_SERVICES } from '@/data/initialData';
 import { ArrowRight, CheckCircle2, Monitor, Smartphone, Cpu, Cloud, ShieldCheck, Sparkles } from 'lucide-react';
+import { api } from '@/lib/api';
 
-export const metadata: Metadata = {
-  title: 'Custom Software & Engineering Services | Ryzite',
-  description: 'Explore Ryzite’s full spectrum of software development services: custom web apps, native mobile development, AI & LLM automation, cloud DevOps, and software consulting.',
-  alternates: {
-    canonical: 'https://ryzite.com/services',
-  },
-  openGraph: {
-    title: 'Custom Software & Engineering Services | Ryzite',
-    description: 'Explore Ryzite’s full spectrum of software development services: custom web apps, native mobile development, AI & LLM automation, cloud DevOps, and software consulting.',
-    url: 'https://ryzite.com/services',
-    siteName: 'Ryzite',
-    images: ['https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1200&auto=format&fit=crop'],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Custom Software & Engineering Services | Ryzite',
-    description: 'Explore Ryzite’s full spectrum of custom software development services.',
-    images: ['https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1200&auto=format&fit=crop'],
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  try {
+    const seo = await api.getSeo('services').catch(() => null);
+    const title = seo?.title || 'Our Engineering Services & Pricing | Ryzite';
+    const description = seo?.description || 'Explore our full-stack web development, AI workflow automation, and cloud microservices engineering services.';
+    const canonical = seo?.canonicalUrl || 'https://ryzite.com/services';
+    const ogImage = seo?.ogImage || 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1200&auto=format&fit=crop';
+
+    return {
+      title,
+      description,
+      alternates: {
+        canonical,
+      },
+      openGraph: {
+        title,
+        description,
+        url: canonical,
+        siteName: 'Ryzite',
+        images: [{ url: ogImage, width: 1200, height: 630 }],
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title,
+        description,
+        images: [ogImage],
+      },
+      robots: {
+        index: seo?.robotsIndex ?? true,
+        follow: seo?.robotsFollow ?? true,
+      },
+    };
+  } catch (err) {
+    return {
+      title: 'Our Engineering Services & Pricing | Ryzite',
+      description: 'Explore our full-stack web development, AI workflow automation, and cloud microservices engineering services.',
+    };
+  }
+}
 
 export default function ServicesPage() {
   const getIcon = (iconName: string) => {

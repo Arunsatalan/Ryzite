@@ -27,11 +27,11 @@ export const FeaturedProjects: React.FC<FeaturedProjectsProps> = ({
   const categories = ['ALL', 'AI Platform', 'Digital Business Card', 'AI Automation', 'Chatbot Platform'];
 
   const filteredProjects = projects.filter((proj) => {
-    const matchesCat = activeCategory === 'ALL' || proj.category.toLowerCase().includes(activeCategory.toLowerCase());
+    const matchesCat = activeCategory === 'ALL' || (proj.category?.toLowerCase() || '').includes(activeCategory.toLowerCase());
     const matchesSearch = searchQuery === '' || 
-      proj.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      proj.client.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      proj.techStack.some(t => t.toLowerCase().includes(searchQuery.toLowerCase()));
+      (proj.title?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+      (proj.client?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
+      (proj.techStack || []).some(t => (t?.toLowerCase() || '').includes(searchQuery.toLowerCase()));
     return matchesCat && matchesSearch;
   });
 
@@ -105,7 +105,7 @@ export const FeaturedProjects: React.FC<FeaturedProjectsProps> = ({
                 </h3>
                 <p className="text-sm sm:text-base text-[#19345d] leading-relaxed mb-6 max-w-xl">{project.description}</p>
                 <ul className="space-y-3 max-w-xl mb-6">
-                  {project.solutions.slice(0, 3).map((solution) => (
+                  {(project.solutions || ['Custom Full-Stack System', 'High-Throughput Architecture']).slice(0, 3).map((solution) => (
                     <li key={solution} className="flex items-start gap-3 text-sm text-[#19345d] leading-relaxed">
                       <Check className="w-4 h-4 shrink-0 mt-0.5 text-[#0052FF]" strokeWidth={3} />
                       <span>{solution}</span>

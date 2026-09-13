@@ -5,26 +5,47 @@ import { Footer } from '@/components/Footer';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { INITIAL_BLOGS, INITIAL_SERVICES } from '@/data/initialData';
 import { ArrowRight, Calendar, Clock, Tag } from 'lucide-react';
+import { api } from '@/lib/api';
 
-export const metadata: Metadata = {
-  title: 'Engineering Blog & Technical Insights | Ryzite',
-  description: 'Read the latest technical articles on AI architecture, Answer Engine Optimization (AEO), vector RAG pipelines, and cloud DevOps by Ryzite.',
-  alternates: {
-    canonical: 'https://ryzite.com/blog',
-  },
-  openGraph: {
-    title: 'Engineering Blog & Technical Insights | Ryzite',
-    description: 'Read the latest technical articles on AI architecture, Answer Engine Optimization (AEO), vector RAG pipelines, and cloud DevOps by Ryzite.',
-    url: 'https://ryzite.com/blog',
-    siteName: 'Ryzite',
-    images: ['https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1200&auto=format&fit=crop'],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Engineering Blog & Technical Insights | Ryzite',
-    description: 'Technical insights & architecture breakdowns by Ryzite.',
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  try {
+    const seo = await api.getSeo('blog').catch(() => null);
+    const title = seo?.title || 'Engineering Insights & AEO Technical Articles | Ryzite';
+    const description = seo?.description || 'Technical articles on Next.js 16, PostgreSQL optimization, AI agent workflows, and Answer Engine Optimization.';
+    const canonical = seo?.canonicalUrl || 'https://ryzite.com/blog';
+    const ogImage = seo?.ogImage || 'https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?q=80&w=1200&auto=format&fit=crop';
+
+    return {
+      title,
+      description,
+      alternates: {
+        canonical,
+      },
+      openGraph: {
+        title,
+        description,
+        url: canonical,
+        siteName: 'Ryzite',
+        images: [{ url: ogImage, width: 1200, height: 630 }],
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title,
+        description,
+        images: [ogImage],
+      },
+      robots: {
+        index: seo?.robotsIndex ?? true,
+        follow: seo?.robotsFollow ?? true,
+      },
+    };
+  } catch (err) {
+    return {
+      title: 'Engineering Insights & AEO Technical Articles | Ryzite',
+      description: 'Technical articles on Next.js 16, PostgreSQL optimization, AI agent workflows, and Answer Engine Optimization.',
+    };
+  }
+}
 
 export default function BlogPage() {
   const jsonLd = {
@@ -40,7 +61,7 @@ export default function BlogPage() {
       url: `https://ryzite.com/blog/${b.slug}`,
       author: {
         '@type': 'Person',
-        name: b.author.name,
+        name: b.author?.name || 'Ryzite Technical Lead',
       },
     })),
   };
@@ -118,11 +139,11 @@ export default function BlogPage() {
                 <div className="p-6 pt-0 mt-2 flex items-center justify-between border-t border-slate-100">
                   <div className="flex items-center gap-2">
                     <img
-                      src={blog.author.avatar}
-                      alt={blog.author.name}
+                      src={blog.author?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop'}
+                      alt={blog.author?.name || 'Ryzite Technical Lead'}
                       className="w-8 h-8 rounded-full object-cover border border-slate-300"
                     />
-                    <span className="text-xs font-bold text-slate-700">{blog.author.name}</span>
+                    <span className="text-xs font-bold text-slate-700">{blog.author?.name || 'Ryzite Technical Lead'}</span>
                   </div>
 
                   <Link

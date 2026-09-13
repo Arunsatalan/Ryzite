@@ -44,17 +44,45 @@ async function main() {
   // 3. Seed HomePage
   const homePage = await prisma.homePage.upsert({
     where: { id: 'home-singleton' },
-    update: {},
+    update: {
+      heroBadgeText: 'SOFTWARE SOLUTIONS THAT SCALE',
+      heroHeadingPrefix: 'We Build Software',
+      heroHeadingHighlight: 'Drives Growth',
+      heroHeadingSuffix: '',
+      heroDescription: 'Empowering startups and enterprises with innovative, scalable and secure software solutions. From idea to impact – we turn your vision into powerful digital products.',
+      heroPrimaryCtaText: 'Explore Our Services',
+      heroPrimaryCtaUrl: '/services',
+      heroPrimaryCtaEnabled: true,
+      heroSecondaryCtaText: 'Book a Free Consultation',
+      heroSecondaryCtaUrl: '#contact',
+      heroSecondaryCtaType: 'consultation',
+      heroSecondaryCtaEnabled: true,
+      heroEnabled: true,
+      heroDisplayOrder: 1
+    },
     create: {
       id: 'home-singleton',
-      heroEyebrow: 'NEXT-GEN SOFTWARE & AI AGENCY',
+      heroBadgeText: 'SOFTWARE SOLUTIONS THAT SCALE',
+      heroHeadingPrefix: 'We Build Software',
+      heroHeadingHighlight: 'Drives Growth',
+      heroHeadingSuffix: '',
+      heroDescription: 'Empowering startups and enterprises with innovative, scalable and secure software solutions. From idea to impact – we turn your vision into powerful digital products.',
+      heroPrimaryCtaText: 'Explore Our Services',
+      heroPrimaryCtaUrl: '/services',
+      heroPrimaryCtaEnabled: true,
+      heroSecondaryCtaText: 'Book a Free Consultation',
+      heroSecondaryCtaUrl: '#contact',
+      heroSecondaryCtaType: 'consultation',
+      heroSecondaryCtaEnabled: true,
+      heroEnabled: true,
+      heroDisplayOrder: 1,
+      heroEyebrow: 'SOFTWARE SOLUTIONS THAT SCALE',
       heroTitle: 'We Build Software That Drives Growth',
       heroHighlightedText: 'Drives Growth',
-      heroDescription: 'Empowering startups and enterprises with innovative, scalable and secure custom software, mobile apps, AI automation, and cloud solutions.',
-      primaryCtaLabel: 'Schedule Architecture Call',
-      primaryCtaUrl: '#contact',
-      secondaryCtaLabel: 'Explore Services',
-      secondaryCtaUrl: '#services',
+      primaryCtaLabel: 'Explore Our Services',
+      primaryCtaUrl: '/services',
+      secondaryCtaLabel: 'Book a Free Consultation',
+      secondaryCtaUrl: '#contact',
       servicesEyebrow: 'OUR CAPABILITIES',
       servicesTitle: 'Engineering Excellence Across the Stack',
       servicesDescription: 'High-performance web, mobile, AI, and cloud architectures built by veteran engineers.',
@@ -93,6 +121,92 @@ async function main() {
         sectionKey: sectionsList[idx],
         enabled: true,
         displayOrder: idx + 1
+      }
+    });
+  }
+
+  // 4. Seed Static Pages & SEO Metadata (home, services, solutions, portfolio, about, blog)
+  const staticPageSeeds = [
+    {
+      pageKey: 'home',
+      route: '/',
+      title: 'Ryzite | Digital Product Studio & Enterprise AI Software Development',
+      metaTitle: 'Ryzite | Digital Product Studio & Enterprise AI Software Development',
+      metaDescription: 'Architecting mission-critical web applications, high-throughput cloud backends, and bespoke digital growth systems for modern scale-ups.',
+      canonicalUrl: 'https://ryzite.com'
+    },
+    {
+      pageKey: 'services',
+      route: '/services',
+      title: 'Our Engineering Services & Pricing | Ryzite',
+      metaTitle: 'Our Engineering Services & Pricing | Ryzite',
+      metaDescription: 'Explore our full-stack web development, AI workflow automation, and cloud microservices engineering services.',
+      canonicalUrl: 'https://ryzite.com/services'
+    },
+    {
+      pageKey: 'solutions',
+      route: '/solutions',
+      title: 'Bespoke Enterprise Solutions & AI Workflows | Ryzite',
+      metaTitle: 'Bespoke Enterprise Solutions & AI Workflows | Ryzite',
+      metaDescription: 'Tailored digital transformation blueprints and high-throughput software architecture solutions.',
+      canonicalUrl: 'https://ryzite.com/solutions'
+    },
+    {
+      pageKey: 'portfolio',
+      route: '/portfolio',
+      title: 'Verified Client Case Studies & Impact Metrics | Ryzite',
+      metaTitle: 'Verified Client Case Studies & Impact Metrics | Ryzite',
+      metaDescription: 'Browse production benchmarks, cloud migrations, and AI agents engineered for scale-ups and enterprises.',
+      canonicalUrl: 'https://ryzite.com/portfolio'
+    },
+    {
+      pageKey: 'about',
+      route: '/about',
+      title: 'About Ryzite | Software Engineering & Growth Agency',
+      metaTitle: 'About Ryzite | Software Engineering & Growth Agency',
+      metaDescription: 'Learn about our engineering philosophy, core team expertise, and technical delivery standards.',
+      canonicalUrl: 'https://ryzite.com/about'
+    },
+    {
+      pageKey: 'blog',
+      route: '/blog',
+      title: 'Engineering Insights & AEO Technical Articles | Ryzite',
+      metaTitle: 'Engineering Insights & AEO Technical Articles | Ryzite',
+      metaDescription: 'Technical articles on Next.js 16, PostgreSQL optimization, AI agent workflows, and Answer Engine Optimization.',
+      canonicalUrl: 'https://ryzite.com/blog'
+    }
+  ];
+
+  for (const pageSeed of staticPageSeeds) {
+    const page = await prisma.staticPage.upsert({
+      where: { pageKey: pageSeed.pageKey },
+      update: {
+        title: pageSeed.title,
+        route: pageSeed.route
+      },
+      create: {
+        pageKey: pageSeed.pageKey,
+        route: pageSeed.route,
+        title: pageSeed.title
+      }
+    });
+
+    await prisma.seoMetadata.upsert({
+      where: { staticPageId: page.id },
+      update: {
+        metaTitle: pageSeed.metaTitle,
+        metaDescription: pageSeed.metaDescription,
+        canonicalUrl: pageSeed.canonicalUrl,
+        robotsIndex: true,
+        robotsFollow: true
+      },
+      create: {
+        staticPageId: page.id,
+        metaTitle: pageSeed.metaTitle,
+        metaDescription: pageSeed.metaDescription,
+        canonicalUrl: pageSeed.canonicalUrl,
+        robotsIndex: true,
+        robotsFollow: true
       }
     });
   }

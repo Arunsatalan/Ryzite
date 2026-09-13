@@ -7,8 +7,9 @@
     "dev": "node ./node_modules/tsx/dist/cli.mjs watch src/server.ts",
     "build": "node ./node_modules/typescript/lib/tsc.js",
     "start": "node dist/server.js",
-    "prisma:generate": "npx prisma generate",
-    "prisma:seed": "node ./node_modules/tsx/dist/cli.mjs prisma/seed.ts"
+    "db:push": "node ./node_modules/prisma/build/index.js db push",
+    "db:generate": "node ./node_modules/prisma/build/index.js generate",
+    "db:seed": "node ./node_modules/tsx/dist/cli.mjs prisma/seed.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.4.1",

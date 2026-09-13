@@ -5,8 +5,8 @@ import './globals.css';
 export const metadata: Metadata = {
   metadataBase: new URL('https://ryzite.com'),
   title: {
-    default: 'Ryzite | Elite Software Development & Digital Marketing Agency',
-    template: '%s | Ryzite',
+    default: 'Ryzite | Digital Product Studio & Enterprise AI Software Development',
+    template: '%s',
   },
   description: 'Scale your business with high-performance custom web applications, AI automation agents, mobile apps, and technical SEO engineered by Ryzite.',
   keywords: [

@@ -30,8 +30,9 @@ import {
   Layers,
   BarChart3
 } from 'lucide-react';
-import { LeadItem, ServiceItem, ProjectItem, BlogPost, LeadStatus, PageMetadataConfig } from '../types';
+import { LeadItem, ServiceItem, ProjectItem, BlogPost, LeadStatus, PageMetadataConfig, HomeHeroConfig } from '../types';
 import { SerpOptimizerModal } from './SerpOptimizerModal';
+import { Hero } from './Hero';
 import { api } from '../lib/api';
 
 interface AdminDashboardProps {
@@ -46,6 +47,7 @@ interface AdminDashboardProps {
 }
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
+  isOpen = true,
   onClose,
   services,
   projects,
@@ -54,9 +56,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onUpdateProjects,
   onUpdateBlogs
 }) => {
-  const [activeTab, setActiveTab] = useState<'crm' | 'services' | 'projects' | 'blogs' | 'seo' | 'analytics'>('crm');
+  const [activeTab, setActiveTab] = useState<'crm' | 'hero' | 'services' | 'projects' | 'blogs' | 'seo' | 'analytics'>('crm');
   const [searchQuery, setSearchQuery] = useState('');
   
+  if (!isOpen) return null;
+
   // Leads state
   const [leads, setLeads] = useState<LeadItem[]>([]);
   const [loadingLeads, setLoadingLeads] = useState(false);
@@ -80,24 +84,107 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [newServicePrice, setNewServicePrice] = useState('$10,000');
   const [newServiceCategory, setNewServiceCategory] = useState('web');
 
+  // Hero state
+  const [heroForm, setHeroForm] = useState<HomeHeroConfig>({
+    badgeText: 'SOFTWARE SOLUTIONS THAT SCALE',
+    headingPrefix: 'We Build Software',
+    headingHighlight: 'Drives Growth',
+    headingSuffix: '',
+    description: 'Empowering startups and enterprises with innovative, scalable and secure software solutions.',
+    primaryCtaText: 'Explore Our Services',
+    primaryCtaUrl: '/services',
+    primaryCtaEnabled: true,
+    primaryCtaOpenNewTab: false,
+    secondaryCtaText: 'Book a Free Consultation',
+    secondaryCtaUrl: '#contact',
+    secondaryCtaType: 'consultation',
+    secondaryCtaEnabled: true,
+    secondaryCtaOpenNewTab: false,
+    backgroundImageUrl: '',
+    backgroundImageAlt: '',
+    enabled: true,
+    displayOrder: 1
+  });
+  const [initialHeroForm, setInitialHeroForm] = useState<HomeHeroConfig | null>(null);
+  const [loadingHero, setLoadingHero] = useState(false);
+  const [savingHero, setSavingHero] = useState(false);
+  const [heroSaved, setHeroSaved] = useState(false);
+  const [heroError, setHeroError] = useState<string | null>(null);
+
   useEffect(() => {
-    fetchLeads();
+    fetchLeads(leadFilter);
     fetchSeo(selectedSeoPage);
     fetchAnalytics();
+    fetchHero();
+
+    const handleFocus = () => {
+      fetchLeads(leadFilter);
+      fetchAnalytics();
+      fetchHero();
+    };
+    window.addEventListener('focus', handleFocus);
+    return () => window.removeEventListener('focus', handleFocus);
   }, []);
+
+  const fetchHero = async () => {
+    setLoadingHero(true);
+    try {
+      const data = await api.getHomeHero();
+      if (data) {
+        setHeroForm(data);
+        setInitialHeroForm(data);
+      }
+    } catch (err: any) {
+      console.warn('Failed to fetch Hero configuration:', err.message);
+    } finally {
+      setLoadingHero(false);
+    }
+  };
+
+  const handleSaveHero = async () => {
+    setSavingHero(true);
+    setHeroError(null);
+    try {
+      const updated = await api.updateHomeHero(heroForm);
+      if (updated) {
+        setHeroForm(updated);
+        setInitialHeroForm(updated);
+        setHeroSaved(true);
+        fetchAnalytics();
+        setTimeout(() => setHeroSaved(false), 3000);
+      }
+    } catch (err: any) {
+      setHeroError(err.message || 'Failed to save Hero configuration.');
+    } finally {
+      setSavingHero(false);
+    }
+  };
+
+  const handleReloadHero = () => {
+    if (initialHeroForm) {
+      setHeroForm(initialHeroForm);
+      setHeroError(null);
+    } else {
+      fetchHero();
+    }
+  };
+
+  useEffect(() => {
+    fetchLeads(leadFilter);
+  }, [leadFilter]);
 
   useEffect(() => {
     fetchSeo(selectedSeoPage);
   }, [selectedSeoPage]);
 
-  const fetchLeads = async () => {
+  const fetchLeads = async (status: string = 'ALL') => {
     setLoadingLeads(true);
     try {
-      const data = await api.getLeads();
+      const data = await api.getLeads(status);
       setLeads(data || []);
     } catch (err) {
       console.error('Failed to fetch leads:', err);
-    } fontally: {
+    } finally {
       setLoadingLeads(false);
     }
   };
@@ -136,6 +223,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     try {
       await api.updateLeadStatus(id, status);
       setLeads(leads.map(l => l.id === id ? { ...l, status } : l));
+      fetchAnalytics();
     } catch (err) {
       console.error('Failed to update lead:', err);
     }
@@ -146,6 +234,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     try {
       await api.deleteLead(id);
       setLeads(leads.filter(l => l.id !== id));
+      fetchAnalytics();
     } catch (err) {
       console.error('Failed to delete lead:', err);
     }
@@ -159,6 +248,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       if (res) {
         setSeoConfig(res);
         setSeoSaved(true);
+        fetchAnalytics();
         setTimeout(() => setSeoSaved(false), 2500);
       }
     } catch (err) {
@@ -243,7 +333,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   };
 
   return (
-    <div className="min-h-screen bg-slate-50 flex w-full font-sans text-slate-900 antialiased">
+    <div className="fixed inset-0 z-[99999] h-screen w-screen bg-slate-50 flex overflow-hidden font-sans text-slate-900 antialiased">
       
       {/* --- SIDEBAR NAVIGATION --- */}
       <aside className="w-64 bg-white border-r border-slate-200 flex flex-col justify-between p-5 shrink-0 shadow-xs">
@@ -285,6 +375,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 activeTab === 'crm' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'
               }`}>
                 {leads.length}
+              </span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('hero')}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                activeTab === 'hero' 
+                  ? 'bg-blue-50 text-blue-600 border border-blue-200/60 shadow-xs' 
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <LayoutDashboard size={18} className={activeTab === 'hero' ? 'text-blue-600' : 'text-slate-400'} />
+                <span>Hero Section</span>
+              </div>
+              <span className="text-[10px] uppercase tracking-wide bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded font-bold">
+                Home CMS
               </span>
             </button>
 
@@ -461,12 +568,16 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </div>
               </div>
               <div className="flex items-baseline justify-between">
-                <h3 className="text-2xl font-extrabold text-slate-900">{leads.length || 14}</h3>
-                <span className="text-xs font-semibold text-emerald-600 flex items-center gap-1">
-                  <TrendingUp size={12} /> +18.4%
-                </span>
+                <h3 className="text-2xl font-extrabold text-slate-900">{analyticsData?.totalLeads ?? (leadFilter === 'ALL' ? leads.length : 0)}</h3>
+                {analyticsData?.leadGrowthPercent !== null && analyticsData?.leadGrowthPercent !== undefined ? (
+                  <span className={`text-xs font-semibold flex items-center gap-1 ${analyticsData.leadGrowthPercent >= 0 ? 'text-emerald-600' : 'text-rose-600'}`}>
+                    <TrendingUp size={12} /> {analyticsData.leadGrowthPercent >= 0 ? `+${analyticsData.leadGrowthPercent}%` : `${analyticsData.leadGrowthPercent}%`}
+                  </span>
+                ) : (
+                  <span className="text-xs font-semibold text-slate-400">No comparison data</span>
+                )}
               </div>
-              <p className="text-[11px] text-slate-400">Incoming contact form & consultation inquiries</p>
+              <p className="text-[11px] text-slate-400">Real-time website inquiry count from PostgreSQL</p>
             </div>
 
             <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs space-y-3">
@@ -477,10 +588,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </div>
               </div>
               <div className="flex items-baseline justify-between">
-                <h3 className="text-2xl font-extrabold text-slate-900">{services.length || 6}</h3>
+                <h3 className="text-2xl font-extrabold text-slate-900">{analyticsData?.activeServices ?? services.length}</h3>
                 <span className="text-xs font-semibold text-slate-500">Live in CMS</span>
               </div>
-              <p className="text-[11px] text-slate-400">Custom web, mobile, AI & Cloud solutions</p>
+              <p className="text-[11px] text-slate-400">Published services in PostgreSQL</p>
             </div>
 
             <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs space-y-3">
@@ -491,26 +602,28 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </div>
               </div>
               <div className="flex items-baseline justify-between">
-                <h3 className="text-2xl font-extrabold text-slate-900">{projects.length || 5}</h3>
-                <span className="text-xs font-semibold text-purple-600">Featured</span>
+                <h3 className="text-2xl font-extrabold text-slate-900">{analyticsData?.caseStudies ?? projects.length}</h3>
+                <span className="text-xs font-semibold text-purple-600">Published Projects</span>
               </div>
-              <p className="text-[11px] text-slate-400">Verified client benchmarks & results</p>
+              <p className="text-[11px] text-slate-400">Verified client projects in PostgreSQL</p>
             </div>
 
             <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs space-y-3">
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">SEO Audit Index</span>
+                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">SEO Health</span>
                 <div className="p-2 bg-amber-50 rounded-xl text-amber-600">
                   <Globe size={18} />
                 </div>
               </div>
               <div className="flex items-baseline justify-between">
-                <h3 className="text-2xl font-extrabold text-slate-900">98 / 100</h3>
+                <h3 className="text-2xl font-extrabold text-slate-900">
+                  {analyticsData?.seoHealthScore !== undefined ? `${analyticsData.seoHealthScore} / 100` : '100 / 100'}
+                </h3>
                 <span className="text-xs font-semibold text-emerald-600 flex items-center gap-0.5">
-                  <Check size={14} /> Perfect AEO
+                  <Check size={14} /> Score: {analyticsData?.seoHealthScore ?? 100}%
                 </span>
               </div>
-              <p className="text-[11px] text-slate-400">Structured Schema markup & canonical routing</p>
+              <p className="text-[11px] text-slate-400">Calculated from dynamic static page metadata checks</p>
             </div>
           </div>
 
@@ -611,6 +724,293 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
           )}
 
+          {/* TAB: HERO CMS */}
+          {activeTab === 'hero' && (
+            <div className="space-y-6">
+              {/* Header Bar */}
+              <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-lg font-bold text-slate-900">Home Page → Hero Section CMS</h2>
+                    {JSON.stringify(heroForm) !== JSON.stringify(initialHeroForm) ? (
+                      <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                        Unsaved Changes
+                      </span>
+                    ) : (
+                      <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                        Published to Database
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">Manage hero text, CTAs, and background media stored in PostgreSQL.</p>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={handleReloadHero}
+                    disabled={loadingHero || savingHero}
+                    className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-all disabled:opacity-50"
+                  >
+                    <RefreshCw size={14} className={loadingHero ? 'animate-spin' : ''} />
+                    <span>Reload from Database</span>
+                  </button>
+
+                  <button
+                    onClick={handleSaveHero}
+                    disabled={savingHero || loadingHero}
+                    className="flex items-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-xl text-xs font-bold shadow-md transition-all disabled:opacity-50"
+                  >
+                    {savingHero ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
+                    <span>{savingHero ? 'Saving...' : 'Save Changes'}</span>
+                  </button>
+                </div>
+              </div>
+
+              {heroSaved && (
+                <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-2xl flex items-center gap-3 text-xs text-emerald-800 font-semibold animate-fadeIn">
+                  <CheckCircle2 size={18} className="text-emerald-600 shrink-0" />
+                  <span>Hero section configuration saved successfully to PostgreSQL and published live!</span>
+                </div>
+              )}
+
+              {heroError && (
+                <div className="p-4 bg-rose-50 border border-rose-200 rounded-2xl flex items-center gap-3 text-xs text-rose-800 font-semibold">
+                  <AlertTriangle size={18} className="text-rose-600 shrink-0" />
+                  <span>{heroError}</span>
+                </div>
+              )}
+
+              {/* Form Grid */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <div className="lg:col-span-7 bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs space-y-6">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                    <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Hero Content Settings</h3>
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <span className="text-xs font-semibold text-slate-700">Section Enabled</span>
+                      <input
+                        type="checkbox"
+                        checked={heroForm.enabled}
+                        onChange={(e) => setHeroForm({ ...heroForm, enabled: e.target.checked })}
+                        className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
+                      />
+                    </label>
+                  </div>
+
+                  <div className="space-y-4 text-xs">
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Badge Text (Top Pill)</label>
+                      <input
+                        type="text"
+                        maxLength={80}
+                        value={heroForm.badgeText || ''}
+                        onChange={(e) => setHeroForm({ ...heroForm, badgeText: e.target.value })}
+                        placeholder="SOFTWARE SOLUTIONS THAT SCALE"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <div className="sm:col-span-1">
+                        <label className="block font-bold text-slate-700 mb-1">Heading Prefix *</label>
+                        <input
+                          type="text"
+                          maxLength={120}
+                          value={heroForm.headingPrefix}
+                          onChange={(e) => setHeroForm({ ...heroForm, headingPrefix: e.target.value })}
+                          placeholder="We Build Software"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                        />
+                      </div>
+                      <div className="sm:col-span-1">
+                        <label className="block font-bold text-slate-700 mb-1">Highlighted Text</label>
+                        <input
+                          type="text"
+                          maxLength={80}
+                          value={heroForm.headingHighlight || ''}
+                          onChange={(e) => setHeroForm({ ...heroForm, headingHighlight: e.target.value })}
+                          placeholder="Drives Growth"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                        />
+                      </div>
+                      <div className="sm:col-span-1">
+                        <label className="block font-bold text-slate-700 mb-1">Heading Suffix</label>
+                        <input
+                          type="text"
+                          maxLength={120}
+                          value={heroForm.headingSuffix || ''}
+                          onChange={(e) => setHeroForm({ ...heroForm, headingSuffix: e.target.value })}
+                          placeholder=""
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">Hero Description *</label>
+                      <textarea
+                        rows={3}
+                        maxLength={500}
+                        value={heroForm.description}
+                        onChange={(e) => setHeroForm({ ...heroForm, description: e.target.value })}
+                        placeholder="Empowering startups and enterprises with innovative..."
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      />
+                    </div>
+
+                    {/* Primary CTA */}
+                    <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-slate-800 uppercase tracking-wider text-[11px]">Primary Call-to-Action</span>
+                        <label className="flex items-center gap-1.5 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={heroForm.primaryCtaEnabled}
+                            onChange={(e) => setHeroForm({ ...heroForm, primaryCtaEnabled: e.target.checked })}
+                            className="w-3.5 h-3.5 text-blue-600 rounded"
+                          />
+                          <span className="text-[11px] font-semibold text-slate-600">Enabled</span>
+                        </label>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block font-semibold text-slate-600 mb-1">CTA Label</label>
+                          <input
+                            type="text"
+                            value={heroForm.primaryCtaText || ''}
+                            onChange={(e) => setHeroForm({ ...heroForm, primaryCtaText: e.target.value })}
+                            placeholder="Explore Our Services"
+                            className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-slate-900"
+                          />
+                        </div>
+                        <div>
+                          <label className="block font-semibold text-slate-600 mb-1">Target URL</label>
+                          <input
+                            type="text"
+                            value={heroForm.primaryCtaUrl || ''}
+                            onChange={(e) => setHeroForm({ ...heroForm, primaryCtaUrl: e.target.value })}
+                            placeholder="/services"
+                            className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-slate-900"
+                          />
+                        </div>
+                      </div>
+
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={heroForm.primaryCtaOpenNewTab || false}
+                          onChange={(e) => setHeroForm({ ...heroForm, primaryCtaOpenNewTab: e.target.checked })}
+                          className="w-3.5 h-3.5 text-blue-600 rounded"
+                        />
+                        <span className="text-[11px] text-slate-600 font-medium">Open link in new tab</span>
+                      </label>
+                    </div>
+
+                    {/* Secondary CTA */}
+                    <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="font-bold text-slate-800 uppercase tracking-wider text-[11px]">Secondary Call-to-Action</span>
+                        <label className="flex items-center gap-1.5 cursor-pointer">
+                          <input
+                            type="checkbox"
+                            checked={heroForm.secondaryCtaEnabled}
+                            onChange={(e) => setHeroForm({ ...heroForm, secondaryCtaEnabled: e.target.checked })}
+                            className="w-3.5 h-3.5 text-blue-600 rounded"
+                          />
+                          <span className="text-[11px] font-semibold text-slate-600">Enabled</span>
+                        </label>
+                      </div>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                          <label className="block font-semibold text-slate-600 mb-1">CTA Label</label>
+                          <input
+                            type="text"
+                            value={heroForm.secondaryCtaText || ''}
+                            onChange={(e) => setHeroForm({ ...heroForm, secondaryCtaText: e.target.value })}
+                            placeholder="Book a Free Consultation"
+                            className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-slate-900"
+                          />
+                        </div>
+                        <div>
+                          <label className="block font-semibold text-slate-600 mb-1">Action Type</label>
+                          <select
+                            value={heroForm.secondaryCtaType || 'consultation'}
+                            onChange={(e) => setHeroForm({ ...heroForm, secondaryCtaType: e.target.value as 'consultation' | 'link' })}
+                            className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-slate-900"
+                          >
+                            <option value="consultation">Consultation Modal</option>
+                            <option value="link">Custom URL Navigation</option>
+                          </select>
+                        </div>
+                        <div>
+                          <label className="block font-semibold text-slate-600 mb-1">Target URL</label>
+                          <input
+                            type="text"
+                            value={heroForm.secondaryCtaUrl || ''}
+                            onChange={(e) => setHeroForm({ ...heroForm, secondaryCtaUrl: e.target.value })}
+                            placeholder="#contact"
+                            className="w-full bg-white border border-slate-200 rounded-lg px-3 py-1.5 text-slate-900"
+                          />
+                        </div>
+                      </div>
+
+                      <label className="flex items-center gap-2 cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={heroForm.secondaryCtaOpenNewTab || false}
+                          onChange={(e) => setHeroForm({ ...heroForm, secondaryCtaOpenNewTab: e.target.checked })}
+                          className="w-3.5 h-3.5 text-blue-600 rounded"
+                        />
+                        <span className="text-[11px] text-slate-600 font-medium">Open link in new tab</span>
+                      </label>
+                    </div>
+
+                    {/* Background Media */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2">
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">Background Image URL (Optional)</label>
+                        <input
+                          type="text"
+                          value={heroForm.backgroundImageUrl || ''}
+                          onChange={(e) => setHeroForm({ ...heroForm, backgroundImageUrl: e.target.value })}
+                          placeholder="https://..."
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-900"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">Background Image Alt Text</label>
+                        <input
+                          type="text"
+                          maxLength={200}
+                          value={heroForm.backgroundImageAlt || ''}
+                          onChange={(e) => setHeroForm({ ...heroForm, backgroundImageAlt: e.target.value })}
+                          placeholder="Ryzite Hero Banner"
+                          className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-slate-900"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Column: Live Preview */}
+                <div className="lg:col-span-5 space-y-4">
+                  <div className="bg-slate-900 text-white rounded-2xl p-4 shadow-sm border border-slate-800 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Sparkles size={16} className="text-blue-400" />
+                      <span className="text-xs font-bold uppercase tracking-wider">Live Admin Preview</span>
+                    </div>
+                    <span className="text-[11px] text-slate-400 font-mono">Updates in Real-Time</span>
+                  </div>
+
+                  <div className="border border-slate-200 rounded-2xl overflow-hidden bg-white shadow-sm scale-[0.98] transform origin-top">
+                    <Hero hero={heroForm} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* TAB 2: SEO & AEO ENGINE */}
           {activeTab === 'seo' && (
             <div className="space-y-6">
@@ -628,7 +1028,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 border border-blue-200 rounded-xl text-xs font-semibold hover:bg-blue-100 transition-colors"
                     >
                       <Sparkles size={16} />
-                      <span>{loadingAudit ? 'Auditing Schema...' : 'Run SERP Audit'}</span>
+                      <span>{loadingAudit ? 'Auditing Schema...' : 'Metadata Completeness & Health Audit'}</span>
                     </button>
                     <button
                       onClick={() => handleSaveSeo()}

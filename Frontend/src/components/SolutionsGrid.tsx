@@ -136,7 +136,7 @@ export const SolutionsGrid: React.FC<SolutionsGridProps> = ({
                 </p>
 
                 <div className="flex flex-wrap gap-1.5 pt-5">
-                  {service.techStack.slice(0, 2).map((tech, idx) => (
+                  {(service.techStack || ['Next.js', 'PostgreSQL']).slice(0, 2).map((tech, idx) => (
                     <span
                       key={idx}
                       title={tech}
@@ -146,9 +146,9 @@ export const SolutionsGrid: React.FC<SolutionsGridProps> = ({
                       <img src={getTechnologyIcon(tech)} alt={tech} className="w-5 h-5 object-contain" />
                     </span>
                   ))}
-                  {service.techStack.length > 2 && (
+                  {(service.techStack?.length || 0) > 2 && (
                     <span className="text-[10px] font-bold text-[#0052FF] bg-blue-50 px-1.5 py-0.5 rounded-md">
-                      +{service.techStack.length - 2}
+                      +{(service.techStack?.length || 0) - 2}
                     </span>
                   )}
                 </div>

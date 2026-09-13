@@ -5,26 +5,47 @@ import { Footer } from '@/components/Footer';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { INITIAL_PROJECTS, INITIAL_SERVICES } from '@/data/initialData';
 import { ArrowRight, Check, ExternalLink, Sparkles, TrendingUp } from 'lucide-react';
+import { api } from '@/lib/api';
 
-export const metadata: Metadata = {
-  title: 'Portfolio & Software Case Studies | Ryzite',
-  description: 'Discover Ryzite’s client case studies: PineGen AI, QRBook NFC platform, Dinefy AI Call Bot, and BotLoop workflow builder.',
-  alternates: {
-    canonical: 'https://ryzite.com/portfolio',
-  },
-  openGraph: {
-    title: 'Portfolio & Software Case Studies | Ryzite',
-    description: 'Discover Ryzite’s client case studies: PineGen AI, QRBook NFC platform, Dinefy AI Call Bot, and BotLoop workflow builder.',
-    url: 'https://ryzite.com/portfolio',
-    siteName: 'Ryzite',
-    images: ['https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1200&auto=format&fit=crop'],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Portfolio & Software Case Studies | Ryzite',
-    description: 'Proven software outcomes & metrics engineered by Ryzite.',
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  try {
+    const seo = await api.getSeo('portfolio').catch(() => null);
+    const title = seo?.title || 'Verified Client Case Studies & Impact Metrics | Ryzite';
+    const description = seo?.description || 'Browse production benchmarks, cloud migrations, and AI agents engineered for scale-ups and enterprises.';
+    const canonical = seo?.canonicalUrl || 'https://ryzite.com/portfolio';
+    const ogImage = seo?.ogImage || 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1200&auto=format&fit=crop';
+
+    return {
+      title,
+      description,
+      alternates: {
+        canonical,
+      },
+      openGraph: {
+        title,
+        description,
+        url: canonical,
+        siteName: 'Ryzite',
+        images: [{ url: ogImage, width: 1200, height: 630 }],
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title,
+        description,
+        images: [ogImage],
+      },
+      robots: {
+        index: seo?.robotsIndex ?? true,
+        follow: seo?.robotsFollow ?? true,
+      },
+    };
+  } catch (err) {
+    return {
+      title: 'Verified Client Case Studies & Impact Metrics | Ryzite',
+      description: 'Browse production benchmarks, cloud migrations, and AI agents engineered for scale-ups and enterprises.',
+    };
+  }
+}
 
 export default function PortfolioPage() {
   const jsonLd = {

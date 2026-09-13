@@ -44,7 +44,7 @@ export async function generateMetadata(
       siteName: 'Ryzite',
       type: 'article',
       publishedTime: blog.publishedAt,
-      authors: [blog.author.name],
+      authors: [blog.author?.name || 'Ryzite Technical Lead'],
       images: [blog.coverImage],
     },
     twitter: {
@@ -73,8 +73,8 @@ export default async function BlogArticlePage({ params }: Props) {
     datePublished: blog.publishedAt,
     author: {
       '@type': 'Person',
-      name: blog.author.name,
-      jobTitle: blog.author.role,
+      name: blog.author?.name || 'Ryzite Technical Lead',
+      jobTitle: blog.author?.role || 'Senior Software Architect',
     },
     publisher: {
       '@type': 'Organization',
@@ -123,13 +123,13 @@ export default async function BlogArticlePage({ params }: Props) {
 
             <div className="flex items-center gap-4 pt-4 border-t border-b border-slate-100 py-4">
               <img
-                src={blog.author.avatar}
-                alt={blog.author.name}
+                src={blog.author?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop'}
+                alt={blog.author?.name || 'Ryzite Technical Lead'}
                 className="w-12 h-12 rounded-full object-cover border-2 border-[#0052FF]"
               />
               <div>
-                <div className="text-sm font-bold text-[#0F172A]">{blog.author.name}</div>
-                <div className="text-xs text-slate-500">{blog.author.role} • Published {blog.publishedAt}</div>
+                <div className="text-sm font-bold text-[#0F172A]">{blog.author?.name || 'Ryzite Technical Lead'}</div>
+                <div className="text-xs text-slate-500">{blog.author?.role || 'Senior Architect'} • Published {blog.publishedAt}</div>
               </div>
             </div>
           </div>

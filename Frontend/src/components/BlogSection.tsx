@@ -86,11 +86,11 @@ export const BlogSection: React.FC<BlogSectionProps> = ({ blogs }) => {
               <div className="p-5 pt-0 mt-3 flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <img 
-                    src={blog.author.avatar} 
-                    alt={blog.author.name}
+                    src={blog.author?.avatar || (blog as any).authorRef?.avatarUrl || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop'} 
+                    alt={blog.author?.name || (blog as any).authorName || 'Ryzite Technical Lead'}
                     className="w-7 h-7 rounded-full object-cover border border-slate-300"
                   />
-                  <span className="text-xs font-bold text-slate-700">{blog.author.name}</span>
+                  <span className="text-xs font-bold text-slate-700">{blog.author?.name || (blog as any).authorName || 'Ryzite Technical Lead'}</span>
                 </div>
 
                 <Link

@@ -62,7 +62,7 @@ export const ServiceDetailModal: React.FC<ServiceDetailModalProps> = ({ service,
               {isConsulting ? 'Expert guidance to help you choose the right technology, design robust architectures and build future-ready software.' : service.fullDescription}
             </p>
             <div className="flex flex-wrap gap-2 mb-10">
-              {(isConsulting ? ['System Architecture', 'Security Standards', '+3 more'] : service.techStack.slice(0, 3)).map((item) => (
+              {(isConsulting ? ['System Architecture', 'Security Standards', '+3 more'] : (service.techStack || ['Next.js', 'PostgreSQL']).slice(0, 3)).map((item) => (
                 <span key={item} className="px-3 py-1.5 text-xs text-slate-700 bg-slate-50 border border-slate-200 rounded-full">{item}</span>
               ))}
             </div>

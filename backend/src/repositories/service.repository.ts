@@ -74,10 +74,13 @@ export const serviceRepository = {
   },
 
   async createService(data: any) {
-    const { features = [], deliverables = [], techStack = [], ...serviceData } = data;
+    const { features = [], deliverables = [], techStack = [], category, ...serviceData } = data;
+    const mappedCategory = category === 'web' ? 'WEB_DEV' : (category === 'mobile' ? 'MOBILE_DEV' : (category === 'ai-automation' ? 'AI_AUTOMATION' : (category === 'cloud-devops' ? 'CLOUD_DEVOPS' : (category === 'consulting' ? 'CONSULTING' : (category || 'WEB_DEV')))));
+
     return prisma.service.create({
       data: {
         ...serviceData,
+        category: mappedCategory,
         features: {
           create: features.map((f: string | any, idx: number) =>
             typeof f === 'string' ? { title: f, displayOrder: idx + 1 } : { ...f, displayOrder: idx + 1 }

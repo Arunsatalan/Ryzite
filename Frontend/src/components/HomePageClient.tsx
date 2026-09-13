@@ -24,10 +24,15 @@ import {
   INITIAL_BLOGS, 
   DEFAULT_PAGE_METADATA 
 } from '../data/initialData';
-import { ServiceItem, ProjectItem, BlogPost } from '../types';
+import { ServiceItem, ProjectItem, BlogPost, HomeHeroConfig } from '../types';
 import { api } from '../lib/api';
 
-export default function HomePageClient() {
+interface HomePageClientProps {
+  initialHero?: HomeHeroConfig | null;
+}
+
+export default function HomePageClient({ initialHero }: HomePageClientProps) {
+  const [hero, setHero] = useState<HomeHeroConfig | undefined>(initialHero || undefined);
   const [services, setServices] = useState<ServiceItem[]>(INITIAL_SERVICES);
   const [projects, setProjects] = useState<ProjectItem[]>(INITIAL_PROJECTS);
   const [blogs, setBlogs] = useState<BlogPost[]>(INITIAL_BLOGS);
@@ -39,18 +44,28 @@ export default function HomePageClient() {
   const [adminOpen, setAdminOpen] = useState(false);
 
   useEffect(() => {
-    // Fetch live data from backend API on mount
+    // Fetch live database data from Express API (Port 5000) on mount
     const loadBackendData = async () => {
       try {
-        const [srvData, projData, blogData] = await Promise.all([
+        const [heroData, srvData, projData, blogData] = await Promise.all([
+          api.getHomeHero().catch(() => null),
           api.getServices().catch(() => null),
           api.getProjects().catch(() => null),
           api.getBlogs().catch(() => null)
         ]);
 
-        if (srvData && Array.isArray(srvData) && srvData.length > 0) setServices(srvData);
-        if (projData && Array.isArray(projData) && projData.length > 0) setProjects(projData);
-        if (blogData && Array.isArray(blogData) && blogData.length > 0) setBlogs(blogData);
+        if (heroData) {
+          setHero(heroData);
+        }
+        if (srvData && Array.isArray(srvData) && srvData.length > 0) {
+          setServices(srvData);
+        }
+        if (projData && Array.isArray(projData) && projData.length > 0) {
+          setProjects(projData);
+        }
+        if (blogData && Array.isArray(blogData) && blogData.length > 0) {
+          setBlogs(blogData);
+        }
       } catch (err) {
         console.warn('Backend API connection pending, using default UI dataset:', err);
       }
@@ -96,6 +111,7 @@ export default function HomePageClient() {
           <>
             {/* 1. Hero Section */}
             <Hero
+              hero={hero}
               onBookConsultation={() => handleOpenConsultation()}
             />
 

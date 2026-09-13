@@ -79,15 +79,40 @@ export const projectRepository = {
   },
 
   async createProject(data: any) {
-    const { metrics = [], highlights = [], ...projectData } = data;
+    const { metrics = [], highlights = [], techStack = [], challenges = [], solutions = [], client, mockupType, description, longDescription, ...projectData } = data;
+    const clientName = client || projectData.clientName || 'Enterprise Partner';
+    const mockupTypeEnum = mockupType === 'dark-dashboard' ? 'DARK_DASHBOARD' : (mockupType === 'mobile-cards' ? 'MOBILE_CARDS' : (mockupType === 'bot-interface' ? 'BOT_INTERFACE' : (mockupType === 'analytics-suite' ? 'ANALYTICS_SUITE' : (mockupType || 'DARK_DASHBOARD'))));
+
+    const shortDescription = description || projectData.shortDescription || 'Case study overview.';
+    const fullDescription = longDescription || projectData.fullDescription || shortDescription;
+    const challengeStr = Array.isArray(challenges) ? challenges.join('\n') : (challenges || projectData.challenge || null);
+    const solutionStr = Array.isArray(solutions) ? solutions.join('\n') : (solutions || projectData.solution || null);
+
     return prisma.project.create({
       data: {
         ...projectData,
+        clientName,
+        shortDescription,
+        fullDescription,
+        challenge: challengeStr,
+        solution: solutionStr,
+        category: projectData.category || 'SaaS Platform',
+        heroImage: projectData.heroImage || 'https://images.unsplash.com/photo-1551288049-bebda4e38f71',
+        mockupType: mockupTypeEnum,
         metrics: {
-          create: metrics.map((m: any, idx: number) => ({ ...m, displayOrder: idx + 1 }))
+          create: metrics.map((m: any, idx: number) => ({
+            label: typeof m === 'string' ? m : m.label,
+            value: typeof m === 'string' ? '100%' : m.value,
+            trend: typeof m === 'string' ? null : (m.trend || null),
+            displayOrder: idx + 1
+          }))
         },
         highlights: {
-          create: highlights.map((h: any, idx: number) => ({ ...h, displayOrder: idx + 1 }))
+          create: highlights.map((h: any, idx: number) => ({
+            title: typeof h === 'string' ? h : h.title,
+            description: typeof h === 'string' ? null : (h.description || null),
+            displayOrder: idx + 1
+          }))
         }
       }
     });

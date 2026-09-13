@@ -192,17 +192,36 @@ model MediaAsset {
 // ==========================================
 
 model HomePage {
-  id                  String        @id @default(uuid())
-  heroEyebrow         String        @default("NEXT-GEN SOFTWARE & AI AGENCY")
-  heroTitle           String        @default("We Build Software That Drives Growth")
-  heroHighlightedText String        @default("Drives Growth")
-  heroDescription     String        @db.Text
-  primaryCtaLabel     String        @default("Schedule Architecture Call")
-  primaryCtaUrl       String        @default("#contact")
-  secondaryCtaLabel   String        @default("Explore Services")
-  secondaryCtaUrl     String        @default("#services")
-  heroImage           MediaAsset?   @relation("HomePageHeroImage", fields: [heroImageId], references: [id], onDelete: SetNull)
-  heroImageId         String?
+  id                      String        @id @default(uuid())
+  heroBadgeText           String?       @default("SOFTWARE SOLUTIONS THAT SCALE")
+  heroHeadingPrefix       String        @default("We Build Software")
+  heroHeadingHighlight    String?       @default("Drives Growth")
+  heroHeadingSuffix       String?       @default("")
+  heroDescription         String        @db.Text
+  heroPrimaryCtaText      String?       @default("Explore Our Services")
+  heroPrimaryCtaUrl       String?       @default("/services")
+  heroPrimaryCtaEnabled   Boolean       @default(true)
+  heroPrimaryCtaOpenNewTab Boolean      @default(false)
+  heroSecondaryCtaText    String?       @default("Book a Free Consultation")
+  heroSecondaryCtaUrl     String?       @default("#contact")
+  heroSecondaryCtaType    String?       @default("consultation")
+  heroSecondaryCtaEnabled Boolean       @default(true)
+  heroSecondaryCtaOpenNewTab Boolean    @default(false)
+  heroBackgroundImageUrl  String?
+  heroBackgroundImageAlt  String?
+  heroEnabled             Boolean       @default(true)
+  heroDisplayOrder        Int           @default(1)
+  
+  // Legacy fields retained for safety
+  heroEyebrow             String        @default("NEXT-GEN SOFTWARE & AI AGENCY")
+  heroTitle               String        @default("We Build Software That Drives Growth")
+  heroHighlightedText     String        @default("Drives Growth")
+  primaryCtaLabel         String        @default("Schedule Architecture Call")
+  primaryCtaUrl           String        @default("#contact")
+  secondaryCtaLabel       String        @default("Explore Services")
+  secondaryCtaUrl         String        @default("#services")
+  heroImage               MediaAsset?   @relation("HomePageHeroImage", fields: [heroImageId], references: [id], onDelete: SetNull)
+  heroImageId             String?
   servicesEyebrow     String        @default("OUR CAPABILITIES")
   servicesTitle       String        @default("Engineering Excellence Across the Stack")
   servicesDescription String        @db.Text

@@ -5,26 +5,47 @@ import { Footer } from '@/components/Footer';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
 import { INITIAL_SOLUTIONS, INITIAL_SERVICES } from '@/data/initialData';
 import { ArrowRight, CheckCircle2, Monitor, Cpu, Smartphone, Cloud, ShieldCheck, Sparkles, Layers } from 'lucide-react';
+import { api } from '@/lib/api';
 
-export const metadata: Metadata = {
-  title: 'Enterprise Technical & Industry Solutions | Ryzite',
-  description: 'Explore Ryzite’s enterprise solutions: SaaS web platforms, AI automation agents, cross-platform mobile apps, cloud DevOps, and CTO advisory.',
-  alternates: {
-    canonical: 'https://ryzite.com/solutions',
-  },
-  openGraph: {
-    title: 'Enterprise Technical & Industry Solutions | Ryzite',
-    description: 'Explore Ryzite’s enterprise solutions: SaaS web platforms, AI automation agents, cross-platform mobile apps, cloud DevOps, and CTO advisory.',
-    url: 'https://ryzite.com/solutions',
-    siteName: 'Ryzite',
-    images: ['https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1200&auto=format&fit=crop'],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    title: 'Enterprise Technical & Industry Solutions | Ryzite',
-    description: 'Enterprise technical solutions engineered by Ryzite.',
-  },
-};
+export async function generateMetadata(): Promise<Metadata> {
+  try {
+    const seo = await api.getSeo('solutions').catch(() => null);
+    const title = seo?.title || 'Bespoke Enterprise Solutions & AI Workflows | Ryzite';
+    const description = seo?.description || 'Tailored digital transformation blueprints and high-throughput software architecture solutions.';
+    const canonical = seo?.canonicalUrl || 'https://ryzite.com/solutions';
+    const ogImage = seo?.ogImage || 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1200&auto=format&fit=crop';
+
+    return {
+      title,
+      description,
+      alternates: {
+        canonical,
+      },
+      openGraph: {
+        title,
+        description,
+        url: canonical,
+        siteName: 'Ryzite',
+        images: [{ url: ogImage, width: 1200, height: 630 }],
+      },
+      twitter: {
+        card: 'summary_large_image',
+        title,
+        description,
+        images: [ogImage],
+      },
+      robots: {
+        index: seo?.robotsIndex ?? true,
+        follow: seo?.robotsFollow ?? true,
+      },
+    };
+  } catch (err) {
+    return {
+      title: 'Bespoke Enterprise Solutions & AI Workflows | Ryzite',
+      description: 'Tailored digital transformation blueprints and high-throughput software architecture solutions.',
+    };
+  }
+}
 
 export default function SolutionsPage() {
   const getIcon = (iconName: string) => {

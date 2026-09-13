@@ -1,4 +1,4 @@
-import { ServiceItem, ProjectItem, BlogPost, PageMetadataConfig, LeadItem, SolutionItem } from '../types';
+import { ServiceItem, ProjectItem, BlogPost, PageMetadataConfig, LeadItem, SolutionItem, HomeHeroConfig } from '../types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
@@ -23,6 +23,9 @@ export async function fetchApi<T>(endpoint: string, options: RequestInit = {}): 
 }
 
 export const api = {
+  getHomeHero: () => fetchApi<HomeHeroConfig>('/api/home/hero', { cache: 'no-store' }),
+  updateHomeHero: (data: Partial<HomeHeroConfig>) => fetchApi<HomeHeroConfig>('/api/home/hero', { method: 'PUT', body: JSON.stringify(data) }),
+
   getServices: () => fetchApi<ServiceItem[]>('/api/services'),
   getServiceBySlug: (slug: string) => fetchApi<ServiceItem>(`/api/services/${slug}`),
   createService: (data: any) => fetchApi<ServiceItem>('/api/services', { method: 'POST', body: JSON.stringify(data) }),
@@ -44,16 +47,16 @@ export const api = {
   getSolutions: () => fetchApi<SolutionItem[]>('/api/solutions'),
   getSolutionBySlug: (slug: string) => fetchApi<SolutionItem>(`/api/solutions/${slug}`),
 
-  getSeo: (pageKey: string = 'home') => fetchApi<PageMetadataConfig>(`/api/seo?pageKey=${pageKey}`),
+  getSeo: (pageKey: string = 'home') => fetchApi<PageMetadataConfig>(`/api/seo?pageKey=${pageKey}`, { cache: 'no-store' }),
   updateSeo: (pageKey: string, data: any) => fetchApi<PageMetadataConfig>(`/api/seo?pageKey=${pageKey}`, { method: 'PUT', body: JSON.stringify(data) }),
   getSeoAudit: () => fetchApi<any>('/api/seo/audit'),
 
-  getLeads: () => fetchApi<LeadItem[]>('/api/leads'),
+  getLeads: (status: string = 'ALL') => fetchApi<LeadItem[]>(`/api/leads${status && status !== 'ALL' ? `?status=${status}` : ''}`, { cache: 'no-store' }),
   createLead: (data: any) => fetchApi<LeadItem>('/api/leads', { method: 'POST', body: JSON.stringify(data) }),
   updateLeadStatus: (id: string, status: string, notes?: string) => fetchApi<LeadItem>(`/api/leads/${id}`, { method: 'PATCH', body: JSON.stringify({ status, notes }) }),
   deleteLead: (id: string) => fetchApi<{ success: boolean }>(`/api/leads/${id}`, { method: 'DELETE' }),
 
-  getAnalyticsSummary: () => fetchApi<any>('/api/analytics/summary'),
+  getAnalyticsSummary: () => fetchApi<any>('/api/analytics/summary', { cache: 'no-store' }),
   getSiteSettings: () => fetchApi<any>('/api/settings'),
   getHomePageContent: () => fetchApi<any>('/api/home')
 };

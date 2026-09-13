@@ -1,8 +1,13 @@
 import { prisma } from './prisma.js';
 
 export const leadRepository = {
-  async getAllLeads() {
+  async getAllLeads(status?: string) {
+    const where: any = {};
+    if (status && status !== 'ALL') {
+      where.status = status;
+    }
     return prisma.lead.findMany({
+      where,
       orderBy: { createdAt: 'desc' },
       include: { service: { select: { id: true, title: true, slug: true } } }
     });

@@ -90,6 +90,32 @@ export interface BlogPost {
   aeoDirectAnswer: string;
 }
 
+export interface HomeHeroConfig {
+  badgeText?: string;
+  headingPrefix: string;
+  headingHighlight?: string;
+  headingSuffix?: string;
+  description: string;
+
+  primaryCtaText?: string;
+  primaryCtaUrl?: string;
+  primaryCtaEnabled: boolean;
+  primaryCtaOpenNewTab?: boolean;
+
+  secondaryCtaText?: string;
+  secondaryCtaUrl?: string;
+  secondaryCtaType?: 'consultation' | 'link';
+  secondaryCtaEnabled: boolean;
+  secondaryCtaOpenNewTab?: boolean;
+
+  backgroundImageUrl?: string | null;
+  backgroundImageAlt?: string | null;
+
+  enabled: boolean;
+  displayOrder?: number;
+  updatedAt?: string;
+}
+
 export type LeadStatus = 'NEW' | 'CONTACTED' | 'IN_DISCUSSION' | 'PROPOSAL_SENT' | 'WON' | 'LOST';
 
 export interface LeadItem {
@@ -149,7 +175,9 @@ export interface PageMetadataConfig {
   description: string;
   canonicalUrl: string;
   ogImage: string;
-  keywords: string[];
+  keywords?: string[];
+  robotsIndex?: boolean;
+  robotsFollow?: boolean;
   siteName?: string;
   twitterHandle?: string;
   themeColor?: string;
