@@ -1,4 +1,4 @@
-import { ServiceItem, ProjectItem, BlogPost, PageMetadataConfig, LeadItem, SolutionItem, HomeHeroConfig } from '../types';
+import { ServiceItem, ProjectItem, BlogPost, PageMetadataConfig, LeadItem, SolutionItem, HomeHeroConfig, TrustedClientItem } from '../types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
@@ -23,8 +23,37 @@ export async function fetchApi<T>(endpoint: string, options: RequestInit = {}): 
 }
 
 export const api = {
+  uploadImage: (file: File): Promise<{ url: string; filename: string; relativePath: string }> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          const res = await fetchApi<{ url: string; filename: string; relativePath: string }>('/api/upload', {
+            method: 'POST',
+            body: JSON.stringify({
+              filename: file.name,
+              fileData: reader.result
+            })
+          });
+          resolve(res);
+        } catch (err) {
+          reject(err);
+        }
+      };
+      reader.onerror = (err) => reject(err);
+      reader.readAsDataURL(file);
+    });
+  },
+
   getHomeHero: () => fetchApi<HomeHeroConfig>('/api/home/hero', { cache: 'no-store' }),
   updateHomeHero: (data: Partial<HomeHeroConfig>) => fetchApi<HomeHeroConfig>('/api/home/hero', { method: 'PUT', body: JSON.stringify(data) }),
+
+  getTrustedClients: () => fetchApi<TrustedClientItem[]>('/api/trusted-clients', { cache: 'no-store' }),
+  getAdminTrustedClients: () => fetchApi<TrustedClientItem[]>('/api/trusted-clients/admin', { cache: 'no-store' }),
+  createTrustedClient: (data: any) => fetchApi<TrustedClientItem>('/api/trusted-clients', { method: 'POST', body: JSON.stringify(data) }),
+  updateTrustedClient: (id: string, data: any) => fetchApi<TrustedClientItem>(`/api/trusted-clients/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteTrustedClient: (id: string) => fetchApi<{ success: boolean }>(`/api/trusted-clients/${id}`, { method: 'DELETE' }),
+  reorderTrustedClients: (orderedIds: string[]) => fetchApi<TrustedClientItem[]>('/api/trusted-clients/reorder', { method: 'PATCH', body: JSON.stringify({ orderedIds }) }),
 
   getServices: () => fetchApi<ServiceItem[]>('/api/services'),
   getServiceBySlug: (slug: string) => fetchApi<ServiceItem>(`/api/services/${slug}`),

@@ -211,6 +211,32 @@ async function main() {
     });
   }
 
+  // 5. Seed Trusted Clients
+  const trustedClientsData = [
+    { name: 'PineGen AI', slug: 'pinegen-ai', companyName: 'PineGen Inc', logoAltText: 'PineGen AI company logo', websiteUrl: 'https://pinegen.ai', caseStudySlug: 'pinegen-ai', displayOrder: 1, featured: true, enabled: true },
+    { name: 'Dinefy Voice AI', slug: 'dinefy-voice-ai', companyName: 'Dinefy Group', logoAltText: 'Dinefy Voice AI company logo', websiteUrl: 'https://dinefy.com', caseStudySlug: 'dinefy-ai-call-bot', displayOrder: 2, featured: true, enabled: true },
+    { name: 'Enterprise IO', slug: 'enterprise-io', companyName: 'Enterprise IO Inc', logoAltText: 'Enterprise IO company logo', websiteUrl: 'https://enterprise.io', displayOrder: 3, featured: true, enabled: true },
+    { name: 'Nexus Cloud', slug: 'nexus-cloud', companyName: 'Nexus Cloud Networks', logoAltText: 'Nexus Cloud company logo', websiteUrl: 'https://nexuscloud.io', displayOrder: 4, featured: true, enabled: true },
+    { name: 'Apex Mobility', slug: 'apex-mobility', companyName: 'Apex Mobility Group', logoAltText: 'Apex Mobility company logo', websiteUrl: 'https://apexmobility.com', displayOrder: 5, featured: true, enabled: true }
+  ];
+
+  for (const clientSeed of trustedClientsData) {
+    await prisma.client.upsert({
+      where: { slug: clientSeed.slug },
+      update: {
+        name: clientSeed.name,
+        companyName: clientSeed.companyName,
+        logoAltText: clientSeed.logoAltText,
+        websiteUrl: clientSeed.websiteUrl,
+        caseStudySlug: clientSeed.caseStudySlug,
+        displayOrder: clientSeed.displayOrder,
+        featured: clientSeed.featured,
+        enabled: clientSeed.enabled
+      },
+      create: clientSeed
+    });
+  }
+
   console.log('🎉 Backend Seeding Completed Successfully!');
 }
 

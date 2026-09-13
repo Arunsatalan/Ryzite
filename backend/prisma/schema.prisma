@@ -264,11 +264,17 @@ model Client {
   id           String      @id @default(uuid())
   name         String
   slug         String      @unique
+  companyName  String?
   websiteUrl   String?
   logoId       String?
   logo         MediaAsset? @relation("ClientLogo", fields: [logoId], references: [id], onDelete: SetNull)
   logoUrl      String?
+  logoAltText  String?
   description  String?
+  projectId    String?
+  project      Project?    @relation(fields: [projectId], references: [id], onDelete: SetNull)
+  caseStudySlug String?
+  featured     Boolean     @default(true)
   enabled      Boolean     @default(true)
   displayOrder Int         @default(0)
   createdAt    DateTime    @default(now())
@@ -511,6 +517,7 @@ model Project {
   mediaGallery     ProjectMedia[]
   services         ProjectService[]
   technologies     ProjectTechnology[]
+  clients          Client[]
   seoMetadata      SeoMetadata?
 
   @@index([status, featured, displayOrder])

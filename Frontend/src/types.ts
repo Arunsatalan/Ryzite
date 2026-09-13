@@ -116,6 +116,21 @@ export interface HomeHeroConfig {
   updatedAt?: string;
 }
 
+export interface TrustedClientItem {
+  id: string;
+  name: string;
+  companyName?: string | null;
+  slug?: string;
+  logoUrl?: string | null;
+  logoAltText?: string | null;
+  websiteUrl?: string | null;
+  description?: string | null;
+  caseStudySlug?: string | null;
+  featured: boolean;
+  enabled: boolean;
+  displayOrder: number;
+}
+
 export type LeadStatus = 'NEW' | 'CONTACTED' | 'IN_DISCUSSION' | 'PROPOSAL_SENT' | 'WON' | 'LOST';
 
 export interface LeadItem {

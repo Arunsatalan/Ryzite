@@ -1,6 +1,8 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import fs from 'fs';
+import path from 'path';
 import { serviceRepository } from './repositories/service.repository.js';
 import { projectRepository } from './repositories/project.repository.js';
 import { blogRepository } from './repositories/blog.repository.js';
@@ -9,6 +11,7 @@ import { seoRepository } from './repositories/seo.repository.js';
 import { leadRepository } from './repositories/lead.repository.js';
 import { settingsRepository } from './repositories/settings.repository.js';
 import { homeRepository } from './repositories/home.repository.js';
+import { clientRepository } from './repositories/client.repository.js';
 import { prisma } from './repositories/prisma.js';
 
 dotenv.config();
@@ -33,17 +36,64 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 const FRONTEND_URL = process.env.FRONTEND_URL || 'http://localhost:3000';
 
+// Ensure local uploads directory exists
+const UPLOADS_DIR = path.join(process.cwd(), 'uploads');
+if (!fs.existsSync(UPLOADS_DIR)) {
+  fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+}
+
+// Serve static upload directory
+app.use('/uploads', express.static(UPLOADS_DIR));
+
 // Middlewares
 app.use(cors({
   origin: [FRONTEND_URL, 'http://localhost:3000', 'http://localhost:3001'],
   credentials: true
 }));
-app.use(express.json());
+app.use(express.json({ limit: '15mb' }));
 
 // Request logger
 app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.url}`);
   next();
+});
+
+// Local File Upload Endpoint
+app.post('/api/upload', async (req, res) => {
+  try {
+    const { filename, fileData } = req.body;
+    if (!fileData) {
+      return res.status(400).json({ success: false, error: 'No file data provided.' });
+    }
+
+    const matches = fileData.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+    if (!matches || matches.length !== 3) {
+      return res.status(400).json({ success: false, error: 'Invalid base64 data format.' });
+    }
+
+    const mimeType = matches[1];
+    const extMatch = mimeType.split('/')[1] || 'png';
+    const cleanExt = extMatch.replace(/[^a-z0-9]/gi, '');
+    const safeBaseName = (filename || 'image').replace(/\.[^/.]+$/, '').replace(/[^a-z0-9]/gi, '-').toLowerCase();
+    const uniqueFilename = `${safeBaseName}-${Date.now()}.${cleanExt}`;
+    const filePath = path.join(UPLOADS_DIR, uniqueFilename);
+
+    const buffer = Buffer.from(matches[2], 'base64');
+    await fs.promises.writeFile(filePath, buffer);
+
+    const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${uniqueFilename}`;
+    res.json({
+      success: true,
+      data: {
+        url: fileUrl,
+        filename: uniqueFilename,
+        relativePath: `/uploads/${uniqueFilename}`
+      }
+    });
+  } catch (err: any) {
+    console.error('[LOCAL UPLOAD ERROR]', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 // Health check
@@ -253,6 +303,66 @@ app.put('/api/home/hero', async (req, res) => {
     res.json({ success: true, data: updated });
   } catch (err: any) {
     console.error('[DB ERROR] Failed to update home hero:', err.message);
+    res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: err.message } });
+  }
+});
+
+// --- TRUSTED CLIENTS ENDPOINTS ---
+app.get('/api/trusted-clients', async (req, res) => {
+  try {
+    const clients = await clientRepository.getAllActive();
+    res.json({ success: true, data: clients });
+  } catch (err: any) {
+    console.error('[DB ERROR] Failed to fetch trusted clients:', err.message);
+    res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: err.message } });
+  }
+});
+
+app.get('/api/trusted-clients/admin', async (req, res) => {
+  try {
+    const clients = await clientRepository.getAllAdmin();
+    res.json({ success: true, data: clients });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: err.message } });
+  }
+});
+
+app.post('/api/trusted-clients', async (req, res) => {
+  try {
+    const newClient = await clientRepository.createClient(req.body);
+    res.status(201).json({ success: true, data: newClient });
+  } catch (err: any) {
+    console.error('[DB ERROR] Failed to create trusted client:', err.message);
+    res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: err.message } });
+  }
+});
+
+app.put('/api/trusted-clients/:id', async (req, res) => {
+  try {
+    const updated = await clientRepository.updateClient(req.params.id, req.body);
+    res.json({ success: true, data: updated });
+  } catch (err: any) {
+    console.error('[DB ERROR] Failed to update trusted client:', err.message);
+    res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: err.message } });
+  }
+});
+
+app.delete('/api/trusted-clients/:id', async (req, res) => {
+  try {
+    await clientRepository.deleteClient(req.params.id);
+    res.json({ success: true, data: { success: true } });
+  } catch (err: any) {
+    console.error('[DB ERROR] Failed to delete trusted client:', err.message);
+    res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: err.message } });
+  }
+});
+
+app.patch('/api/trusted-clients/reorder', async (req, res) => {
+  try {
+    const updatedList = await clientRepository.reorderClients(req.body.orderedIds);
+    res.json({ success: true, data: updatedList });
+  } catch (err: any) {
+    console.error('[DB ERROR] Failed to reorder trusted clients:', err.message);
     res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: err.message } });
   }
 });

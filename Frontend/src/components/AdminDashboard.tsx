@@ -28,11 +28,15 @@ import {
   Mail,
   DollarSign,
   Layers,
-  BarChart3
+  BarChart3,
+  Star,
+  ArrowUp,
+  ArrowDown
 } from 'lucide-react';
-import { LeadItem, ServiceItem, ProjectItem, BlogPost, LeadStatus, PageMetadataConfig, HomeHeroConfig } from '../types';
+import { LeadItem, ServiceItem, ProjectItem, BlogPost, LeadStatus, PageMetadataConfig, HomeHeroConfig, TrustedClientItem } from '../types';
 import { SerpOptimizerModal } from './SerpOptimizerModal';
 import { Hero } from './Hero';
+import { TrustedClients } from './TrustedClients';
 import { api } from '../lib/api';
 
 interface AdminDashboardProps {
@@ -56,7 +60,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onUpdateProjects,
   onUpdateBlogs
 }) => {
-  const [activeTab, setActiveTab] = useState<'crm' | 'hero' | 'services' | 'projects' | 'blogs' | 'seo' | 'analytics'>('crm');
+  const [activeTab, setActiveTab] = useState<'crm' | 'hero' | 'clients' | 'services' | 'projects' | 'blogs' | 'seo' | 'analytics'>('crm');
   const [searchQuery, setSearchQuery] = useState('');
   
   if (!isOpen) return null;
@@ -111,20 +115,191 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [heroSaved, setHeroSaved] = useState(false);
   const [heroError, setHeroError] = useState<string | null>(null);
 
+  // Trusted Clients State
+  const [trustedClientsList, setTrustedClientsList] = useState<TrustedClientItem[]>([]);
+  const [loadingClients, setLoadingClients] = useState(false);
+  const [showClientModal, setShowClientModal] = useState(false);
+  const [editingClient, setEditingClient] = useState<TrustedClientItem | null>(null);
+  const [clientForm, setClientForm] = useState<{
+    name: string;
+    companyName: string;
+    logoUrl: string;
+    logoAltText: string;
+    websiteUrl: string;
+    caseStudySlug: string;
+    featured: boolean;
+    enabled: boolean;
+  }>({
+    name: '',
+    companyName: '',
+    logoUrl: '',
+    logoAltText: '',
+    websiteUrl: '',
+    caseStudySlug: '',
+    featured: true,
+    enabled: true
+  });
+  const [clientSaving, setClientSaving] = useState(false);
+  const [clientError, setClientError] = useState<string | null>(null);
+  const [uploadingLogo, setUploadingLogo] = useState(false);
+
+  const handleLogoFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setUploadingLogo(true);
+    setClientError(null);
+    try {
+      const res = await api.uploadImage(file);
+      if (res && res.url) {
+        setClientForm(prev => ({
+          ...prev,
+          logoUrl: res.url
+        }));
+      }
+    } catch (err: any) {
+      setClientError(err.message || 'Failed to upload logo image file.');
+    } finally {
+      setUploadingLogo(false);
+    }
+  };
+
   useEffect(() => {
     fetchLeads(leadFilter);
     fetchSeo(selectedSeoPage);
     fetchAnalytics();
     fetchHero();
+    fetchAdminClients();
 
     const handleFocus = () => {
       fetchLeads(leadFilter);
       fetchAnalytics();
       fetchHero();
+      fetchAdminClients();
     };
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
   }, []);
+
+  const fetchAdminClients = async () => {
+    setLoadingClients(true);
+    try {
+      const data = await api.getAdminTrustedClients();
+      if (Array.isArray(data)) {
+        setTrustedClientsList(data);
+      }
+    } catch (err: any) {
+      console.warn('Failed to fetch trusted clients:', err.message);
+    } finally {
+      setLoadingClients(false);
+    }
+  };
+
+  const handleOpenAddClient = () => {
+    setEditingClient(null);
+    setClientForm({
+      name: '',
+      companyName: '',
+      logoUrl: '',
+      logoAltText: '',
+      websiteUrl: '',
+      caseStudySlug: '',
+      featured: true,
+      enabled: true
+    });
+    setClientError(null);
+    setShowClientModal(true);
+  };
+
+  const handleOpenEditClient = (client: TrustedClientItem) => {
+    setEditingClient(client);
+    setClientForm({
+      name: client.name || '',
+      companyName: client.companyName || client.name || '',
+      logoUrl: client.logoUrl || '',
+      logoAltText: client.logoAltText || `${client.name} company logo`,
+      websiteUrl: client.websiteUrl || '',
+      caseStudySlug: client.caseStudySlug || '',
+      featured: client.featured ?? true,
+      enabled: client.enabled ?? true
+    });
+    setClientError(null);
+    setShowClientModal(true);
+  };
+
+  const handleSaveClient = async () => {
+    if (!clientForm.name.trim()) {
+      setClientError('Client name is required.');
+      return;
+    }
+    setClientSaving(true);
+    setClientError(null);
+    try {
+      const payload = {
+        ...clientForm,
+        logoAltText: clientForm.logoAltText || `${clientForm.name} company logo`
+      };
+
+      if (editingClient) {
+        await api.updateTrustedClient(editingClient.id, payload);
+      } else {
+        await api.createTrustedClient(payload);
+      }
+      setShowClientModal(false);
+      fetchAdminClients();
+    } catch (err: any) {
+      setClientError(err.message || 'Failed to save client.');
+    } finally {
+      setClientSaving(false);
+    }
+  };
+
+  const handleDeleteClient = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this trusted client?')) return;
+    try {
+      await api.deleteTrustedClient(id);
+      fetchAdminClients();
+    } catch (err: any) {
+      console.error('Failed to delete client:', err);
+    }
+  };
+
+  const handleToggleClientActive = async (client: TrustedClientItem) => {
+    try {
+      await api.updateTrustedClient(client.id, { ...client, enabled: !client.enabled });
+      fetchAdminClients();
+    } catch (err: any) {
+      console.error('Failed to toggle client status:', err);
+    }
+  };
+
+  const handleToggleClientFeatured = async (client: TrustedClientItem) => {
+    try {
+      await api.updateTrustedClient(client.id, { ...client, featured: !client.featured });
+      fetchAdminClients();
+    } catch (err: any) {
+      console.error('Failed to toggle client featured:', err);
+    }
+  };
+
+  const handleMoveClientOrder = async (currentIndex: number, direction: 'up' | 'down') => {
+    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    if (targetIndex < 0 || targetIndex >= trustedClientsList.length) return;
+
+    const listCopy = [...trustedClientsList];
+    const temp = listCopy[currentIndex];
+    listCopy[currentIndex] = listCopy[targetIndex];
+    listCopy[targetIndex] = temp;
+
+    setTrustedClientsList(listCopy);
+    try {
+      const orderedIds = listCopy.map(c => c.id);
+      await api.reorderTrustedClients(orderedIds);
+    } catch (err: any) {
+      console.error('Failed to reorder clients:', err);
+      fetchAdminClients();
+    }
+  };
 
   const fetchHero = async () => {
     setLoadingHero(true);
@@ -392,6 +567,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
               <span className="text-[10px] uppercase tracking-wide bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded font-bold">
                 Home CMS
+              </span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('clients')}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                activeTab === 'clients' 
+                  ? 'bg-blue-50 text-blue-600 border border-blue-200/60 shadow-xs' 
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <Building2 size={18} className={activeTab === 'clients' ? 'text-blue-600' : 'text-slate-400'} />
+                <span>Trusted Clients</span>
+              </div>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-bold">
+                {trustedClientsList.length}
               </span>
             </button>
 
@@ -1011,6 +1203,212 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
           )}
 
+          {/* TAB: TRUSTED CLIENTS CMS */}
+          {activeTab === 'clients' && (
+            <div className="space-y-6">
+              {/* Header Bar */}
+              <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-lg font-bold text-slate-900">Home Page → Trusted Clients Orbit Showcase</h2>
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-300">
+                      {trustedClientsList.filter(c => c.enabled !== false).length} Active Logos
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">Manage client logos, orbit display order, alt text for accessibility, and case study links stored in PostgreSQL.</p>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={fetchAdminClients}
+                    disabled={loadingClients}
+                    className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-all disabled:opacity-50"
+                  >
+                    <RefreshCw size={14} className={loadingClients ? 'animate-spin' : ''} />
+                    <span>Refresh</span>
+                  </button>
+
+                  <button
+                    onClick={handleOpenAddClient}
+                    className="flex items-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-xl text-xs font-bold shadow-md transition-all"
+                  >
+                    <Plus size={16} />
+                    <span>Add Trusted Client</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Main Content Layout: Grid (Table Left, Orbit Live Preview Right) */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                {/* Left Column: Client Management Table */}
+                <div className="lg:col-span-7 bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                    <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Client Showcase Directory</h3>
+                    <span className="text-xs font-medium text-slate-500">
+                      Total: {trustedClientsList.length} clients
+                    </span>
+                  </div>
+
+                  {loadingClients ? (
+                    <div className="py-16 text-center text-slate-500 flex flex-col items-center justify-center gap-3">
+                      <RefreshCw size={24} className="animate-spin text-blue-600" />
+                      <span className="text-xs font-semibold">Loading clients from PostgreSQL...</span>
+                    </div>
+                  ) : trustedClientsList.length === 0 ? (
+                    <div className="py-12 text-center text-slate-400 space-y-3">
+                      <Building2 size={36} className="mx-auto text-slate-300" />
+                      <p className="text-xs font-semibold">No trusted client logos found.</p>
+                      <button
+                        onClick={handleOpenAddClient}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition-all inline-flex items-center gap-1.5"
+                      >
+                        <Plus size={14} /> Add First Client
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs text-slate-700">
+                        <thead className="bg-slate-50 text-slate-500 font-semibold uppercase text-[11px] tracking-wider border-b border-slate-200">
+                          <tr>
+                            <th className="py-3 px-3">Order</th>
+                            <th className="py-3 px-3">Logo & Client Name</th>
+                            <th className="py-3 px-3 text-center">Status</th>
+                            <th className="py-3 px-3 text-center">Featured</th>
+                            <th className="py-3 px-3 text-right">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {trustedClientsList.map((client, idx) => (
+                            <tr key={client.id} className="hover:bg-slate-50/80 transition-colors">
+                              
+                              {/* Order & Reorder arrows */}
+                              <td className="py-3 px-3 font-mono font-bold text-slate-400">
+                                <div className="flex items-center gap-1">
+                                  <span className="w-4 text-center">{client.displayOrder ?? idx + 1}</span>
+                                  <div className="flex flex-col">
+                                    <button
+                                      disabled={idx === 0}
+                                      onClick={() => handleMoveClientOrder(idx, 'up')}
+                                      className="p-0.5 hover:bg-slate-200 rounded disabled:opacity-30 disabled:hover:bg-transparent text-slate-600"
+                                      title="Move Up"
+                                    >
+                                      <ArrowUp size={12} />
+                                    </button>
+                                    <button
+                                      disabled={idx === trustedClientsList.length - 1}
+                                      onClick={() => handleMoveClientOrder(idx, 'down')}
+                                      className="p-0.5 hover:bg-slate-200 rounded disabled:opacity-30 disabled:hover:bg-transparent text-slate-600"
+                                      title="Move Down"
+                                    >
+                                      <ArrowDown size={12} />
+                                    </button>
+                                  </div>
+                                </div>
+                              </td>
+
+                              {/* Logo & Name */}
+                              <td className="py-3 px-3">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-9 h-9 rounded-lg bg-slate-900 border border-slate-700 flex items-center justify-center p-1 overflow-hidden shrink-0">
+                                    {client.logoUrl ? (
+                                      <img src={client.logoUrl} alt={client.logoAltText || client.name} className="max-h-full max-w-full object-contain" />
+                                    ) : (
+                                      <Building2 size={16} className="text-slate-400" />
+                                    )}
+                                  </div>
+                                  <div>
+                                    <div className="font-bold text-slate-900 text-xs">{client.name}</div>
+                                    <div className="text-[11px] text-slate-400 truncate max-w-[160px]">
+                                      {client.websiteUrl || client.caseStudySlug ? (
+                                        <a href={client.websiteUrl || `/portfolio/${client.caseStudySlug}`} target="_blank" rel="noreferrer" className="text-blue-600 hover:underline flex items-center gap-0.5">
+                                          <span>{client.websiteUrl || `case-study: ${client.caseStudySlug}`}</span>
+                                          <ExternalLink size={10} />
+                                        </a>
+                                      ) : (
+                                        'No link set'
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </td>
+
+                              {/* Active / Enabled Toggle */}
+                              <td className="py-3 px-3 text-center">
+                                <button
+                                  onClick={() => handleToggleClientActive(client)}
+                                  className={`px-2 py-0.5 rounded-full text-[10px] font-bold border transition-colors ${
+                                    client.enabled !== false
+                                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                      : 'bg-slate-100 text-slate-500 border-slate-200'
+                                  }`}
+                                >
+                                  {client.enabled !== false ? 'ACTIVE' : 'HIDDEN'}
+                                </button>
+                              </td>
+
+                              {/* Featured Toggle */}
+                              <td className="py-3 px-3 text-center">
+                                <button
+                                  onClick={() => handleToggleClientFeatured(client)}
+                                  className={`p-1.5 rounded-lg transition-colors ${
+                                    client.featured
+                                      ? 'text-amber-500 bg-amber-50 border border-amber-200'
+                                      : 'text-slate-300 hover:text-slate-500 hover:bg-slate-100'
+                                  }`}
+                                  title={client.featured ? 'Featured on Orbit Showcase' : 'Mark as Featured'}
+                                >
+                                  <Star size={14} className={client.featured ? 'fill-amber-500' : ''} />
+                                </button>
+                              </td>
+
+                              {/* Actions */}
+                              <td className="py-3 px-3 text-right space-x-1">
+                                <button
+                                  onClick={() => handleOpenEditClient(client)}
+                                  className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                  title="Edit Client"
+                                >
+                                  <Edit3 size={15} />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteClient(client.id)}
+                                  className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                                  title="Delete Client"
+                                >
+                                  <Trash2 size={15} />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+
+                {/* Right Column: Live Orbit Showcase Preview */}
+                <div className="lg:col-span-5 space-y-4">
+                  <div className="bg-slate-900 text-white rounded-2xl p-4 shadow-sm border border-slate-800 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Sparkles size={16} className="text-blue-400" />
+                      <span className="text-xs font-bold uppercase tracking-wider">Live Orbit Showcase Preview</span>
+                    </div>
+                    <span className="text-[11px] text-emerald-400 font-medium flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      Circular Logo Rotation
+                    </span>
+                  </div>
+
+                  {/* Render TrustedClients Component directly in Admin */}
+                  <div className="border border-slate-800 rounded-2xl bg-slate-950 p-4 shadow-xl">
+                    <TrustedClients clients={trustedClientsList.filter(c => c.enabled !== false)} />
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* TAB 2: SEO & AEO ENGINE */}
           {activeTab === 'seo' && (
             <div className="space-y-6">
@@ -1337,6 +1735,168 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
         </div>
       </main>
+
+      {/* Modal: Add/Edit Trusted Client */}
+      {showClientModal && (
+        <div className="fixed inset-0 z-[100000] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-lg w-full overflow-hidden animate-scaleIn">
+            <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+              <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                <Building2 size={18} className="text-blue-600" />
+                <span>{editingClient ? 'Edit Trusted Client' : 'Add New Trusted Client'}</span>
+              </h3>
+              <button
+                onClick={() => setShowClientModal(false)}
+                className="text-slate-400 hover:text-slate-600 text-xs font-bold px-2 py-1 rounded-lg hover:bg-slate-200 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4 max-h-[80vh] overflow-y-auto">
+              {clientError && (
+                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 font-semibold flex items-center gap-2">
+                  <AlertTriangle size={16} className="shrink-0 text-rose-600" />
+                  <span>{clientError}</span>
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Client / Brand Name <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={clientForm.name}
+                  onChange={(e) => setClientForm({ ...clientForm, name: e.target.value, companyName: e.target.value })}
+                  placeholder="e.g. PineGen AI"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                />
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-bold text-slate-700">
+                    Logo Image (Saved to Local Disk Folder)
+                  </label>
+                  <label className="cursor-pointer text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1 bg-blue-50 px-2 py-1 rounded-lg border border-blue-200">
+                    <Plus size={13} />
+                    <span>{uploadingLogo ? 'Uploading File...' : 'Upload Image File'}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleLogoFileUpload}
+                      disabled={uploadingLogo}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+                
+                <div className="flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={clientForm.logoUrl}
+                    onChange={(e) => setClientForm({ ...clientForm, logoUrl: e.target.value })}
+                    placeholder="Upload local file above or enter image path (e.g. http://localhost:5000/uploads/logo.png)"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-mono"
+                  />
+                  {clientForm.logoUrl && (
+                    <div className="w-9 h-9 rounded-lg border border-slate-700 bg-slate-900 p-1 flex items-center justify-center shrink-0 overflow-hidden" title="Live Logo Preview">
+                      <img src={clientForm.logoUrl} alt="Preview" className="max-w-full max-h-full object-contain" />
+                    </div>
+                  )}
+                </div>
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Uploaded files are saved directly to <code className="text-blue-600 font-mono">backend/uploads/</code> on local disk. No cloud service (S3/Cloudinary) required.
+                </p>
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Logo Accessible Alt Text <span className="text-xs font-normal text-slate-400">(AEO & SEO optimized)</span>
+                </label>
+                <input
+                  type="text"
+                  maxLength={200}
+                  value={clientForm.logoAltText}
+                  onChange={(e) => setClientForm({ ...clientForm, logoAltText: e.target.value })}
+                  placeholder={clientForm.name ? `${clientForm.name} company logo` : 'PineGen AI company logo'}
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Target Website URL
+                  </label>
+                  <input
+                    type="text"
+                    value={clientForm.websiteUrl}
+                    onChange={(e) => setClientForm({ ...clientForm, websiteUrl: e.target.value })}
+                    placeholder="https://clientwebsite.com"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Related Case Study Slug
+                  </label>
+                  <input
+                    type="text"
+                    value={clientForm.caseStudySlug}
+                    onChange={(e) => setClientForm({ ...clientForm, caseStudySlug: e.target.value })}
+                    placeholder="pinegen-ai-automation"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center gap-6 pt-2 border-t border-slate-100">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={clientForm.enabled}
+                    onChange={(e) => setClientForm({ ...clientForm, enabled: e.target.checked })}
+                    className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
+                  />
+                  <span className="text-xs font-semibold text-slate-700">Active (Visible on Homepage)</span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={clientForm.featured}
+                    onChange={(e) => setClientForm({ ...clientForm, featured: e.target.checked })}
+                    className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
+                  />
+                  <span className="text-xs font-semibold text-slate-700">Featured in Orbit</span>
+                </label>
+              </div>
+            </div>
+
+            <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowClientModal(false)}
+                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 rounded-xl hover:bg-slate-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveClient}
+                disabled={clientSaving}
+                className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-2 disabled:opacity-50"
+              >
+                {clientSaving ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
+                <span>{clientSaving ? 'Saving...' : 'Save Trusted Client'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

@@ -1,11 +1,12 @@
 import React from 'react';
 import Link from 'next/link';
 import { ArrowRight, Sparkles } from 'lucide-react';
-import { TRUSTED_CLIENTS } from '../data/initialData';
-import { HomeHeroConfig } from '../types';
+import { HomeHeroConfig, TrustedClientItem } from '../types';
+import { TrustedClients } from './TrustedClients';
 
 interface HeroProps {
   hero?: HomeHeroConfig;
+  clients?: TrustedClientItem[];
   onExploreServices?: () => void;
   onBookConsultation?: () => void;
   onSelectClient?: (clientName: string) => void;
@@ -13,6 +14,7 @@ interface HeroProps {
 
 export const Hero: React.FC<HeroProps> = ({
   hero,
+  clients = [],
   onExploreServices,
   onBookConsultation,
   onSelectClient
@@ -118,30 +120,7 @@ export const Hero: React.FC<HeroProps> = ({
               )}
             </div>
 
-            <div className="pt-9 border-t border-blue-100/80 w-full max-w-2xl">
-              <p className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-4">
-                TRUSTED BY GROWING BUSINESSES
-              </p>
-              
-              <div className="flex flex-wrap items-center justify-center gap-x-7 gap-y-4">
-                {TRUSTED_CLIENTS.map((client, idx) => (
-                  <Link
-                    key={idx}
-                    id={`client-trust-${client.name.toLowerCase().replace(/\s+/g, '-')}`}
-                    href="/portfolio"
-                    className="flex items-center gap-1.5 text-slate-700 hover:text-[#0052FF] transition-colors group cursor-pointer focus:outline-none"
-                    title={`View ${client.name} case study`}
-                  >
-                    <div className="w-5 h-5 rounded-md bg-blue-100/60 group-hover:bg-[#0052FF] group-hover:text-white text-[#0052FF] flex items-center justify-center transition-colors">
-                      <Sparkles className="w-3 h-3" />
-                    </div>
-                    <span className="text-sm font-bold tracking-tight text-[#001F54] group-hover:text-[#0052FF]">
-                      {client.name}
-                    </span>
-                  </Link>
-                ))}
-              </div>
-            </div>
+            <TrustedClients clients={clients} onSelectClient={onSelectClient} />
           </div>
         </div>
       </div>

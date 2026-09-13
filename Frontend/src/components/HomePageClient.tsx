@@ -24,7 +24,7 @@ import {
   INITIAL_BLOGS, 
   DEFAULT_PAGE_METADATA 
 } from '../data/initialData';
-import { ServiceItem, ProjectItem, BlogPost, HomeHeroConfig } from '../types';
+import { ServiceItem, ProjectItem, BlogPost, HomeHeroConfig, TrustedClientItem } from '../types';
 import { api } from '../lib/api';
 
 interface HomePageClientProps {
@@ -33,6 +33,7 @@ interface HomePageClientProps {
 
 export default function HomePageClient({ initialHero }: HomePageClientProps) {
   const [hero, setHero] = useState<HomeHeroConfig | undefined>(initialHero || undefined);
+  const [trustedClients, setTrustedClients] = useState<TrustedClientItem[]>([]);
   const [services, setServices] = useState<ServiceItem[]>(INITIAL_SERVICES);
   const [projects, setProjects] = useState<ProjectItem[]>(INITIAL_PROJECTS);
   const [blogs, setBlogs] = useState<BlogPost[]>(INITIAL_BLOGS);
@@ -47,8 +48,9 @@ export default function HomePageClient({ initialHero }: HomePageClientProps) {
     // Fetch live database data from Express API (Port 5000) on mount
     const loadBackendData = async () => {
       try {
-        const [heroData, srvData, projData, blogData] = await Promise.all([
+        const [heroData, clientData, srvData, projData, blogData] = await Promise.all([
           api.getHomeHero().catch(() => null),
+          api.getTrustedClients().catch(() => null),
           api.getServices().catch(() => null),
           api.getProjects().catch(() => null),
           api.getBlogs().catch(() => null)
@@ -56,6 +58,9 @@ export default function HomePageClient({ initialHero }: HomePageClientProps) {
 
         if (heroData) {
           setHero(heroData);
+        }
+        if (clientData && Array.isArray(clientData)) {
+          setTrustedClients(clientData);
         }
         if (srvData && Array.isArray(srvData) && srvData.length > 0) {
           setServices(srvData);
@@ -112,6 +117,7 @@ export default function HomePageClient({ initialHero }: HomePageClientProps) {
             {/* 1. Hero Section */}
             <Hero
               hero={hero}
+              clients={trustedClients}
               onBookConsultation={() => handleOpenConsultation()}
             />
 
