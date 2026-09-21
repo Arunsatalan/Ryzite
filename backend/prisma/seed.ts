@@ -237,7 +237,93 @@ async function main() {
     });
   }
 
+  // 6. Seed Company Statistics
+  const initialCompanyStats = [
+    {
+      id: 'stat-1',
+      value: '25',
+      prefix: '',
+      suffix: '+',
+      label: 'Projects Delivered',
+      description: 'Global enterprise deployments',
+      iconName: 'Rocket',
+      iconColor: '#0052FF',
+      animationEnabled: true,
+      displayOrder: 1,
+      status: 'PUBLISHED' as const,
+      seoTitle: '25+ Projects Delivered',
+      seoDescription: 'Ryzite has delivered scalable software projects worldwide.'
+    },
+    {
+      id: 'stat-2',
+      value: '15',
+      prefix: '',
+      suffix: '+',
+      label: 'Happy Clients',
+      description: 'Enterprise & Startups',
+      iconName: 'Users',
+      iconColor: '#0052FF',
+      animationEnabled: true,
+      displayOrder: 2,
+      status: 'PUBLISHED' as const,
+      seoTitle: '15+ Happy Clients',
+      seoDescription: 'Trusted by enterprise leaders and modern tech scale-ups.'
+    },
+    {
+      id: 'stat-3',
+      value: '98',
+      prefix: '',
+      suffix: '%',
+      label: 'Client Satisfaction',
+      description: '5-Star CSAT Rating',
+      iconName: 'Award',
+      iconColor: '#0052FF',
+      animationEnabled: true,
+      displayOrder: 3,
+      status: 'PUBLISHED' as const,
+      seoTitle: '98% Client Satisfaction',
+      seoDescription: 'Industry leading satisfaction rating.'
+    },
+    {
+      id: 'stat-4',
+      value: '3',
+      prefix: '',
+      suffix: '+',
+      label: 'Years of Experience',
+      description: 'Industry Leadership',
+      iconName: 'Globe',
+      iconColor: '#0052FF',
+      animationEnabled: true,
+      displayOrder: 4,
+      status: 'PUBLISHED' as const,
+      seoTitle: '3+ Years Experience',
+      seoDescription: 'Pioneering AI software solutions.'
+    }
+  ];
+
+  for (const statSeed of initialCompanyStats) {
+    await prisma.companyStatistic.upsert({
+      where: { id: statSeed.id },
+      update: {
+        value: statSeed.value,
+        prefix: statSeed.prefix,
+        suffix: statSeed.suffix,
+        label: statSeed.label,
+        description: statSeed.description,
+        iconName: statSeed.iconName,
+        iconColor: statSeed.iconColor,
+        animationEnabled: statSeed.animationEnabled,
+        displayOrder: statSeed.displayOrder,
+        status: statSeed.status,
+        seoTitle: statSeed.seoTitle,
+        seoDescription: statSeed.seoDescription
+      },
+      create: statSeed
+    });
+  }
+
   console.log('🎉 Backend Seeding Completed Successfully!');
+
 }
 
 main()

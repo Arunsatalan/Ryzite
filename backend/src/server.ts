@@ -12,6 +12,9 @@ import { leadRepository } from './repositories/lead.repository.js';
 import { settingsRepository } from './repositories/settings.repository.js';
 import { homeRepository } from './repositories/home.repository.js';
 import { clientRepository } from './repositories/client.repository.js';
+import { statisticRepository } from './repositories/statistic.repository.js';
+import { verifyAdminToken } from './middleware/auth.middleware.js';
+import { z } from 'zod';
 import { prisma } from './repositories/prisma.js';
 
 dotenv.config();
@@ -101,6 +104,60 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
+// Services File Upload Endpoint
+app.post('/api/upload/service-image', async (req, res) => {
+  try {
+    const { filename, fileData } = req.body;
+    if (!fileData) {
+      return res.status(400).json({ success: false, error: 'No image file data provided.' });
+    }
+
+    const matches = fileData.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+    if (!matches || matches.length !== 3) {
+      return res.status(400).json({ success: false, error: 'Invalid base64 image data format.' });
+    }
+
+    const mimeType = matches[1];
+    const buffer = Buffer.from(matches[2], 'base64');
+
+    // 5MB file size limit check
+    if (buffer.length > 5 * 1024 * 1024) {
+      return res.status(400).json({ success: false, error: 'Image file size exceeds maximum 5MB limit.' });
+    }
+
+    const extMatch = mimeType.split('/')[1] || 'webp';
+    const cleanExt = extMatch.replace(/[^a-z0-9]/gi, '').toLowerCase();
+    const allowedExts = ['jpg', 'jpeg', 'png', 'webp', 'svg'];
+    if (!allowedExts.includes(cleanExt)) {
+      return res.status(400).json({ success: false, error: `Invalid image extension .${cleanExt}. Allowed: jpg, jpeg, png, webp, svg` });
+    }
+
+    const SERVICES_UPLOADS_DIR = path.join(process.cwd(), 'uploads', 'services');
+    if (!fs.existsSync(SERVICES_UPLOADS_DIR)) {
+      fs.mkdirSync(SERVICES_UPLOADS_DIR, { recursive: true });
+    }
+
+    const safeBaseName = (filename || 'service').replace(/\.[^/.]+$/, '').replace(/[^a-z0-9]/gi, '-').toLowerCase();
+    const uniqueFilename = `${safeBaseName}-${Date.now()}.${cleanExt}`;
+    const filePath = path.join(SERVICES_UPLOADS_DIR, uniqueFilename);
+
+    await fs.promises.writeFile(filePath, buffer);
+
+    const fileUrl = `${req.protocol}://${req.get('host')}/uploads/services/${uniqueFilename}`;
+    res.json({
+      success: true,
+      data: {
+        url: fileUrl,
+        filename: uniqueFilename,
+        relativePath: `/uploads/services/${uniqueFilename}`
+      }
+    });
+  } catch (err: any) {
+    console.error('[SERVICE IMAGE UPLOAD ERROR]', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // --- SERVICES ENDPOINTS ---
 app.get('/api/services', async (req, res) => {
   try {
@@ -109,6 +166,16 @@ app.get('/api/services', async (req, res) => {
   } catch (err: any) {
     console.warn('[DB FALLBACK] Database query failed for services, returning fallback data:', err.message);
     res.json({ data: DEFAULT_SERVICES });
+  }
+});
+
+app.get('/api/services/admin', async (req, res) => {
+  try {
+    const services = await serviceRepository.getAllAdmin();
+    res.json({ data: services });
+  } catch (err: any) {
+    console.error('[DB ERROR] Failed to fetch admin services:', err.message);
+    res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: err.message } });
   }
 });
 
@@ -133,7 +200,8 @@ app.post('/api/services', async (req, res) => {
     const newService = await serviceRepository.createService(req.body);
     res.status(201).json({ data: newService });
   } catch (err: any) {
-    res.status(201).json({ data: { id: `srv-${Date.now()}`, ...req.body } });
+    console.error('[DB ERROR] Failed to create service:', err.message);
+    res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: err.message } });
   }
 });
 
@@ -142,7 +210,8 @@ app.put('/api/services/:id', async (req, res) => {
     const updated = await serviceRepository.updateService(req.params.id, req.body);
     res.json({ data: updated });
   } catch (err: any) {
-    res.json({ data: { id: req.params.id, ...req.body } });
+    console.error('[DB ERROR] Failed to update service:', err.message);
+    res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: err.message } });
   }
 });
 
@@ -151,7 +220,18 @@ app.delete('/api/services/:id', async (req, res) => {
     await serviceRepository.deleteService(req.params.id);
     res.json({ data: { success: true } });
   } catch (err: any) {
-    res.json({ data: { success: true } });
+    console.error('[DB ERROR] Failed to delete service:', err.message);
+    res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: err.message } });
+  }
+});
+
+app.patch('/api/services/reorder', async (req, res) => {
+  try {
+    const updatedList = await serviceRepository.reorderServices(req.body.orderedIds);
+    res.json({ data: updatedList });
+  } catch (err: any) {
+    console.error('[DB ERROR] Failed to reorder services:', err.message);
+    res.status(400).json({ error: { code: 'VALIDATION_ERROR', message: err.message } });
   }
 });
 
@@ -366,6 +446,139 @@ app.patch('/api/trusted-clients/reorder', async (req, res) => {
     res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: err.message } });
   }
 });
+
+// --- COMPANY STATISTICS ENDPOINTS ---
+const companyStatisticZodSchema = z.object({
+  value: z.string({ required_error: 'Statistic value is required' }).min(1, 'Statistic value is required'),
+  label: z.string({ required_error: 'Statistic label is required' }).min(1, 'Statistic label is required').max(100, 'Label cannot exceed 100 characters'),
+  description: z.string().max(250, 'Description cannot exceed 250 characters').optional().nullable(),
+  prefix: z.string().optional().nullable(),
+  suffix: z.string().optional().nullable(),
+  iconName: z.string().optional().nullable(),
+  iconColor: z.string().optional().nullable(),
+  animationEnabled: z.boolean().optional(),
+  displayOrder: z.number().int({ message: 'Display order must be an integer' }).optional(),
+  status: z.enum(['DRAFT', 'PUBLISHED', 'HIDDEN']).optional(),
+  seoTitle: z.string().optional().nullable(),
+  seoDescription: z.string().optional().nullable()
+});
+
+// Public GET API - Returns array of PUBLISHED statistics
+app.get('/api/statistics', async (req, res) => {
+  try {
+    const stats = await statisticRepository.getAllPublished();
+    const formatted = stats.map(s => ({
+      id: s.id,
+      value: s.value,
+      prefix: s.prefix || '',
+      suffix: s.suffix || '',
+      label: s.label,
+      description: s.description || '',
+      iconName: s.iconName || 'Rocket',
+      iconColor: s.iconColor || '#0052FF',
+      animationEnabled: s.animationEnabled,
+      displayOrder: s.displayOrder,
+      status: s.status,
+      seoTitle: s.seoTitle || null,
+      seoDescription: s.seoDescription || null
+    }));
+    res.json(formatted);
+  } catch (err: any) {
+    console.error('[DB ERROR] Failed to fetch statistics:', err.message);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Admin GET API - Returns all statistics (including DRAFT, HIDDEN)
+app.get('/api/admin/statistics', verifyAdminToken, async (req, res) => {
+  try {
+    const stats = await statisticRepository.getAllAdmin();
+    res.json({ success: true, data: stats });
+  } catch (err: any) {
+    console.error('[DB ERROR] Failed to fetch admin statistics:', err.message);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Admin POST API - Create new statistic
+app.post('/api/admin/statistics', verifyAdminToken, async (req, res) => {
+  try {
+    const validation = companyStatisticZodSchema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: validation.error.errors
+      });
+    }
+    const newStat = await statisticRepository.createStatistic(validation.data);
+    res.status(201).json({ success: true, data: newStat });
+  } catch (err: any) {
+    console.error('[DB ERROR] Failed to create statistic:', err.message);
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+// Admin PUT API - Update existing statistic
+app.put('/api/admin/statistics/:id', verifyAdminToken, async (req, res) => {
+  try {
+    const validation = companyStatisticZodSchema.safeParse(req.body);
+    if (!validation.success) {
+      return res.status(400).json({
+        success: false,
+        message: 'Validation failed',
+        errors: validation.error.errors
+      });
+    }
+    const updated = await statisticRepository.updateStatistic(req.params.id, validation.data);
+    res.json({ success: true, data: updated });
+  } catch (err: any) {
+    console.error('[DB ERROR] Failed to update statistic:', err.message);
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+// Admin DELETE API - Delete statistic
+app.delete('/api/admin/statistics/:id', verifyAdminToken, async (req, res) => {
+  try {
+    await statisticRepository.deleteStatistic(req.params.id);
+    res.json({ success: true, message: 'Statistic deleted successfully' });
+  } catch (err: any) {
+    console.error('[DB ERROR] Failed to delete statistic:', err.message);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+// Admin PATCH API - Change status (DRAFT | PUBLISHED | HIDDEN)
+app.patch('/api/admin/statistics/:id/status', verifyAdminToken, async (req, res) => {
+  try {
+    const { status } = req.body;
+    if (!status || !['DRAFT', 'PUBLISHED', 'HIDDEN'].includes(status)) {
+      return res.status(400).json({ success: false, message: 'Invalid status parameter' });
+    }
+    const updated = await statisticRepository.updateStatus(req.params.id, status);
+    res.json({ success: true, data: updated });
+  } catch (err: any) {
+    console.error('[DB ERROR] Failed to update statistic status:', err.message);
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+// Admin PATCH API - Update Order
+app.patch('/api/admin/statistics/order', verifyAdminToken, async (req, res) => {
+  try {
+    const { orderedIds } = req.body;
+    if (!Array.isArray(orderedIds)) {
+      return res.status(400).json({ success: false, message: 'orderedIds array required' });
+    }
+    const updatedList = await statisticRepository.reorderStatistics(orderedIds);
+    res.json({ success: true, data: updatedList });
+  } catch (err: any) {
+    console.error('[DB ERROR] Failed to reorder statistics:', err.message);
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
 
 // Helper for default page SEO metadata
 function getDefaultSeo(pageKey: string) {

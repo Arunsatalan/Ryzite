@@ -136,7 +136,7 @@ export default function ServicesPage() {
 
                   <div className="space-y-2 mb-6">
                     <div className="text-xs font-bold text-slate-400 uppercase tracking-wider">Key Capabilities</div>
-                    {service.features.slice(0, 3).map((feat, idx) => (
+                    {(service.features || []).slice(0, 3).map((feat, idx) => (
                       <div key={idx} className="flex items-start gap-2 text-xs text-slate-700">
                         <CheckCircle2 className="w-4 h-4 text-[#0052FF] shrink-0 mt-0.5" />
                         <span>{feat}</span>

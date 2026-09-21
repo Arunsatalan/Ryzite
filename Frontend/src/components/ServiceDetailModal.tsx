@@ -76,7 +76,7 @@ export const ServiceDetailModal: React.FC<ServiceDetailModalProps> = ({ service,
           </div>
 
           <div className="service-image-enter relative min-h-[360px] sm:min-h-[520px] overflow-hidden bg-[#F4F4F1]">
-            <img src="https://images.unsplash.com/photo-1497366811353-6870744d04b2?q=85&w=1400&auto=format&fit=crop" alt="Minimal consulting workspace with architecture notes" className="absolute inset-0 w-full h-full object-cover grayscale-[15%]" />
+            <img src={service.imageUrl || "https://images.unsplash.com/photo-1497366811353-6870744d04b2?q=85&w=1400&auto=format&fit=crop"} alt={service.imageAlt || service.title} className="absolute inset-0 w-full h-full object-cover grayscale-[15%]" />
             <div className="absolute inset-0 bg-gradient-to-r from-white/30 via-transparent to-transparent" />
           </div>
         </div>
@@ -127,7 +127,7 @@ export const ServiceDetailModal: React.FC<ServiceDetailModalProps> = ({ service,
             <button onClick={() => onBookService(service.title)} className="min-h-11 inline-flex items-center gap-2 px-6 py-3 bg-[#101828] text-white text-sm font-semibold hover:bg-[#0052FF] transition-colors">Talk to an Expert <ArrowRight className="w-4 h-4" /></button>
           </section>
         </> : (
-          <section id="service-benefits" className="border-t border-slate-200 py-16"><h2 className="text-3xl font-bold mb-8">Core Architectural Capabilities</h2><div className="grid sm:grid-cols-2 gap-3">{service.features.map((feature) => <div key={feature} className="flex gap-3 border-b border-slate-100 py-4 text-sm text-slate-600"><Check className="w-4 h-4 text-[#0052FF] shrink-0" />{feature}</div>)}</div></section>
+          <section id="service-benefits" className="border-t border-slate-200 py-16"><h2 className="text-3xl font-bold mb-8">Core Architectural Capabilities</h2><div className="grid sm:grid-cols-2 gap-3">{(service.features || []).map((feature) => <div key={feature} className="flex gap-3 border-b border-slate-100 py-4 text-sm text-slate-600"><Check className="w-4 h-4 text-[#0052FF] shrink-0" />{feature}</div>)}</div></section>
         )}
       </div>
     </section>

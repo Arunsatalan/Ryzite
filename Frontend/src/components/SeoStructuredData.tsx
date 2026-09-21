@@ -67,18 +67,23 @@ export const SeoStructuredData: React.FC<SeoStructuredDataProps> = ({
     }
     linkEl.setAttribute('href', canonical);
 
-    // 1. Organization & LocalBusiness Schema with AggregateRating
+    // 1. Organization & LocalBusiness Schema with AggregateRating & knowsAbout
     const orgSchema = {
       "@context": "https://schema.org",
-      "@type": "ProfessionalService",
-      "name": metadata?.organizationSchema?.name || "Ryzite",
+      "@type": "Organization",
+      "name": metadata?.organizationSchema?.name || "Ryzite Software & AI Agency",
       "url": metadata?.organizationSchema?.url || "https://ryzite.com",
       "logo": metadata?.organizationSchema?.logo || "https://ryzite.com/assets/logo.png",
       "image": ogImage,
       "telephone": metadata?.organizationSchema?.telephone || "+1-800-555-0199",
       "email": metadata?.organizationSchema?.email || "contact@ryzite.com",
-      "priceRange": metadata?.serpSnippet?.priceRange || "$$$$",
-      "description": pageDesc,
+      "knowsAbout": [
+        "Software Development",
+        "AI Solutions",
+        "Cloud Engineering",
+        "Mobile App Development",
+        "Answer Engine Optimization"
+      ],
       "address": {
         "@type": "PostalAddress",
         "streetAddress": "100 Innovation Way, Suite 400",
@@ -101,18 +106,33 @@ export const SeoStructuredData: React.FC<SeoStructuredDataProps> = ({
       ]
     };
 
-    // 2. WebSite with Sitelinks Searchbox
+    // 2. WebSite with Credibility Data & Sitelinks Searchbox
     const websiteSchema = {
       "@context": "https://schema.org",
       "@type": "WebSite",
       "name": siteName,
       "url": canonical,
+      "about": [
+        {
+          "@type": "Thing",
+          "name": "25+ Projects Delivered"
+        },
+        {
+          "@type": "Thing",
+          "name": "98% Client Satisfaction"
+        },
+        {
+          "@type": "Thing",
+          "name": "15+ Happy Clients"
+        }
+      ],
       "potentialAction": {
         "@type": "SearchAction",
         "target": `${canonical}/?s={search_term_string}`,
         "query-input": "required name=search_term_string"
       }
     };
+
 
     // 3. BreadcrumbList Schema
     const breadcrumbSchema = {
@@ -166,6 +186,7 @@ export const SeoStructuredData: React.FC<SeoStructuredDataProps> = ({
           "name": s.title,
           "description": s.shortDescription,
           "category": s.category,
+          ...(s.imageUrl ? { "image": s.imageUrl } : {}),
           "offers": {
             "@type": "Offer",
             "price": s.startingPrice.replace(/[^0-9]/g, '') || "5000",

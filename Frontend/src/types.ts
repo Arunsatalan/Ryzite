@@ -13,13 +13,20 @@ export interface ServiceItem {
   shortDescription: string;
   fullDescription: string;
   iconName: string;
-  features: string[];
-  deliverables: string[];
-  techStack: string[];
+  imageUrl?: string;
+  imageAlt?: string;
+  active?: boolean;
+  displayOrder?: number;
+  seoTitle?: string;
+  seoDescription?: string;
+  seoKeywords?: string;
+  features?: string[];
+  deliverables?: string[];
+  techStack?: string[];
   timeline: string;
   startingPrice: string;
-  order: number;
-  featured: boolean;
+  order?: number;
+  featured?: boolean;
 }
 
 export interface SolutionItem {
@@ -130,6 +137,27 @@ export interface TrustedClientItem {
   enabled: boolean;
   displayOrder: number;
 }
+
+export type StatisticStatus = 'DRAFT' | 'PUBLISHED' | 'HIDDEN';
+
+export interface CompanyStatisticItem {
+  id: string;
+  value: string;
+  prefix?: string | null;
+  suffix?: string | null;
+  label: string;
+  description?: string | null;
+  iconName?: string | null;
+  iconColor?: string | null;
+  animationEnabled: boolean;
+  displayOrder: number;
+  status: StatisticStatus;
+  seoTitle?: string | null;
+  seoDescription?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
 
 export type LeadStatus = 'NEW' | 'CONTACTED' | 'IN_DISCUSSION' | 'PROPOSAL_SENT' | 'WON' | 'LOST';
 

@@ -135,9 +135,13 @@ export const Navbar: React.FC<NavbarProps> = ({
                               onClick={() => setServicesDropdownOpen(false)}
                               className="w-full text-left p-3 rounded-xl hover:bg-blue-50/70 transition-colors flex items-start gap-3.5 group/item"
                             >
-                              <div className="p-2.5 rounded-lg bg-blue-100/50 group-hover/item:bg-[#0052FF] group-hover/item:text-white transition-colors">
-                                {getServiceIcon(srv.iconName)}
-                              </div>
+                              {srv.imageUrl ? (
+                                <img src={srv.imageUrl} alt={srv.title} className="w-10 h-10 object-cover rounded-lg shrink-0 border border-slate-200" />
+                              ) : (
+                                <div className="p-2.5 rounded-lg bg-blue-100/50 group-hover/item:bg-[#0052FF] group-hover/item:text-white transition-colors">
+                                  {getServiceIcon(srv.iconName)}
+                                </div>
+                              )}
                               <div className="flex-1 min-w-0">
                                 <div className="text-sm font-bold text-slate-900 group-hover/item:text-[#0052FF] flex items-center justify-between">
                                   <span>{srv.title}</span>

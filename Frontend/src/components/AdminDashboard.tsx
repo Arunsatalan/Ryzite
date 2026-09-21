@@ -31,13 +31,35 @@ import {
   BarChart3,
   Star,
   ArrowUp,
-  ArrowDown
+  ArrowDown,
+  Rocket,
+  Award,
+  Clock,
+  Code,
+  Shield,
+  Eye,
+  EyeOff,
+  LucideIcon
 } from 'lucide-react';
-import { LeadItem, ServiceItem, ProjectItem, BlogPost, LeadStatus, PageMetadataConfig, HomeHeroConfig, TrustedClientItem } from '../types';
+import { LeadItem, ServiceItem, ServiceCategory, ProjectItem, BlogPost, LeadStatus, PageMetadataConfig, HomeHeroConfig, TrustedClientItem, CompanyStatisticItem, StatisticStatus } from '../types';
 import { SerpOptimizerModal } from './SerpOptimizerModal';
 import { Hero } from './Hero';
 import { TrustedClients } from './TrustedClients';
 import { api } from '../lib/api';
+
+const STAT_ICON_MAP: Record<string, LucideIcon> = {
+  Rocket,
+  Award,
+  Users,
+  Star,
+  Globe,
+  Clock,
+  Code,
+  Shield,
+  TrendingUp
+};
+
+
 
 interface AdminDashboardProps {
   isOpen?: boolean;
@@ -60,10 +82,48 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onUpdateProjects,
   onUpdateBlogs
 }) => {
-  const [activeTab, setActiveTab] = useState<'crm' | 'hero' | 'clients' | 'services' | 'projects' | 'blogs' | 'seo' | 'analytics'>('crm');
+  const [activeTab, setActiveTab] = useState<'crm' | 'hero' | 'clients' | 'statistics' | 'services' | 'projects' | 'blogs' | 'seo' | 'analytics'>('crm');
   const [searchQuery, setSearchQuery] = useState('');
   
   if (!isOpen) return null;
+
+  // Company Statistics CMS state & handlers
+  const [companyStatisticsList, setCompanyStatisticsList] = useState<CompanyStatisticItem[]>([]);
+  const [loadingStatistics, setLoadingStatistics] = useState(false);
+  const [showStatisticModal, setShowStatisticModal] = useState(false);
+  const [editingStatistic, setEditingStatistic] = useState<CompanyStatisticItem | null>(null);
+  const [statisticSaving, setStatisticSaving] = useState(false);
+  const [statisticError, setStatisticError] = useState<string | null>(null);
+  const [statisticToast, setStatisticToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  const [statisticForm, setStatisticForm] = useState<{
+    value: string;
+    prefix: string;
+    suffix: string;
+    label: string;
+    description: string;
+    iconName: string;
+    iconColor: string;
+    animationEnabled: boolean;
+    displayOrder: number;
+    status: StatisticStatus;
+    seoTitle: string;
+    seoDescription: string;
+  }>({
+    value: '',
+    prefix: '',
+    suffix: '+',
+    label: '',
+    description: '',
+    iconName: 'Rocket',
+    iconColor: '#0052FF',
+    animationEnabled: true,
+    displayOrder: 1,
+    status: 'PUBLISHED',
+    seoTitle: '',
+    seoDescription: ''
+  });
+
 
   // Leads state
   const [leads, setLeads] = useState<LeadItem[]>([]);
@@ -81,12 +141,229 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   // Analytics state
   const [analyticsData, setAnalyticsData] = useState<any>(null);
 
-  // New Service Form state
-  const [showNewService, setShowNewService] = useState(false);
-  const [newServiceTitle, setNewServiceTitle] = useState('');
-  const [newServiceDesc, setNewServiceDesc] = useState('');
-  const [newServicePrice, setNewServicePrice] = useState('$10,000');
-  const [newServiceCategory, setNewServiceCategory] = useState('web');
+  // Services CMS state & handlers
+  const [adminServicesList, setAdminServicesList] = useState<ServiceItem[]>([]);
+  const [loadingServices, setLoadingServices] = useState(false);
+  const [showServiceModal, setShowServiceModal] = useState(false);
+  const [editingService, setEditingService] = useState<ServiceItem | null>(null);
+  const [tempServicePreviewUrl, setTempServicePreviewUrl] = useState<string | null>(null);
+  const [uploadingServiceImg, setUploadingServiceImg] = useState(false);
+  const [serviceSaving, setServiceSaving] = useState(false);
+  const [serviceError, setServiceError] = useState<string | null>(null);
+
+  const [serviceForm, setServiceForm] = useState<{
+    title: string;
+    slug: string;
+    category: ServiceCategory;
+    startingPrice: string;
+    timeline: string;
+    iconName: string;
+    shortDescription: string;
+    fullDescription: string;
+    imageUrl: string;
+    imageAlt: string;
+    seoTitle: string;
+    seoDescription: string;
+    seoKeywords: string;
+    active: boolean;
+    featured: boolean;
+  }>({
+    title: '',
+    slug: '',
+    category: 'web',
+    startingPrice: '$10,000',
+    timeline: '4 - 8 Weeks',
+    iconName: 'Sparkles',
+    shortDescription: '',
+    fullDescription: '',
+    imageUrl: '',
+    imageAlt: '',
+    seoTitle: '',
+    seoDescription: '',
+    seoKeywords: '',
+    active: true,
+    featured: true
+  });
+
+  const fetchAdminServices = async () => {
+    setLoadingServices(true);
+    try {
+      const data = await api.getAdminServices();
+      if (Array.isArray(data)) {
+        setAdminServicesList(data);
+      }
+    } catch (err: any) {
+      console.warn('Failed to fetch admin services:', err.message);
+    } finally {
+      setLoadingServices(false);
+    }
+  };
+
+  const handleOpenAddService = () => {
+    setEditingService(null);
+    setTempServicePreviewUrl(null);
+    setServiceForm({
+      title: '',
+      slug: '',
+      category: 'web',
+      startingPrice: '$10,000',
+      timeline: '4 - 8 Weeks',
+      iconName: 'Sparkles',
+      shortDescription: '',
+      fullDescription: '',
+      imageUrl: '',
+      imageAlt: '',
+      seoTitle: '',
+      seoDescription: '',
+      seoKeywords: '',
+      active: true,
+      featured: true
+    });
+    setServiceError(null);
+    setShowServiceModal(true);
+  };
+
+  const handleOpenEditService = (service: ServiceItem) => {
+    setEditingService(service);
+    setTempServicePreviewUrl(null);
+    setServiceForm({
+      title: service.title || '',
+      slug: service.slug || '',
+      category: service.category || 'web',
+      startingPrice: service.startingPrice || '$10,000',
+      timeline: service.timeline || '4 - 8 Weeks',
+      iconName: service.iconName || 'Sparkles',
+      shortDescription: service.shortDescription || '',
+      fullDescription: service.fullDescription || service.shortDescription || '',
+      imageUrl: service.imageUrl || '',
+      imageAlt: service.imageAlt || `${service.title} solution`,
+      seoTitle: service.seoTitle || `${service.title} | Ryzite Agency`,
+      seoDescription: service.seoDescription || service.shortDescription || '',
+      seoKeywords: service.seoKeywords || '',
+      active: service.active !== false,
+      featured: service.featured ?? true
+    });
+    setServiceError(null);
+    setShowServiceModal(true);
+  };
+
+  const handleServiceImageFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      setServiceError('Image file size exceeds maximum 5MB limit.');
+      return;
+    }
+
+    // Instant FileReader temporary preview
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (event.target?.result) {
+        setTempServicePreviewUrl(event.target.result as string);
+      }
+    };
+    reader.readAsDataURL(file);
+
+    setUploadingServiceImg(true);
+    setServiceError(null);
+    try {
+      const res = await api.uploadServiceImage(file);
+      if (res && res.url) {
+        setServiceForm(prev => ({
+          ...prev,
+          imageUrl: res.url,
+          imageAlt: prev.imageAlt || `${prev.title || file.name} solution`
+        }));
+      }
+    } catch (err: any) {
+      setServiceError(err.message || 'Failed to upload service image file.');
+    } finally {
+      setUploadingServiceImg(false);
+    }
+  };
+
+  const handleSaveService = async () => {
+    if (!serviceForm.title.trim()) {
+      setServiceError('Service title is required.');
+      return;
+    }
+    const slugToSave = serviceForm.slug.trim() || serviceForm.title.toLowerCase().replace(/[^a-z0-9]/g, '-');
+
+    setServiceSaving(true);
+    setServiceError(null);
+    try {
+      const payload = {
+        ...serviceForm,
+        slug: slugToSave,
+        imageAlt: serviceForm.imageAlt || `${serviceForm.title} solution`
+      };
+
+      if (editingService) {
+        await api.updateService(editingService.id, payload);
+      } else {
+        await api.createService({
+          ...payload,
+          order: adminServicesList.length + 1,
+          features: ['Custom Portal Architecture', 'REST API Integration'],
+          deliverables: ['Production Next.js App', 'Database Schema'],
+          techStack: ['Next.js', 'PostgreSQL', 'TypeScript']
+        });
+      }
+      setShowServiceModal(false);
+      fetchAdminServices();
+      const pubServices = await api.getServices();
+      onUpdateServices(pubServices);
+    } catch (err: any) {
+      setServiceError(err.message || 'Failed to save service.');
+    } finally {
+      setServiceSaving(false);
+    }
+  };
+
+  const handleDeleteService = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this service?')) return;
+    try {
+      await api.deleteService(id);
+      fetchAdminServices();
+      const pubServices = await api.getServices();
+      onUpdateServices(pubServices);
+    } catch (err: any) {
+      console.error('Failed to delete service:', err);
+    }
+  };
+
+  const handleToggleServiceActive = async (service: ServiceItem) => {
+    try {
+      await api.updateService(service.id, { active: !service.active });
+      fetchAdminServices();
+      const pubServices = await api.getServices();
+      onUpdateServices(pubServices);
+    } catch (err: any) {
+      console.error('Failed to toggle service active:', err);
+    }
+  };
+
+  const handleMoveServiceOrder = async (currentIndex: number, direction: 'up' | 'down') => {
+    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    if (targetIndex < 0 || targetIndex >= adminServicesList.length) return;
+
+    const listCopy = [...adminServicesList];
+    const temp = listCopy[currentIndex];
+    listCopy[currentIndex] = listCopy[targetIndex];
+    listCopy[targetIndex] = temp;
+
+    setAdminServicesList(listCopy);
+    try {
+      const orderedIds = listCopy.map(s => s.id);
+      await api.reorderServices(orderedIds);
+      const pubServices = await api.getServices();
+      onUpdateServices(pubServices);
+    } catch (err: any) {
+      console.error('Failed to reorder services:', err);
+      fetchAdminServices();
+    }
+  };
 
   // Hero state
   const [heroForm, setHeroForm] = useState<HomeHeroConfig>({
@@ -170,12 +447,14 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     fetchAnalytics();
     fetchHero();
     fetchAdminClients();
+    fetchAdminServices();
 
     const handleFocus = () => {
       fetchLeads(leadFilter);
       fetchAnalytics();
       fetchHero();
       fetchAdminClients();
+      fetchAdminServices();
     };
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
@@ -300,6 +579,142 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       fetchAdminClients();
     }
   };
+
+  const showStatisticToast = (message: string, type: 'success' | 'error') => {
+    setStatisticToast({ message, type });
+    setTimeout(() => setStatisticToast(null), 3500);
+  };
+
+  const fetchAdminStatistics = async () => {
+    setLoadingStatistics(true);
+    try {
+      const data = await api.getAdminStatistics();
+      if (Array.isArray(data)) {
+        setCompanyStatisticsList(data);
+      }
+    } catch (err: any) {
+      console.warn('Failed to fetch admin statistics:', err.message);
+    } finally {
+      setLoadingStatistics(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchAdminStatistics();
+  }, []);
+
+  const handleOpenAddStatistic = () => {
+    setEditingStatistic(null);
+    setStatisticForm({
+      value: '',
+      prefix: '',
+      suffix: '+',
+      label: '',
+      description: '',
+      iconName: 'Rocket',
+      iconColor: '#0052FF',
+      animationEnabled: true,
+      displayOrder: companyStatisticsList.length + 1,
+      status: 'PUBLISHED',
+      seoTitle: '',
+      seoDescription: ''
+    });
+    setStatisticError(null);
+    setShowStatisticModal(true);
+  };
+
+  const handleOpenEditStatistic = (stat: CompanyStatisticItem) => {
+    setEditingStatistic(stat);
+    setStatisticForm({
+      value: stat.value || '',
+      prefix: stat.prefix || '',
+      suffix: stat.suffix || '',
+      label: stat.label || '',
+      description: stat.description || '',
+      iconName: stat.iconName || 'Rocket',
+      iconColor: stat.iconColor || '#0052FF',
+      animationEnabled: stat.animationEnabled !== false,
+      displayOrder: stat.displayOrder || 1,
+      status: stat.status || 'PUBLISHED',
+      seoTitle: stat.seoTitle || `${stat.value}${stat.suffix || ''} ${stat.label}`,
+      seoDescription: stat.seoDescription || stat.description || ''
+    });
+    setStatisticError(null);
+    setShowStatisticModal(true);
+  };
+
+  const handleSaveStatistic = async () => {
+    if (!statisticForm.value.trim()) {
+      setStatisticError('Statistic Value is required.');
+      return;
+    }
+    if (!statisticForm.label.trim()) {
+      setStatisticError('Statistic Label is required.');
+      return;
+    }
+
+    setStatisticSaving(true);
+    setStatisticError(null);
+
+    try {
+      if (editingStatistic) {
+        await api.updateStatistic(editingStatistic.id, statisticForm);
+        showStatisticToast('Statistic updated successfully', 'success');
+      } else {
+        await api.createStatistic(statisticForm);
+        showStatisticToast('Statistic updated successfully', 'success');
+      }
+      setShowStatisticModal(false);
+      fetchAdminStatistics();
+    } catch (err: any) {
+      setStatisticError(err.message || 'Failed to update statistic');
+      showStatisticToast('Failed to update statistic', 'error');
+    } finally {
+      setStatisticSaving(false);
+    }
+  };
+
+  const handleDeleteStatistic = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this statistic?')) return;
+    try {
+      await api.deleteStatistic(id);
+      showStatisticToast('Statistic updated successfully', 'success');
+      fetchAdminStatistics();
+    } catch (err: any) {
+      showStatisticToast('Failed to update statistic', 'error');
+    }
+  };
+
+  const handleToggleStatisticStatus = async (stat: CompanyStatisticItem) => {
+    const nextStatus: StatisticStatus = stat.status === 'PUBLISHED' ? 'HIDDEN' : 'PUBLISHED';
+    try {
+      await api.updateStatisticStatus(stat.id, nextStatus);
+      showStatisticToast('Statistic updated successfully', 'success');
+      fetchAdminStatistics();
+    } catch (err: any) {
+      showStatisticToast('Failed to update statistic', 'error');
+    }
+  };
+
+  const handleMoveStatisticOrder = async (currentIndex: number, direction: 'up' | 'down') => {
+    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    if (targetIndex < 0 || targetIndex >= companyStatisticsList.length) return;
+
+    const listCopy = [...companyStatisticsList];
+    const temp = listCopy[currentIndex];
+    listCopy[currentIndex] = listCopy[targetIndex];
+    listCopy[targetIndex] = temp;
+
+    setCompanyStatisticsList(listCopy);
+    try {
+      const orderedIds = listCopy.map(s => s.id);
+      await api.reorderStatistics(orderedIds);
+      showStatisticToast('Statistic updated successfully', 'success');
+    } catch (err: any) {
+      fetchAdminStatistics();
+    }
+  };
+
 
   const fetchHero = async () => {
     setLoadingHero(true);
@@ -431,44 +846,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   };
 
-  const handleCreateService = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newServiceTitle) return;
-    try {
-      const newSrv = await api.createService({
-        title: newServiceTitle,
-        shortDescription: newServiceDesc,
-        fullDescription: newServiceDesc,
-        startingPrice: newServicePrice,
-        category: newServiceCategory,
-        slug: newServiceTitle.toLowerCase().replace(/[^a-z0-9]/g, '-'),
-        iconName: 'Sparkles',
-        features: ['Custom Portal Architecture', 'REST API Integration'],
-        deliverables: ['Production Next.js App', 'Database Schema'],
-        techStack: ['Next.js', 'PostgreSQL', 'TypeScript'],
-        timeline: '4 - 8 Weeks',
-        order: services.length + 1,
-        featured: true
-      });
 
-      onUpdateServices([...services, newSrv]);
-      setNewServiceTitle('');
-      setNewServiceDesc('');
-      setShowNewService(false);
-    } catch (err) {
-      console.error('Failed to create service:', err);
-    }
-  };
-
-  const handleDeleteService = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this service?')) return;
-    try {
-      await api.deleteService(id);
-      onUpdateServices(services.filter(s => s.id !== id));
-    } catch (err) {
-      console.error('Failed to delete service:', err);
-    }
-  };
 
   const handleDeleteProject = async (id: string) => {
     if (!confirm('Are you sure you want to delete this project?')) return;
@@ -586,6 +964,24 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 {trustedClientsList.length}
               </span>
             </button>
+
+            <button
+              onClick={() => setActiveTab('statistics')}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                activeTab === 'statistics' 
+                  ? 'bg-blue-50 text-blue-600 border border-blue-200/60 shadow-xs' 
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <BarChart3 size={18} className={activeTab === 'statistics' ? 'text-blue-600' : 'text-slate-400'} />
+                <span>Company Statistics</span>
+              </div>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-bold">
+                {companyStatisticsList.length}
+              </span>
+            </button>
+
 
             <button
               onClick={() => setActiveTab('seo')}
@@ -716,7 +1112,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
           <div className="flex items-center gap-4">
             <button 
-              onClick={() => setShowNewService(true)}
+              onClick={() => { setEditingService(null); setTempServicePreviewUrl(null); setServiceError(null); setShowServiceModal(true); }}
               className="flex items-center gap-2 px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all"
             >
               <Plus size={15} />
@@ -1409,6 +1805,244 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
           )}
 
+          {/* TAB: COMPANY STATISTICS CMS */}
+          {activeTab === 'statistics' && (
+            <div className="space-y-6">
+              {/* Header & Controls Bar */}
+              <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-lg font-bold text-slate-900">Website Content → Company Statistics CMS</h2>
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-300">
+                      {companyStatisticsList.filter(s => s.status === 'PUBLISHED').length} Published
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">Manage dynamic metrics & credibility indicators displayed on the homepage 'Why Choose Us' section.</p>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={fetchAdminStatistics}
+                    disabled={loadingStatistics}
+                    className="p-2 text-slate-500 hover:text-slate-800 bg-slate-100 hover:bg-slate-200 rounded-xl transition-colors"
+                    title="Refresh statistics list"
+                  >
+                    <RefreshCw size={16} className={loadingStatistics ? 'animate-spin' : ''} />
+                  </button>
+                  
+                  <button
+                    onClick={handleOpenAddStatistic}
+                    className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs shadow-md shadow-blue-500/20 transition-all flex items-center gap-2"
+                  >
+                    <Plus size={16} />
+                    <span>Add New Statistic</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Toast Notification Banner */}
+              {statisticToast && (
+                <div className={`p-4 rounded-xl text-xs font-bold flex items-center justify-between shadow-md transition-all ${
+                  statisticToast.type === 'success' 
+                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' 
+                    : 'bg-rose-50 text-rose-800 border border-rose-200'
+                }`}>
+                  <div className="flex items-center gap-2">
+                    {statisticToast.type === 'success' ? <CheckCircle2 size={16} className="text-emerald-600" /> : <AlertTriangle size={16} className="text-rose-600" />}
+                    <span>{statisticToast.message}</span>
+                  </div>
+                  <button onClick={() => setStatisticToast(null)} className="hover:opacity-75">✕</button>
+                </div>
+              )}
+
+              {/* Main Table / Grid Container */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                {/* Table Column (lg:col-span-7) */}
+                <div className="lg:col-span-7 bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <h3 className="font-bold text-sm text-slate-900 flex items-center gap-2">
+                      <BarChart3 size={16} className="text-blue-600" />
+                      <span>All Configured Statistics</span>
+                    </h3>
+                    <span className="text-xs font-semibold text-slate-400 font-mono">
+                      {companyStatisticsList.length} Total Rows
+                    </span>
+                  </div>
+
+                  {loadingStatistics ? (
+                    <div className="p-12 text-center text-slate-400 space-y-2">
+                      <RefreshCw size={24} className="animate-spin mx-auto text-blue-600" />
+                      <p className="text-xs font-medium">Loading company statistics from PostgreSQL...</p>
+                    </div>
+                  ) : companyStatisticsList.length === 0 ? (
+                    <div className="p-12 text-center bg-slate-50 rounded-xl border border-dashed border-slate-200 space-y-3">
+                      <BarChart3 size={32} className="mx-auto text-slate-300" />
+                      <p className="text-xs font-semibold text-slate-600">No company statistics configured yet.</p>
+                      <button
+                        onClick={handleOpenAddStatistic}
+                        className="px-3.5 py-1.5 bg-blue-600 text-white rounded-lg font-bold text-xs shadow-sm hover:bg-blue-700"
+                      >
+                        Add First Statistic
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs text-slate-700">
+                        <thead className="bg-slate-50 text-slate-500 font-semibold uppercase text-[11px] tracking-wider border-b border-slate-200">
+                          <tr>
+                            <th className="py-3 px-3">Order</th>
+                            <th className="py-3 px-3">Icon</th>
+                            <th className="py-3 px-3">Value</th>
+                            <th className="py-3 px-3">Label</th>
+                            <th className="py-3 px-3 text-center">Status</th>
+                            <th className="py-3 px-3 text-right">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {companyStatisticsList.map((stat, idx) => {
+                            const IconComp = stat.iconName && STAT_ICON_MAP[stat.iconName] ? STAT_ICON_MAP[stat.iconName] : Rocket;
+                            return (
+                              <tr key={stat.id} className="hover:bg-slate-50/80 transition-colors">
+                                {/* Order & Reorder arrows */}
+                                <td className="py-3 px-3 font-mono font-bold text-slate-400">
+                                  <div className="flex items-center gap-1">
+                                    <span className="w-4 text-center">{stat.displayOrder ?? idx + 1}</span>
+                                    <div className="flex flex-col">
+                                      <button
+                                        disabled={idx === 0}
+                                        onClick={() => handleMoveStatisticOrder(idx, 'up')}
+                                        className="p-0.5 hover:bg-slate-200 rounded disabled:opacity-30 text-slate-600"
+                                        title="Move Up"
+                                      >
+                                        <ArrowUp size={12} />
+                                      </button>
+                                      <button
+                                        disabled={idx === companyStatisticsList.length - 1}
+                                        onClick={() => handleMoveStatisticOrder(idx, 'down')}
+                                        className="p-0.5 hover:bg-slate-200 rounded disabled:opacity-30 text-slate-600"
+                                        title="Move Down"
+                                      >
+                                        <ArrowDown size={12} />
+                                      </button>
+                                    </div>
+                                  </div>
+                                </td>
+
+                                {/* Icon */}
+                                <td className="py-3 px-3">
+                                  <div className="w-8 h-8 rounded-lg bg-blue-50 border border-blue-100 flex items-center justify-center">
+                                    <IconComp size={16} style={{ color: stat.iconColor || '#0052FF' }} />
+                                  </div>
+                                </td>
+
+                                {/* Value (prefix + value + suffix) */}
+                                <td className="py-3 px-3 font-extrabold text-blue-600 text-sm font-display">
+                                  {stat.prefix || ''}{stat.value}{stat.suffix || ''}
+                                </td>
+
+                                {/* Label & Description */}
+                                <td className="py-3 px-3">
+                                  <div className="font-bold text-slate-900 text-xs">{stat.label}</div>
+                                  {stat.description && (
+                                    <div className="text-[11px] text-slate-400 truncate max-w-[180px]">
+                                      {stat.description}
+                                    </div>
+                                  )}
+                                </td>
+
+                                {/* Status */}
+                                <td className="py-3 px-3 text-center">
+                                  <button
+                                    onClick={() => handleToggleStatisticStatus(stat)}
+                                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border transition-colors ${
+                                      stat.status === 'PUBLISHED'
+                                        ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                        : stat.status === 'DRAFT'
+                                        ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                        : 'bg-slate-100 text-slate-500 border-slate-200'
+                                    }`}
+                                  >
+                                    {stat.status}
+                                  </button>
+                                </td>
+
+                                {/* Actions */}
+                                <td className="py-3 px-3 text-right space-x-1">
+                                  <button
+                                    onClick={() => handleOpenEditStatistic(stat)}
+                                    className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                    title="Edit Statistic"
+                                  >
+                                    <Edit3 size={15} />
+                                  </button>
+                                  <button
+                                    onClick={() => handleToggleStatisticStatus(stat)}
+                                    className="p-1.5 text-slate-500 hover:text-emerald-600 hover:bg-emerald-50 rounded-lg transition-colors"
+                                    title={stat.status === 'PUBLISHED' ? 'Hide Statistic' : 'Publish Statistic'}
+                                  >
+                                    {stat.status === 'PUBLISHED' ? <EyeOff size={15} /> : <Eye size={15} />}
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteStatistic(stat.id)}
+                                    className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                                    title="Delete Statistic"
+                                  >
+                                    <Trash2 size={15} />
+                                  </button>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+
+                {/* Live Preview Bar (lg:col-span-5) */}
+                <div className="lg:col-span-5 space-y-4">
+                  <div className="bg-slate-900 text-white rounded-2xl p-4 shadow-sm border border-slate-800 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Sparkles size={16} className="text-cyan-400" />
+                      <span className="text-xs font-bold uppercase tracking-wider">Homepage Card Preview</span>
+                    </div>
+                    <span className="text-[11px] text-emerald-400 font-medium flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      Live Component Sync
+                    </span>
+                  </div>
+
+                  {/* Dynamic Statistic Cards Render */}
+                  <div className="bg-white rounded-2xl p-6 border border-slate-200 shadow-md space-y-4">
+                    <div className="text-xs font-bold uppercase text-slate-400 tracking-wider">
+                      "Why Choose Us" Floating Stats Bar
+                    </div>
+                    <div className="grid grid-cols-2 gap-4">
+                      {companyStatisticsList.filter(s => s.status === 'PUBLISHED').map((stat) => {
+                        const IconComp = stat.iconName && STAT_ICON_MAP[stat.iconName] ? STAT_ICON_MAP[stat.iconName] : Rocket;
+                        return (
+                          <div key={stat.id} className="p-4 rounded-xl bg-slate-50 border border-slate-100 text-center space-y-1">
+                            <div className="flex items-center justify-center gap-1">
+                              <IconComp size={16} style={{ color: stat.iconColor || '#0052FF' }} />
+                              <div className="text-2xl font-black text-[#0052FF] font-display">
+                                {stat.prefix || ''}{stat.value}{stat.suffix || ''}
+                              </div>
+                            </div>
+                            <div className="text-xs font-bold text-slate-800">{stat.label}</div>
+                            {stat.description && <div className="text-[10px] text-slate-400">{stat.description}</div>}
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          )}
+
+
           {/* TAB 2: SEO & AEO ENGINE */}
           {activeTab === 'seo' && (
             <div className="space-y-6">
@@ -1528,87 +2162,176 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           )}
 
           {/* TAB 3: SERVICES CMS */}
+          {/* TAB 4: SERVICES OFFERED CMS */}
           {activeTab === 'services' && (
-            <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs space-y-6">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-5">
+            <div className="space-y-6">
+              {/* Header Bar */}
+              <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                  <h2 className="text-lg font-bold text-slate-900">Services Catalog ({services.length})</h2>
-                  <p className="text-xs text-slate-500">Manage public engineering offerings, pricing, and capabilities.</p>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-lg font-bold text-slate-900">Services Catalog Management</h2>
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                      {adminServicesList.filter(s => s.active !== false).length} Active Services Live
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">Manage public service offerings, image media uploads, pricing, and SEO meta tags stored in PostgreSQL.</p>
                 </div>
-                <button
-                  onClick={() => setShowNewService(true)}
-                  className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold transition-colors shadow-sm"
-                >
-                  <Plus size={16} />
-                  <span>Create Service</span>
-                </button>
+
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={fetchAdminServices}
+                    disabled={loadingServices}
+                    className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-all disabled:opacity-50"
+                  >
+                    <RefreshCw size={14} className={loadingServices ? 'animate-spin' : ''} />
+                    <span>Refresh</span>
+                  </button>
+
+                  <button
+                    onClick={handleOpenAddService}
+                    className="flex items-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-xl text-xs font-bold shadow-md transition-all"
+                  >
+                    <Plus size={16} />
+                    <span>Add New Service</span>
+                  </button>
+                </div>
               </div>
 
-              {showNewService && (
-                <form onSubmit={handleCreateService} className="bg-slate-50 border border-blue-200 p-5 rounded-2xl space-y-4">
-                  <h3 className="text-sm font-bold text-blue-900">Add New Service Offering</h3>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">Service Title</label>
-                      <input
-                        type="text"
-                        placeholder="e.g. AI Workflow Automation"
-                        value={newServiceTitle}
-                        onChange={(e) => setNewServiceTitle(e.target.value)}
-                        className="w-full bg-white border border-slate-200 text-slate-900 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-blue-500"
-                        required
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs font-semibold text-slate-700 mb-1">Starting Price</label>
-                      <input
-                        type="text"
-                        placeholder="e.g. $10,000"
-                        value={newServicePrice}
-                        onChange={(e) => setNewServicePrice(e.target.value)}
-                        className="w-full bg-white border border-slate-200 text-slate-900 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-blue-500"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-xs font-semibold text-slate-700 mb-1">Short Description</label>
-                    <textarea
-                      placeholder="Brief overview for homepage & services listing..."
-                      value={newServiceDesc}
-                      onChange={(e) => setNewServiceDesc(e.target.value)}
-                      className="w-full bg-white border border-slate-200 text-slate-900 rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-blue-500"
-                    />
-                  </div>
-                  <div className="flex gap-2 justify-end">
-                    <button type="button" onClick={() => setShowNewService(false)} className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900">Cancel</button>
-                    <button type="submit" className="px-5 py-2 bg-blue-600 text-white text-xs font-semibold rounded-xl shadow-xs">Save Service to Database</button>
-                  </div>
-                </form>
-              )}
+              {/* Main Table */}
+              <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs space-y-4">
+                <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                  <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Services List</h3>
+                  <span className="text-xs font-medium text-slate-500">
+                    Total: {adminServicesList.length} services
+                  </span>
+                </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {services.map(srv => (
-                  <div key={srv.id} className="p-5 bg-slate-50 border border-slate-200 rounded-xl flex items-start justify-between gap-4">
-                    <div className="space-y-2">
-                      <div className="flex items-center gap-2">
-                        <h4 className="font-bold text-slate-900 text-sm">{srv.title}</h4>
-                        <span className="text-[10px] font-bold text-blue-700 bg-blue-100 px-2 py-0.5 rounded-md uppercase">
-                          {srv.category || 'Engineering'}
-                        </span>
-                      </div>
-                      <p className="text-xs text-slate-600 line-clamp-2 leading-relaxed">{srv.shortDescription}</p>
-                      <div className="text-xs font-bold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-lg border border-emerald-200/60 inline-block">
-                        Starting at {srv.startingPrice}
-                      </div>
-                    </div>
+                {loadingServices ? (
+                  <div className="py-16 text-center text-slate-500 flex flex-col items-center justify-center gap-3">
+                    <RefreshCw size={24} className="animate-spin text-blue-600" />
+                    <span className="text-xs font-semibold">Loading services catalog from PostgreSQL...</span>
+                  </div>
+                ) : adminServicesList.length === 0 ? (
+                  <div className="py-12 text-center text-slate-400 space-y-3">
+                    <Sparkles size={36} className="mx-auto text-slate-300" />
+                    <p className="text-xs font-semibold">No service offerings found.</p>
                     <button
-                      onClick={() => handleDeleteService(srv.id)}
-                      className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors shrink-0"
+                      onClick={handleOpenAddService}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition-all inline-flex items-center gap-1.5"
                     >
-                      <Trash2 size={16} />
+                      <Plus size={14} /> Add First Service
                     </button>
                   </div>
-                ))}
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs text-slate-700">
+                      <thead className="bg-slate-50 text-slate-500 font-semibold uppercase text-[11px] tracking-wider border-b border-slate-200">
+                        <tr>
+                          <th className="py-3 px-3">Order</th>
+                          <th className="py-3 px-3">Image & Service Title</th>
+                          <th className="py-3 px-3">Category</th>
+                          <th className="py-3 px-3">Starting Price</th>
+                          <th className="py-3 px-3 text-center">Status</th>
+                          <th className="py-3 px-3 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {adminServicesList.map((srv, idx) => (
+                          <tr key={srv.id} className="hover:bg-slate-50/80 transition-colors">
+                            
+                            {/* Order & Reorder arrows */}
+                            <td className="py-3 px-3 font-mono font-bold text-slate-400">
+                              <div className="flex items-center gap-1">
+                                <span className="w-4 text-center">{srv.displayOrder ?? idx + 1}</span>
+                                <div className="flex flex-col">
+                                  <button
+                                    disabled={idx === 0}
+                                    onClick={() => handleMoveServiceOrder(idx, 'up')}
+                                    className="p-0.5 hover:bg-slate-200 rounded disabled:opacity-30 disabled:hover:bg-transparent text-slate-600"
+                                    title="Move Up"
+                                  >
+                                    <ArrowUp size={12} />
+                                  </button>
+                                  <button
+                                    disabled={idx === adminServicesList.length - 1}
+                                    onClick={() => handleMoveServiceOrder(idx, 'down')}
+                                    className="p-0.5 hover:bg-slate-200 rounded disabled:opacity-30 disabled:hover:bg-transparent text-slate-600"
+                                    title="Move Down"
+                                  >
+                                    <ArrowDown size={12} />
+                                  </button>
+                                </div>
+                              </div>
+                            </td>
+
+                            {/* Image Thumbnail & Service Info */}
+                            <td className="py-3 px-3">
+                              <div className="flex items-center gap-3">
+                                <div className="w-12 h-10 rounded-lg bg-slate-900 border border-slate-700 flex items-center justify-center p-0.5 overflow-hidden shrink-0">
+                                  {srv.imageUrl ? (
+                                    <img src={srv.imageUrl} alt={srv.imageAlt || srv.title} className="w-full h-full object-cover rounded-md" />
+                                  ) : (
+                                    <Sparkles size={16} className="text-blue-400" />
+                                  )}
+                                </div>
+                                <div>
+                                  <div className="font-bold text-slate-900 text-xs">{srv.title}</div>
+                                  <div className="text-[11px] text-slate-400 truncate max-w-[200px]">
+                                    /services/{srv.slug}
+                                  </div>
+                                </div>
+                              </div>
+                            </td>
+
+                            {/* Category Badge */}
+                            <td className="py-3 px-3">
+                              <span className="inline-block px-2.5 py-0.5 rounded-md text-[10px] font-bold uppercase bg-blue-50 text-blue-700 border border-blue-200/80">
+                                {srv.category}
+                              </span>
+                            </td>
+
+                            {/* Starting Price */}
+                            <td className="py-3 px-3 font-semibold text-emerald-700">
+                              {srv.startingPrice || '$10,000'}
+                            </td>
+
+                            {/* Active / Enabled Toggle */}
+                            <td className="py-3 px-3 text-center">
+                              <button
+                                onClick={() => handleToggleServiceActive(srv)}
+                                className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border transition-colors ${
+                                  srv.active !== false
+                                    ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                    : 'bg-slate-100 text-slate-500 border-slate-200'
+                                }`}
+                              >
+                                {srv.active !== false ? 'ACTIVE' : 'HIDDEN'}
+                              </button>
+                            </td>
+
+                            {/* Actions */}
+                            <td className="py-3 px-3 text-right space-x-1">
+                              <button
+                                onClick={() => handleOpenEditService(srv)}
+                                className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                title="Edit Service"
+                              >
+                                <Edit3 size={15} />
+                              </button>
+                              <button
+                                onClick={() => handleDeleteService(srv.id)}
+                                className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                                title="Delete Service"
+                              >
+                                <Trash2 size={15} />
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -1898,6 +2621,527 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
       )}
 
+      {/* Modal: Add/Edit Service Offering */}
+      {showServiceModal && (
+        <div className="fixed inset-0 z-[100000] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl border border-slate-200 shadow-2xl max-w-2xl w-full overflow-hidden animate-scaleIn">
+            <div className="px-6 py-4 bg-slate-50 border-b border-slate-200 flex items-center justify-between">
+              <h3 className="font-bold text-slate-900 text-sm flex items-center gap-2">
+                <Sparkles size={18} className="text-blue-600" />
+                <span>{editingService ? 'Edit Service Offering' : 'Add New Service Offering'}</span>
+              </h3>
+              <button
+                onClick={() => setShowServiceModal(false)}
+                className="text-slate-400 hover:text-slate-600 text-xs font-bold px-2 py-1 rounded-lg hover:bg-slate-200 transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-6 space-y-5 max-h-[80vh] overflow-y-auto">
+              {serviceError && (
+                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs text-rose-700 font-semibold flex items-center gap-2">
+                  <AlertTriangle size={16} className="shrink-0 text-rose-600" />
+                  <span>{serviceError}</span>
+                </div>
+              )}
+
+              {/* Basic Fields */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Service Title <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={serviceForm.title}
+                    onChange={(e) => setServiceForm({ 
+                      ...serviceForm, 
+                      title: e.target.value,
+                      slug: serviceForm.slug || e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '-'),
+                      seoTitle: serviceForm.seoTitle || `${e.target.value} | Ryzite Agency`
+                    })}
+                    placeholder="e.g. AI Workflow Automation"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    URL Slug
+                  </label>
+                  <input
+                    type="text"
+                    value={serviceForm.slug}
+                    onChange={(e) => setServiceForm({ ...serviceForm, slug: e.target.value })}
+                    placeholder="ai-workflow-automation"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-mono"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Category
+                  </label>
+                  <select
+                    value={serviceForm.category}
+                    onChange={(e) => setServiceForm({ ...serviceForm, category: e.target.value as ServiceCategory })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20 cursor-pointer"
+                  >
+                    <option value="web">Web Development</option>
+                    <option value="mobile">Mobile Engineering</option>
+                    <option value="ai-automation">AI & Workflow Automation</option>
+                    <option value="cloud-devops">Cloud & DevOps</option>
+                    <option value="consulting">Tech Consulting</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Starting Price
+                  </label>
+                  <input
+                    type="text"
+                    value={serviceForm.startingPrice}
+                    onChange={(e) => setServiceForm({ ...serviceForm, startingPrice: e.target.value })}
+                    placeholder="$10,000"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Delivery Timeline
+                  </label>
+                  <input
+                    type="text"
+                    value={serviceForm.timeline}
+                    onChange={(e) => setServiceForm({ ...serviceForm, timeline: e.target.value })}
+                    placeholder="4 - 8 Weeks"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  />
+                </div>
+              </div>
+
+              {/* Service Image Upload & Preview Section */}
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider">
+                    Service Image (Local Server Disk Storage)
+                  </label>
+                  <label className="cursor-pointer text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1 bg-white px-2.5 py-1 rounded-lg border border-blue-200 shadow-2xs">
+                    <Plus size={13} />
+                    <span>{uploadingServiceImg ? 'Uploading...' : 'Upload Image File'}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleServiceImageFileUpload}
+                      disabled={uploadingServiceImg}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+                  <div className="sm:col-span-8 space-y-2">
+                    <input
+                      type="text"
+                      value={serviceForm.imageUrl}
+                      onChange={(e) => setServiceForm({ ...serviceForm, imageUrl: e.target.value })}
+                      placeholder="Upload file above or enter URL (e.g. /uploads/services/ai.webp)"
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20 font-mono"
+                    />
+
+                    <input
+                      type="text"
+                      value={serviceForm.imageAlt}
+                      onChange={(e) => setServiceForm({ ...serviceForm, imageAlt: e.target.value })}
+                      placeholder="Image Alt Text for SEO & Accessibility"
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    />
+                  </div>
+
+                  {/* Live Image Preview Box */}
+                  <div className="sm:col-span-4 flex flex-col items-center justify-center p-2 bg-slate-900 border border-slate-700 rounded-xl text-center min-h-[90px]">
+                    {tempServicePreviewUrl ? (
+                      <div className="space-y-1">
+                        <img src={tempServicePreviewUrl} alt="Temp Preview" className="max-h-16 max-w-full object-contain mx-auto rounded" />
+                        <span className="text-[9px] font-bold text-amber-400 bg-amber-950/80 px-1.5 py-0.5 rounded border border-amber-800">
+                          Temporary File Preview
+                        </span>
+                      </div>
+                    ) : serviceForm.imageUrl ? (
+                      <div className="space-y-1">
+                        <img src={serviceForm.imageUrl} alt="Saved Preview" className="max-h-16 max-w-full object-contain mx-auto rounded" />
+                        <span className="text-[9px] font-bold text-emerald-400 bg-emerald-950/80 px-1.5 py-0.5 rounded border border-emerald-800">
+                          Database Image URL Preview
+                        </span>
+                      </div>
+                    ) : (
+                      <div className="text-slate-500 text-[11px] font-medium space-y-1">
+                        <Sparkles size={20} className="mx-auto text-slate-600" />
+                        <span>No Image Selected</span>
+                        <div className="text-[9px] text-slate-600">Uses default placeholder</div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Descriptions */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Short Description
+                </label>
+                <textarea
+                  rows={2}
+                  value={serviceForm.shortDescription}
+                  onChange={(e) => setServiceForm({ ...serviceForm, shortDescription: e.target.value })}
+                  placeholder="Brief summary for homepage grid cards..."
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Full Description & Capabilities
+                </label>
+                <textarea
+                  rows={3}
+                  value={serviceForm.fullDescription}
+                  onChange={(e) => setServiceForm({ ...serviceForm, fullDescription: e.target.value })}
+                  placeholder="Comprehensive service details for full page view..."
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                />
+              </div>
+
+              {/* SEO Metadata Section */}
+              <div className="p-4 bg-blue-50/50 border border-blue-200/70 rounded-2xl space-y-3">
+                <h4 className="text-xs font-bold text-blue-900 uppercase tracking-wider">SEO & AEO Metadata</h4>
+                <div className="space-y-2">
+                  <input
+                    type="text"
+                    value={serviceForm.seoTitle}
+                    onChange={(e) => setServiceForm({ ...serviceForm, seoTitle: e.target.value })}
+                    placeholder="Page Title Tag (e.g. AI Automation Solutions | Ryzite)"
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  />
+                  <textarea
+                    rows={2}
+                    value={serviceForm.seoDescription}
+                    onChange={(e) => setServiceForm({ ...serviceForm, seoDescription: e.target.value })}
+                    placeholder="Meta Description (e.g. Build autonomous LLM agents and workflow bots...)"
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  />
+                  <input
+                    type="text"
+                    value={serviceForm.seoKeywords}
+                    onChange={(e) => setServiceForm({ ...serviceForm, seoKeywords: e.target.value })}
+                    placeholder="Focus Keywords (comma separated: AI automation, LLM workflows, RAG pipelines)"
+                    className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-1.5 text-xs text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  />
+                </div>
+              </div>
+
+              {/* Status Switches */}
+              <div className="flex items-center gap-6 pt-2 border-t border-slate-100">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={serviceForm.active}
+                    onChange={(e) => setServiceForm({ ...serviceForm, active: e.target.checked })}
+                    className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
+                  />
+                  <span className="text-xs font-semibold text-slate-700">Active (Published on Website)</span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={serviceForm.featured}
+                    onChange={(e) => setServiceForm({ ...serviceForm, featured: e.target.checked })}
+                    className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
+                  />
+                  <span className="text-xs font-semibold text-slate-700">Featured Service</span>
+                </label>
+              </div>
+            </div>
+
+            <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowServiceModal(false)}
+                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 rounded-xl hover:bg-slate-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveService}
+                disabled={serviceSaving}
+                className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-2 disabled:opacity-50"
+              >
+                {serviceSaving ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
+                <span>{serviceSaving ? 'Saving...' : 'Save Service Offering'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ADD / EDIT COMPANY STATISTIC MODAL */}
+      {showStatisticModal && (
+        <div className="fixed inset-0 z-[100000] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-xl w-full shadow-2xl border border-slate-200 overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200">
+            
+            {/* Modal Header */}
+            <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <BarChart3 size={18} className="text-blue-400" />
+                <h3 className="font-bold text-sm">
+                  {editingStatistic ? 'Edit Company Statistic' : 'Add New Company Statistic'}
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowStatisticModal(false)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 space-y-5 max-h-[80vh] overflow-y-auto">
+              {statisticError && (
+                <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-xs font-bold text-rose-700 flex items-center gap-2">
+                  <AlertTriangle size={16} />
+                  <span>{statisticError}</span>
+                </div>
+              )}
+
+              {/* Statistic Value, Prefix, Suffix */}
+              <div className="grid grid-cols-3 gap-3">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Prefix
+                  </label>
+                  <input
+                    type="text"
+                    value={statisticForm.prefix}
+                    onChange={(e) => setStatisticForm({ ...statisticForm, prefix: e.target.value })}
+                    placeholder="e.g. $"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-900"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Statistic Value <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={statisticForm.value}
+                    onChange={(e) => setStatisticForm({ ...statisticForm, value: e.target.value })}
+                    placeholder="e.g. 25"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-extrabold text-blue-600"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Suffix
+                  </label>
+                  <input
+                    type="text"
+                    value={statisticForm.suffix}
+                    onChange={(e) => setStatisticForm({ ...statisticForm, suffix: e.target.value })}
+                    placeholder="e.g. + or %"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-medium text-slate-900"
+                  />
+                </div>
+              </div>
+
+              {/* Live Form Display Preview */}
+              <div className="p-3 bg-blue-50/70 border border-blue-200 rounded-xl flex items-center justify-between">
+                <span className="text-xs font-bold text-slate-600">Final Display Preview:</span>
+                <span className="text-xl font-black text-blue-600 font-display">
+                  {statisticForm.prefix}{statisticForm.value || '0'}{statisticForm.suffix}
+                </span>
+              </div>
+
+              {/* Label & Description */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Label <span className="text-rose-500">*</span> (max 100 chars)
+                </label>
+                <input
+                  type="text"
+                  maxLength={100}
+                  value={statisticForm.label}
+                  onChange={(e) => setStatisticForm({ 
+                    ...statisticForm, 
+                    label: e.target.value,
+                    seoTitle: statisticForm.seoTitle || `${statisticForm.prefix}${statisticForm.value}${statisticForm.suffix} ${e.target.value}`
+                  })}
+                  placeholder="e.g. Projects Delivered"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-900"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Description (max 250 chars)
+                </label>
+                <textarea
+                  rows={2}
+                  maxLength={250}
+                  value={statisticForm.description}
+                  onChange={(e) => setStatisticForm({ ...statisticForm, description: e.target.value })}
+                  placeholder="e.g. Global enterprise deployments"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-900"
+                />
+              </div>
+
+              {/* Icon Selection & Icon Color */}
+              <div className="space-y-2">
+                <label className="block text-xs font-bold text-slate-700">
+                  Icon Selection
+                </label>
+                <div className="grid grid-cols-5 gap-2">
+                  {['Rocket', 'Award', 'Users', 'Star', 'Globe', 'Clock', 'Code', 'Shield', 'TrendingUp'].map((iconKey) => {
+                    const IconComp = STAT_ICON_MAP[iconKey] || Rocket;
+                    const isSelected = statisticForm.iconName === iconKey;
+                    return (
+                      <button
+                        type="button"
+                        key={iconKey}
+                        onClick={() => setStatisticForm({ ...statisticForm, iconName: iconKey })}
+                        className={`p-2.5 rounded-xl border flex flex-col items-center gap-1 transition-all ${
+                          isSelected 
+                            ? 'bg-blue-50 border-blue-600 text-blue-600 shadow-sm' 
+                            : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
+                        }`}
+                      >
+                        <IconComp size={18} />
+                        <span className="text-[10px] font-bold truncate max-w-full">{iconKey}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Animation Toggle & Display Order */}
+              <div className="grid grid-cols-2 gap-4 pt-2">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Display Order
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={statisticForm.displayOrder}
+                    onChange={(e) => setStatisticForm({ ...statisticForm, displayOrder: parseInt(e.target.value) || 1 })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Status
+                  </label>
+                  <select
+                    value={statisticForm.status}
+                    onChange={(e) => setStatisticForm({ ...statisticForm, status: e.target.value as StatisticStatus })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-bold text-slate-900 cursor-pointer"
+                  >
+                    <option value="PUBLISHED">Published</option>
+                    <option value="DRAFT">Draft</option>
+                    <option value="HIDDEN">Hidden</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Counter Animation Toggle */}
+              <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl flex items-center justify-between">
+                <div>
+                  <div className="text-xs font-bold text-slate-900">Enable Counter Animation</div>
+                  <div className="text-[10px] text-slate-500">Animate count up from 0 → final value on scroll</div>
+                </div>
+                <input
+                  type="checkbox"
+                  checked={statisticForm.animationEnabled}
+                  onChange={(e) => setStatisticForm({ ...statisticForm, animationEnabled: e.target.checked })}
+                  className="w-4 h-4 text-blue-600 rounded cursor-pointer"
+                />
+              </div>
+
+              {/* SEO Metadata */}
+              <div className="space-y-3 pt-2 border-t border-slate-100">
+                <div className="text-xs font-bold text-slate-900 uppercase tracking-wider text-[11px] text-slate-500">
+                  SEO Metadata Integration
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">SEO Title</label>
+                  <input
+                    type="text"
+                    value={statisticForm.seoTitle}
+                    onChange={(e) => setStatisticForm({ ...statisticForm, seoTitle: e.target.value })}
+                    placeholder="e.g. 25+ Projects Delivered | Ryzite"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">SEO Description</label>
+                  <input
+                    type="text"
+                    value={statisticForm.seoDescription}
+                    onChange={(e) => setStatisticForm({ ...statisticForm, seoDescription: e.target.value })}
+                    placeholder="e.g. Ryzite has delivered scalable software projects worldwide."
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs text-slate-900"
+                  />
+                </div>
+              </div>
+
+              {/* Live Instant Preview Card */}
+              <div className="p-4 bg-slate-900 text-white rounded-xl space-y-2">
+                <div className="text-[10px] uppercase tracking-wider font-bold text-cyan-400">Card Layout Preview</div>
+                <div className="flex items-center gap-2">
+                  <div className="text-3xl font-black text-blue-400 font-display">
+                    {statisticForm.prefix}{statisticForm.value || '0'}{statisticForm.suffix}
+                  </div>
+                  <div>
+                    <div className="text-sm font-extrabold text-white">{statisticForm.label || 'Statistic Label'}</div>
+                    {statisticForm.description && <div className="text-xs text-slate-400">{statisticForm.description}</div>}
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Modal Actions */}
+            <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowStatisticModal(false)}
+                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 rounded-xl hover:bg-slate-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveStatistic}
+                disabled={statisticSaving}
+                className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-2 disabled:opacity-50"
+              >
+                {statisticSaving ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
+                <span>{statisticSaving ? 'Saving...' : 'Save Statistic'}</span>
+              </button>
+            </div>
+
+          </div>
+        </div>
+      )}
+
     </div>
   );
 };
+

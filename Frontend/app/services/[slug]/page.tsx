@@ -156,7 +156,7 @@ export default async function ServiceDetailPage({ params }: Props) {
                 <span>Core Capabilities & Features</span>
               </h2>
               <div className="space-y-4">
-                {service.features.map((feat, idx) => (
+                {(service.features || []).map((feat, idx) => (
                   <div key={idx} className="flex items-start gap-3 text-sm text-slate-700">
                     <CheckCircle2 className="w-5 h-5 text-[#0052FF] shrink-0 mt-0.5" />
                     <span className="font-medium">{feat}</span>
@@ -172,7 +172,7 @@ export default async function ServiceDetailPage({ params }: Props) {
                 <span>Guaranteed Deliverables</span>
               </h2>
               <div className="space-y-4">
-                {service.deliverables.map((deliv, idx) => (
+                {(service.deliverables || []).map((deliv, idx) => (
                   <div key={idx} className="flex items-start gap-3 text-sm text-slate-700">
                     <CheckCircle2 className="w-5 h-5 text-[#0052FF] shrink-0 mt-0.5" />
                     <span className="font-medium">{deliv}</span>
@@ -187,7 +187,7 @@ export default async function ServiceDetailPage({ params }: Props) {
           <div className="p-8 rounded-3xl bg-[#0F172A] text-white space-y-6">
             <h2 className="text-2xl font-bold font-display">Technology & Framework Stack</h2>
             <div className="flex flex-wrap gap-2.5">
-              {service.techStack.map((tech, idx) => (
+              {(service.techStack || []).map((tech, idx) => (
                 <span
                   key={idx}
                   className="px-4 py-2 bg-slate-800 text-cyan-300 font-bold text-xs rounded-xl border border-slate-700"

@@ -107,13 +107,36 @@ export const SolutionsGrid: React.FC<SolutionsGridProps> = ({
               id={`service-card-${service.id}`}
               className={`group relative min-h-[310px] sm:min-h-[350px] bg-white border-b border-blue-100/80 transition-all duration-300 flex flex-col lg:flex-row items-stretch overflow-hidden ${index % 2 === 1 ? 'lg:flex-row-reverse' : ''}`}
             >
-              <div className={`relative lg:w-1/2 min-h-[230px] bg-gradient-to-br ${index % 2 === 0 ? 'from-[#EAF2FF] via-[#F8FBFF] to-[#CFE2FF]' : 'from-[#DCEBFF] via-[#F8FBFF] to-[#EAF2FF]'} overflow-hidden flex items-center justify-center`}>
-                <div className="relative z-10 w-36 h-36 sm:w-48 sm:h-48 rounded-[30px] bg-[#0F172A] shadow-2xl shadow-blue-900/20 rotate-[-6deg] group-hover:rotate-0 group-hover:scale-105 transition-all duration-500 flex items-center justify-center">
-                  <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-full bg-[#0052FF] flex items-center justify-center text-white">
-                    <div className="[&>svg]:!text-white [&>svg]:w-9 [&>svg]:h-9 sm:[&>svg]:w-12 sm:[&>svg]:h-12">{getIcon(service.iconName)}</div>
+              <div className={`relative lg:w-1/2 min-h-[240px] sm:min-h-[300px] bg-gradient-to-br ${index % 2 === 0 ? 'from-[#EAF2FF] via-[#F8FBFF] to-[#CFE2FF]' : 'from-[#DCEBFF] via-[#F8FBFF] to-[#EAF2FF]'} overflow-hidden flex items-center justify-center p-6`}>
+                {service.imageUrl ? (
+                  <div className="relative z-10 w-full h-full max-h-[260px] flex items-center justify-center">
+                    <img
+                      src={service.imageUrl}
+                      alt={service.imageAlt || service.title}
+                      className="w-full h-full max-h-[220px] sm:max-h-[260px] object-cover sm:object-contain rounded-2xl shadow-xl shadow-blue-900/15 group-hover:scale-[1.03] transition-all duration-500 border border-white/60 bg-white/40 backdrop-blur-sm"
+                      onError={(e) => {
+                        (e.currentTarget as HTMLElement).style.display = 'none';
+                        const parent = (e.currentTarget as HTMLElement).parentElement;
+                        if (parent) {
+                          const fallback = parent.querySelector('.service-icon-fallback');
+                          if (fallback) (fallback as HTMLElement).classList.remove('hidden');
+                        }
+                      }}
+                    />
+                    <div className="service-icon-fallback hidden relative z-10 w-36 h-36 sm:w-48 sm:h-48 rounded-[30px] bg-[#0F172A] shadow-2xl shadow-blue-900/20 rotate-[-6deg] group-hover:rotate-0 group-hover:scale-105 transition-all duration-500 flex items-center justify-center">
+                      <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-full bg-[#0052FF] flex items-center justify-center text-white">
+                        <div className="[&>svg]:!text-white [&>svg]:w-9 [&>svg]:h-9 sm:[&>svg]:w-12 sm:[&>svg]:h-12">{getIcon(service.iconName)}</div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <span className="absolute bottom-2 right-7 text-7xl sm:text-8xl font-black text-white/70 font-display">0{index + 1}</span>
+                ) : (
+                  <div className="relative z-10 w-36 h-36 sm:w-48 sm:h-48 rounded-[30px] bg-[#0F172A] shadow-2xl shadow-blue-900/20 rotate-[-6deg] group-hover:rotate-0 group-hover:scale-105 transition-all duration-500 flex items-center justify-center">
+                    <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-full bg-[#0052FF] flex items-center justify-center text-white">
+                      <div className="[&>svg]:!text-white [&>svg]:w-9 [&>svg]:h-9 sm:[&>svg]:w-12 sm:[&>svg]:h-12">{getIcon(service.iconName)}</div>
+                    </div>
+                  </div>
+                )}
+                <span className="absolute bottom-2 right-7 text-7xl sm:text-8xl font-black text-white/70 font-display select-none">0{index + 1}</span>
               </div>
 
               <div className="lg:w-1/2 p-7 sm:p-10 lg:p-12 flex flex-col justify-center text-left">

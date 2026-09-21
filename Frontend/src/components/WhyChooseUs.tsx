@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Award, 
   Workflow, 
@@ -7,14 +7,62 @@ import {
   CheckCircle2, 
   Sparkles,
   Zap,
-  ShieldAlert
+  ShieldAlert,
+  Rocket,
+  Users,
+  Star,
+  Globe,
+  Code,
+  Shield,
+  TrendingUp,
+  LucideIcon
 } from 'lucide-react';
+import { CompanyStatisticItem } from '../types';
+import { api } from '../lib/api';
+import { AnimatedCounter } from './AnimatedCounter';
+
+const ICON_MAP: Record<string, LucideIcon> = {
+  Rocket,
+  Award,
+  Users,
+  Star,
+  Globe,
+  Clock,
+  Code,
+  Shield,
+  TrendingUp
+};
+
+const DEFAULT_FALLBACK_STATS: CompanyStatisticItem[] = [
+  { id: '1', value: '25', prefix: '', suffix: '+', label: 'Projects Delivered', description: 'Global enterprise deployments', iconName: 'Rocket', iconColor: '#0052FF', animationEnabled: true, displayOrder: 1, status: 'PUBLISHED' },
+  { id: '2', value: '15', prefix: '', suffix: '+', label: 'Happy Clients', description: 'Enterprise & Startups', iconName: 'Users', iconColor: '#0052FF', animationEnabled: true, displayOrder: 2, status: 'PUBLISHED' },
+  { id: '3', value: '98', prefix: '', suffix: '%', label: 'Client Satisfaction', description: '5-Star CSAT Rating', iconName: 'Award', iconColor: '#0052FF', animationEnabled: true, displayOrder: 3, status: 'PUBLISHED' },
+  { id: '4', value: '3', prefix: '', suffix: '+', label: 'Years of Experience', description: 'Industry Leadership', iconName: 'Globe', iconColor: '#0052FF', animationEnabled: true, displayOrder: 4, status: 'PUBLISHED' }
+];
 
 interface WhyChooseUsProps {
   onStartConsultation: () => void;
 }
 
 export const WhyChooseUs: React.FC<WhyChooseUsProps> = ({ onStartConsultation }) => {
+  const [stats, setStats] = useState<CompanyStatisticItem[]>(DEFAULT_FALLBACK_STATS);
+
+  useEffect(() => {
+    let isMounted = true;
+    api.getPublicStatistics()
+      .then((data) => {
+        if (isMounted && Array.isArray(data) && data.length > 0) {
+          setStats(data);
+        }
+      })
+      .catch((err) => {
+        console.warn('Failed to load dynamic company statistics, using default fallback:', err);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   const pillars = [
     {
       title: 'Quality First',
@@ -40,13 +88,6 @@ export const WhyChooseUs: React.FC<WhyChooseUsProps> = ({ onStartConsultation })
       icon: Headphones,
       tag: 'Hypercare Warranty'
     }
-  ];
-
-  const stats = [
-    { value: '25+', label: 'Projects Delivered', suffix: 'Global Deployments' },
-    { value: '15+', label: 'Happy Clients', suffix: 'Enterprise & Startups' },
-    { value: '98%', label: 'Client Satisfaction', suffix: '5-Star CSAT Rating' },
-    { value: '3+', label: 'Years of Experience', suffix: 'Industry Leadership' }
   ];
 
   return (
@@ -168,25 +209,38 @@ export const WhyChooseUs: React.FC<WhyChooseUsProps> = ({ onStartConsultation })
 
         </div>
 
-        {/* Bottom Floating Statistics Card (White Neo-Morphic Bar matching screenshot) */}
+        {/* Bottom Floating Dynamic Statistics Card (Fully CMS-Driven) */}
         <div className="relative mt-8 bg-white text-[#0F172A] rounded-2xl sm:rounded-3xl shadow-[0_20px_50px_rgba(0,31,84,0.18)] p-6 sm:p-8 border border-slate-100">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 sm:gap-8 divide-y lg:divide-y-0 lg:divide-x divide-slate-100">
-            {stats.map((stat, idx) => (
-              <div 
-                key={idx} 
-                className={`text-center space-y-1 ${idx > 0 ? 'pt-4 lg:pt-0' : ''}`}
-              >
-                <div className="text-3xl sm:text-4xl lg:text-5xl font-black text-[#0052FF] font-display tracking-tight">
-                  {stat.value}
+          <div className={`grid grid-cols-2 lg:grid-cols-${Math.min(stats.length, 4)} gap-6 sm:gap-8 divide-y lg:divide-y-0 lg:divide-x divide-slate-100`}>
+            {stats.map((stat, idx) => {
+              const IconComponent = stat.iconName && ICON_MAP[stat.iconName] ? ICON_MAP[stat.iconName] : Rocket;
+              return (
+                <div 
+                  key={stat.id || idx} 
+                  className={`text-center space-y-1 ${idx > 0 ? 'pt-4 lg:pt-0 lg:pl-4' : ''}`}
+                >
+                  <div className="flex items-center justify-center gap-1.5 mb-1">
+                    <IconComponent className="w-5 h-5 text-[#0052FF]" style={{ color: stat.iconColor || '#0052FF' }} />
+                    <div className="text-3xl sm:text-4xl lg:text-5xl font-black text-[#0052FF] font-display tracking-tight">
+                      <AnimatedCounter 
+                        value={stat.value} 
+                        prefix={stat.prefix} 
+                        suffix={stat.suffix} 
+                        animationEnabled={stat.animationEnabled !== false}
+                      />
+                    </div>
+                  </div>
+                  <div className="text-xs sm:text-sm font-extrabold text-slate-800">
+                    {stat.label}
+                  </div>
+                  {stat.description && (
+                    <div className="text-[11px] text-slate-400 font-medium">
+                      {stat.description}
+                    </div>
+                  )}
                 </div>
-                <div className="text-xs sm:text-sm font-extrabold text-slate-800">
-                  {stat.label}
-                </div>
-                <div className="text-[11px] text-slate-400 font-medium">
-                  {stat.suffix}
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
 

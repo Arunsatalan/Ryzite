@@ -1,4 +1,4 @@
-import { ServiceItem, ProjectItem, BlogPost, PageMetadataConfig, LeadItem, SolutionItem, HomeHeroConfig, TrustedClientItem } from '../types';
+import { ServiceItem, ProjectItem, BlogPost, PageMetadataConfig, LeadItem, SolutionItem, HomeHeroConfig, TrustedClientItem, CompanyStatisticItem } from '../types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
@@ -55,11 +55,44 @@ export const api = {
   deleteTrustedClient: (id: string) => fetchApi<{ success: boolean }>(`/api/trusted-clients/${id}`, { method: 'DELETE' }),
   reorderTrustedClients: (orderedIds: string[]) => fetchApi<TrustedClientItem[]>('/api/trusted-clients/reorder', { method: 'PATCH', body: JSON.stringify({ orderedIds }) }),
 
-  getServices: () => fetchApi<ServiceItem[]>('/api/services'),
+  getPublicStatistics: () => fetchApi<CompanyStatisticItem[]>('/api/statistics', { cache: 'no-store' }),
+  getAdminStatistics: () => fetchApi<CompanyStatisticItem[]>('/api/admin/statistics', { cache: 'no-store', headers: { 'x-admin-token': 'admin-jwt-token' } }),
+  createStatistic: (data: any) => fetchApi<CompanyStatisticItem>('/api/admin/statistics', { method: 'POST', headers: { 'x-admin-token': 'admin-jwt-token' }, body: JSON.stringify(data) }),
+  updateStatistic: (id: string, data: any) => fetchApi<CompanyStatisticItem>(`/api/admin/statistics/${id}`, { method: 'PUT', headers: { 'x-admin-token': 'admin-jwt-token' }, body: JSON.stringify(data) }),
+  deleteStatistic: (id: string) => fetchApi<{ success: boolean; message?: string }>(`/api/admin/statistics/${id}`, { method: 'DELETE', headers: { 'x-admin-token': 'admin-jwt-token' } }),
+  updateStatisticStatus: (id: string, status: string) => fetchApi<CompanyStatisticItem>(`/api/admin/statistics/${id}/status`, { method: 'PATCH', headers: { 'x-admin-token': 'admin-jwt-token' }, body: JSON.stringify({ status }) }),
+  reorderStatistics: (orderedIds: string[]) => fetchApi<CompanyStatisticItem[]>('/api/admin/statistics/order', { method: 'PATCH', headers: { 'x-admin-token': 'admin-jwt-token' }, body: JSON.stringify({ orderedIds }) }),
+
+
+  uploadServiceImage: (file: File): Promise<{ url: string; filename: string; relativePath: string }> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          const res = await fetchApi<{ url: string; filename: string; relativePath: string }>('/api/upload/service-image', {
+            method: 'POST',
+            body: JSON.stringify({
+              filename: file.name,
+              fileData: reader.result
+            })
+          });
+          resolve(res);
+        } catch (err) {
+          reject(err);
+        }
+      };
+      reader.onerror = (err) => reject(err);
+      reader.readAsDataURL(file);
+    });
+  },
+
+  getServices: () => fetchApi<ServiceItem[]>('/api/services', { cache: 'no-store' }),
+  getAdminServices: () => fetchApi<ServiceItem[]>('/api/services/admin', { cache: 'no-store' }),
   getServiceBySlug: (slug: string) => fetchApi<ServiceItem>(`/api/services/${slug}`),
   createService: (data: any) => fetchApi<ServiceItem>('/api/services', { method: 'POST', body: JSON.stringify(data) }),
   updateService: (id: string, data: any) => fetchApi<ServiceItem>(`/api/services/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
   deleteService: (id: string) => fetchApi<{ success: boolean }>(`/api/services/${id}`, { method: 'DELETE' }),
+  reorderServices: (orderedIds: string[]) => fetchApi<ServiceItem[]>('/api/services/reorder', { method: 'PATCH', body: JSON.stringify({ orderedIds }) }),
 
   getProjects: () => fetchApi<ProjectItem[]>('/api/projects'),
   getProjectBySlug: (slug: string) => fetchApi<ProjectItem>(`/api/projects/${slug}`),
