@@ -226,5 +226,44 @@ export const api = {
 
   getAeoHealthScore: () => fetchApi<any>('/api/seo/health', { cache: 'no-store' }),
   runAeoAudit: () => fetchApi<any>('/api/seo/audit', { method: 'POST' }),
-  getAeoIssues: () => fetchApi<any[]>('/api/seo/issues', { cache: 'no-store' })
+  getAeoIssues: () => fetchApi<any[]>('/api/seo/issues', { cache: 'no-store' }),
+
+  // About Page CMS API methods
+  getPublicAboutPage: () => fetchApi<any>('/api/about', { cache: 'no-store' }),
+  getAdminAboutPage: () => fetchApi<any>('/api/admin/about', { cache: 'no-store' }),
+  updateAboutDraft: (data: any) => fetchApi<any>('/api/admin/about', { method: 'PUT', body: JSON.stringify(data) }),
+  publishAboutPage: (publishedBy: string = 'Admin User', reason?: string) => fetchApi<any>('/api/admin/about/publish', { method: 'POST', body: JSON.stringify({ publishedBy, reason }) }),
+  unpublishAboutPage: () => fetchApi<any>('/api/admin/about/unpublish', { method: 'POST' }),
+  getAboutPreview: () => fetchApi<any>('/api/about/preview', { cache: 'no-store' }),
+  getAboutHistory: () => fetchApi<any[]>('/api/admin/about/history', { cache: 'no-store' }),
+  restoreAboutVersion: (versionId: string, changedBy: string = 'Admin User') => fetchApi<any>('/api/admin/about/restore', { method: 'POST', body: JSON.stringify({ versionId, changedBy }) }),
+
+  // Technical Leadership Team CMS API methods
+  getPublicTeam: () => fetchApi<any[]>('/api/team', { cache: 'no-store' }),
+  getAdminTeam: () => fetchApi<any[]>('/api/admin/team', { cache: 'no-store' }),
+  createTeamMember: (data: any) => fetchApi<any>('/api/admin/team', { method: 'POST', body: JSON.stringify(data) }),
+  updateTeamMember: (id: string, data: any) => fetchApi<any>(`/api/admin/team/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteTeamMember: (id: string) => fetchApi<{ success: boolean; message?: string }>(`/api/admin/team/${id}`, { method: 'DELETE' }),
+  reorderTeamMembers: (items: { id: string; displayOrder: number }[]) => fetchApi<any[]>('/api/admin/team/reorder', { method: 'PATCH', body: JSON.stringify({ items }) }),
+  uploadTeamMemberImage: (file: File): Promise<{ url: string; public_id: string; width?: number; height?: number; alt?: string }> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          const res = await fetchApi<{ url: string; public_id: string; width?: number; height?: number; alt?: string }>('/api/admin/team/upload-image', {
+            method: 'POST',
+            body: JSON.stringify({
+              filename: file.name,
+              fileData: reader.result
+            })
+          });
+          resolve(res);
+        } catch (err) {
+          reject(err);
+        }
+      };
+      reader.onerror = (err) => reject(err);
+      reader.readAsDataURL(file);
+    });
+  }
 };

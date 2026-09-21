@@ -1,19 +1,19 @@
 import React, { useState, useEffect } from 'react';
-import { 
-  LayoutDashboard, 
-  Users, 
-  FolderKanban, 
-  FileText, 
-  Globe, 
-  Activity, 
-  Plus, 
-  Trash2, 
-  Edit3, 
-  Check, 
-  Sparkles, 
-  Save, 
-  Search, 
-  RefreshCw, 
+import {
+  LayoutDashboard,
+  Users,
+  FolderKanban,
+  FileText,
+  Globe,
+  Activity,
+  Plus,
+  Trash2,
+  Edit3,
+  Check,
+  Sparkles,
+  Save,
+  Search,
+  RefreshCw,
   ExternalLink,
   ShieldCheck,
   TrendingUp,
@@ -51,6 +51,8 @@ import { Hero } from './Hero';
 import { TrustedClients } from './TrustedClients';
 import { WhyChooseUs } from './WhyChooseUs';
 import { AeoKnowledgeHubModule } from './admin/AeoKnowledgeHubModule';
+import { AboutCmsModule } from './admin/AboutCmsModule';
+import { TeamCmsModule } from './admin/TeamCmsModule';
 import { api } from '../lib/api';
 
 const STAT_ICON_MAP: Record<string, LucideIcon> = {
@@ -69,7 +71,7 @@ const STAT_ICON_MAP: Record<string, LucideIcon> = {
 
 interface AdminDashboardProps {
   isOpen?: boolean;
-  initialTab?: 'crm' | 'hero' | 'clients' | 'principles' | 'statistics' | 'services' | 'projects' | 'blogs' | 'seo' | 'analytics';
+  initialTab?: 'crm' | 'hero' | 'clients' | 'principles' | 'statistics' | 'services' | 'projects' | 'blogs' | 'seo' | 'about' | 'team' | 'analytics';
   onClose: () => void;
   services: ServiceItem[];
   projects: ProjectItem[];
@@ -90,9 +92,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onUpdateProjects,
   onUpdateBlogs
 }) => {
-  const [activeTab, setActiveTab] = useState<'crm' | 'hero' | 'clients' | 'principles' | 'statistics' | 'services' | 'projects' | 'blogs' | 'seo' | 'analytics'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'crm' | 'hero' | 'clients' | 'principles' | 'statistics' | 'services' | 'projects' | 'blogs' | 'seo' | 'about' | 'team' | 'analytics'>(initialTab);
   const [searchQuery, setSearchQuery] = useState('');
-  
+
   if (!isOpen) return null;
 
   // Why Choose Us (Principles) CMS state & handlers
@@ -160,7 +162,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [leads, setLeads] = useState<LeadItem[]>([]);
   const [loadingLeads, setLoadingLeads] = useState(false);
   const [leadFilter, setLeadFilter] = useState<string>('ALL');
-  
+
   // SEO state
   const [selectedSeoPage, setSelectedSeoPage] = useState<string>('home');
   const [seoConfig, setSeoConfig] = useState<PageMetadataConfig | null>(null);
@@ -1419,7 +1421,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   };
 
   const getStatusBadgeClass = (status: string) => {
-    switch(status) {
+    switch (status) {
       case 'NEW':
         return 'bg-blue-50 text-blue-700 border-blue-200';
       case 'CONTACTED':
@@ -1437,11 +1439,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
   return (
     <div className="fixed inset-0 z-[99999] h-screen w-screen bg-slate-50 flex overflow-hidden font-sans text-slate-900 antialiased">
-      
+
       {/* --- SIDEBAR NAVIGATION --- */}
       <aside className="w-64 bg-white border-r border-slate-200 flex flex-col justify-between p-5 shrink-0 shadow-xs">
         <div className="space-y-6">
-          
+
           {/* Brand Logo & Status */}
           <div className="flex items-center gap-3 px-2 py-1">
             <div className="h-10 w-10 bg-blue-600 rounded-xl flex items-center justify-center text-white shadow-md shadow-blue-500/20 font-bold text-xl">
@@ -1464,30 +1466,27 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
             <button
               onClick={() => setActiveTab('crm')}
-              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                activeTab === 'crm' 
-                  ? 'bg-blue-50 text-blue-600 border border-blue-200/60 shadow-xs' 
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${activeTab === 'crm'
+                  ? 'bg-blue-50 text-blue-600 border border-blue-200/60 shadow-xs'
                   : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-              }`}
+                }`}
             >
               <div className="flex items-center gap-3">
                 <Users size={18} className={activeTab === 'crm' ? 'text-blue-600' : 'text-slate-400'} />
                 <span>Leads CRM</span>
               </div>
-              <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${
-                activeTab === 'crm' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'
-              }`}>
+              <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${activeTab === 'crm' ? 'bg-blue-600 text-white' : 'bg-slate-100 text-slate-600'
+                }`}>
                 {leads.length}
               </span>
             </button>
 
             <button
               onClick={() => setActiveTab('hero')}
-              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                activeTab === 'hero' 
-                  ? 'bg-blue-50 text-blue-600 border border-blue-200/60 shadow-xs' 
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${activeTab === 'hero'
+                  ? 'bg-blue-50 text-blue-600 border border-blue-200/60 shadow-xs'
                   : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-              }`}
+                }`}
             >
               <div className="flex items-center gap-3">
                 <LayoutDashboard size={18} className={activeTab === 'hero' ? 'text-blue-600' : 'text-slate-400'} />
@@ -1500,11 +1499,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
             <button
               onClick={() => setActiveTab('clients')}
-              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                activeTab === 'clients' 
-                  ? 'bg-blue-50 text-blue-600 border border-blue-200/60 shadow-xs' 
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${activeTab === 'clients'
+                  ? 'bg-blue-50 text-blue-600 border border-blue-200/60 shadow-xs'
                   : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-              }`}
+                }`}
             >
               <div className="flex items-center gap-3">
                 <Building2 size={18} className={activeTab === 'clients' ? 'text-blue-600' : 'text-slate-400'} />
@@ -1517,11 +1515,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
             <button
               onClick={() => setActiveTab('principles')}
-              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                activeTab === 'principles' 
-                  ? 'bg-blue-50 text-blue-600 border border-blue-200/60 shadow-xs' 
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${activeTab === 'principles'
+                  ? 'bg-blue-50 text-blue-600 border border-blue-200/60 shadow-xs'
                   : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-              }`}
+                }`}
             >
               <div className="flex items-center gap-3">
                 <ShieldCheck size={18} className={activeTab === 'principles' ? 'text-blue-600' : 'text-slate-400'} />
@@ -1534,11 +1531,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
             <button
               onClick={() => setActiveTab('statistics')}
-              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                activeTab === 'statistics' 
-                  ? 'bg-blue-50 text-blue-600 border border-blue-200/60 shadow-xs' 
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${activeTab === 'statistics'
+                  ? 'bg-blue-50 text-blue-600 border border-blue-200/60 shadow-xs'
                   : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-              }`}
+                }`}
             >
               <div className="flex items-center gap-3">
                 <BarChart3 size={18} className={activeTab === 'statistics' ? 'text-blue-600' : 'text-slate-400'} />
@@ -1552,11 +1548,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
             <button
               onClick={() => setActiveTab('seo')}
-              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                activeTab === 'seo' 
-                  ? 'bg-blue-50 text-blue-600 border border-blue-200/60 shadow-xs' 
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${activeTab === 'seo'
+                  ? 'bg-blue-50 text-blue-600 border border-blue-200/60 shadow-xs'
                   : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-              }`}
+                }`}
             >
               <div className="flex items-center gap-3">
                 <Globe size={18} className={activeTab === 'seo' ? 'text-blue-600' : 'text-slate-400'} />
@@ -1568,12 +1563,43 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </button>
 
             <button
-              onClick={() => setActiveTab('services')}
-              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                activeTab === 'services' 
-                  ? 'bg-blue-50 text-blue-600 border border-blue-200/60 shadow-xs' 
+              onClick={() => setActiveTab('about')}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${activeTab === 'about'
+                  ? 'bg-blue-50 text-blue-600 border border-blue-200/60 shadow-xs'
                   : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-              }`}
+                }`}
+            >
+              <div className="flex items-center gap-3">
+                <Building2 size={18} className={activeTab === 'about' ? 'text-blue-600' : 'text-slate-400'} />
+                <span>About Page CMS</span>
+              </div>
+              <span className="text-[10px] uppercase tracking-wide bg-emerald-100 text-emerald-800 px-1.5 py-0.5 rounded font-bold">
+                CMS
+              </span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('team')}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${activeTab === 'team'
+                  ? 'bg-blue-50 text-blue-600 border border-blue-200/60 shadow-xs'
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                }`}
+            >
+              <div className="flex items-center gap-3">
+                <Users size={18} className={activeTab === 'team' ? 'text-blue-600' : 'text-slate-400'} />
+                <span>Technical Leadership Team</span>
+              </div>
+              <span className="text-[10px] uppercase tracking-wide bg-blue-100 text-blue-800 px-1.5 py-0.5 rounded font-bold">
+                CMS
+              </span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('services')}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${activeTab === 'services'
+                  ? 'bg-blue-50 text-blue-600 border border-blue-200/60 shadow-xs'
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                }`}
             >
               <div className="flex items-center gap-3">
                 <Sparkles size={18} className={activeTab === 'services' ? 'text-blue-600' : 'text-slate-400'} />
@@ -1586,11 +1612,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
             <button
               onClick={() => setActiveTab('projects')}
-              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                activeTab === 'projects' 
-                  ? 'bg-blue-50 text-blue-600 border border-blue-200/60 shadow-xs' 
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${activeTab === 'projects'
+                  ? 'bg-blue-50 text-blue-600 border border-blue-200/60 shadow-xs'
                   : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-              }`}
+                }`}
             >
               <div className="flex items-center gap-3">
                 <FolderKanban size={18} className={activeTab === 'projects' ? 'text-blue-600' : 'text-slate-400'} />
@@ -1603,11 +1628,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
             <button
               onClick={() => setActiveTab('blogs')}
-              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                activeTab === 'blogs' 
-                  ? 'bg-blue-50 text-blue-600 border border-blue-200/60 shadow-xs' 
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${activeTab === 'blogs'
+                  ? 'bg-blue-50 text-blue-600 border border-blue-200/60 shadow-xs'
                   : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-              }`}
+                }`}
             >
               <div className="flex items-center gap-3">
                 <FileText size={18} className={activeTab === 'blogs' ? 'text-blue-600' : 'text-slate-400'} />
@@ -1620,11 +1644,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
             <button
               onClick={() => setActiveTab('analytics')}
-              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
-                activeTab === 'analytics' 
-                  ? 'bg-blue-50 text-blue-600 border border-blue-200/60 shadow-xs' 
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${activeTab === 'analytics'
+                  ? 'bg-blue-50 text-blue-600 border border-blue-200/60 shadow-xs'
                   : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
-              }`}
+                }`}
             >
               <div className="flex items-center gap-3">
                 <Activity size={18} className={activeTab === 'analytics' ? 'text-blue-600' : 'text-slate-400'} />
@@ -1661,7 +1684,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
       {/* --- MAIN PAGE CONTENT --- */}
       <main className="flex-1 flex flex-col min-w-0 overflow-hidden bg-slate-50">
-        
+
         {/* Top Bar Header */}
         <header className="h-16 bg-white border-b border-slate-200 px-8 flex items-center justify-between shrink-0 shadow-xs">
           <div className="flex items-center gap-4 flex-1 max-w-xl">
@@ -1678,7 +1701,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
           </div>
 
           <div className="flex items-center gap-4">
-            <button 
+            <button
               onClick={() => { setEditingService(null); setTempServicePreviewUrl(null); setServiceError(null); setShowServiceModal(true); }}
               className="flex items-center gap-2 px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-semibold shadow-sm transition-all"
             >
@@ -1712,7 +1735,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
         {/* Main Body Section */}
         <div className="flex-1 overflow-y-auto p-8 space-y-8">
-          
+
           {/* Executive Overview KPI Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
             <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs space-y-3">
@@ -1796,11 +1819,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     <button
                       key={st}
                       onClick={() => setLeadFilter(st)}
-                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
-                        leadFilter === st 
-                          ? 'bg-white text-blue-600 shadow-xs' 
+                      className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${leadFilter === st
+                          ? 'bg-white text-blue-600 shadow-xs'
                           : 'text-slate-600 hover:text-slate-900'
-                      }`}
+                        }`}
                     >
                       {st.replace('_', ' ')}
                     </button>
@@ -2203,7 +2225,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
               {/* Main Content Layout: Grid (Table Left, Orbit Live Preview Right) */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                
+
                 {/* Left Column: Client Management Table */}
                 <div className="lg:col-span-7 bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs space-y-4">
                   <div className="flex items-center justify-between border-b border-slate-100 pb-4">
@@ -2244,7 +2266,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         <tbody className="divide-y divide-slate-100">
                           {trustedClientsList.map((client, idx) => (
                             <tr key={client.id} className="hover:bg-slate-50/80 transition-colors">
-                              
+
                               {/* Order & Reorder arrows */}
                               <td className="py-3 px-3 font-mono font-bold text-slate-400">
                                 <div className="flex items-center gap-1">
@@ -2300,11 +2322,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                               <td className="py-3 px-3 text-center">
                                 <button
                                   onClick={() => handleToggleClientActive(client)}
-                                  className={`px-2 py-0.5 rounded-full text-[10px] font-bold border transition-colors ${
-                                    client.enabled !== false
+                                  className={`px-2 py-0.5 rounded-full text-[10px] font-bold border transition-colors ${client.enabled !== false
                                       ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                                       : 'bg-slate-100 text-slate-500 border-slate-200'
-                                  }`}
+                                    }`}
                                 >
                                   {client.enabled !== false ? 'ACTIVE' : 'HIDDEN'}
                                 </button>
@@ -2314,11 +2335,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                               <td className="py-3 px-3 text-center">
                                 <button
                                   onClick={() => handleToggleClientFeatured(client)}
-                                  className={`p-1.5 rounded-lg transition-colors ${
-                                    client.featured
+                                  className={`p-1.5 rounded-lg transition-colors ${client.featured
                                       ? 'text-amber-500 bg-amber-50 border border-amber-200'
                                       : 'text-slate-300 hover:text-slate-500 hover:bg-slate-100'
-                                  }`}
+                                    }`}
                                   title={client.featured ? 'Featured on Orbit Showcase' : 'Mark as Featured'}
                                 >
                                   <Star size={14} className={client.featured ? 'fill-amber-500' : ''} />
@@ -2409,11 +2429,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
               {/* Toast Banner */}
               {principleToast && (
-                <div className={`p-4 rounded-xl text-xs font-bold flex items-center justify-between shadow-md transition-all ${
-                  principleToast.type === 'success' 
-                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' 
+                <div className={`p-4 rounded-xl text-xs font-bold flex items-center justify-between shadow-md transition-all ${principleToast.type === 'success'
+                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
                     : 'bg-rose-50 text-rose-800 border border-rose-200'
-                }`}>
+                  }`}>
                   <div className="flex items-center gap-2">
                     {principleToast.type === 'success' ? <CheckCircle2 size={16} className="text-emerald-600" /> : <AlertTriangle size={16} className="text-rose-600" />}
                     <span>{principleToast.message}</span>
@@ -2424,7 +2443,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
               {/* Main Content Layout: Table Left, Live Component Preview Right */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                
+
                 {/* Left Column: Management Table */}
                 <div className="lg:col-span-7 bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs space-y-4">
                   <div className="flex items-center justify-between border-b border-slate-100 pb-4">
@@ -2506,11 +2525,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                               <td className="py-3 px-3 text-center">
                                 <button
                                   onClick={() => handleTogglePrincipleEnabled(principle)}
-                                  className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border transition-colors ${
-                                    principle.enabled !== false
+                                  className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border transition-colors ${principle.enabled !== false
                                       ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                                       : 'bg-slate-100 text-slate-500 border-slate-200'
-                                  }`}
+                                    }`}
                                 >
                                   {principle.enabled !== false ? 'ACTIVE' : 'HIDDEN'}
                                 </button>
@@ -2587,7 +2605,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   >
                     <RefreshCw size={16} className={loadingStatistics ? 'animate-spin' : ''} />
                   </button>
-                  
+
                   <button
                     onClick={handleOpenAddStatistic}
                     className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-xl font-bold text-xs shadow-md shadow-blue-500/20 transition-all flex items-center gap-2"
@@ -2600,11 +2618,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
               {/* Toast Notification Banner */}
               {statisticToast && (
-                <div className={`p-4 rounded-xl text-xs font-bold flex items-center justify-between shadow-md transition-all ${
-                  statisticToast.type === 'success' 
-                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' 
+                <div className={`p-4 rounded-xl text-xs font-bold flex items-center justify-between shadow-md transition-all ${statisticToast.type === 'success'
+                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-200'
                     : 'bg-rose-50 text-rose-800 border border-rose-200'
-                }`}>
+                  }`}>
                   <div className="flex items-center gap-2">
                     {statisticToast.type === 'success' ? <CheckCircle2 size={16} className="text-emerald-600" /> : <AlertTriangle size={16} className="text-rose-600" />}
                     <span>{statisticToast.message}</span>
@@ -2615,7 +2632,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
               {/* Main Table / Grid Container */}
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                
+
                 {/* Table Column (lg:col-span-7) */}
                 <div className="lg:col-span-7 bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs space-y-4">
                   <div className="flex items-center justify-between border-b border-slate-100 pb-3">
@@ -2713,13 +2730,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                                 <td className="py-3 px-3 text-center">
                                   <button
                                     onClick={() => handleToggleStatisticStatus(stat)}
-                                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border transition-colors ${
-                                      stat.status === 'PUBLISHED'
+                                    className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border transition-colors ${stat.status === 'PUBLISHED'
                                         ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                                         : stat.status === 'DRAFT'
-                                        ? 'bg-amber-50 text-amber-700 border-amber-200'
-                                        : 'bg-slate-100 text-slate-500 border-slate-200'
-                                    }`}
+                                          ? 'bg-amber-50 text-amber-700 border-amber-200'
+                                          : 'bg-slate-100 text-slate-500 border-slate-200'
+                                      }`}
                                   >
                                     {stat.status}
                                   </button>
@@ -2810,7 +2826,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     <h2 className="text-lg font-bold text-slate-900">SEO & Search Engine Control</h2>
                     <p className="text-xs text-slate-500">Configure page titles, meta descriptions, canonical URLs, and preview Google desktop SERP results.</p>
                   </div>
-                  
+
                   <div className="flex items-center gap-3">
                     <button
                       onClick={runSerpAudit}
@@ -2836,11 +2852,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     <button
                       key={pk}
                       onClick={() => setSelectedSeoPage(pk)}
-                      className={`px-3.5 py-1.5 rounded-lg text-xs font-bold capitalize transition-all ${
-                        selectedSeoPage === pk 
-                          ? 'bg-blue-600 text-white shadow-xs' 
+                      className={`px-3.5 py-1.5 rounded-lg text-xs font-bold capitalize transition-all ${selectedSeoPage === pk
+                          ? 'bg-blue-600 text-white shadow-xs'
                           : 'text-slate-600 hover:bg-slate-100'
-                      }`}
+                        }`}
                     >
                       {pk} Page
                     </button>
@@ -2849,11 +2864,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
                 {seoConfig && (
                   <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                    
+
                     {/* Meta Fields Form */}
                     <div className="space-y-4 bg-slate-50 border border-slate-200/80 p-5 rounded-2xl">
                       <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Metadata Configuration</h3>
-                      
+
                       <div>
                         <label className="block text-xs font-semibold text-slate-700 mb-1">Page Title Tag (Recommended: 50-60 characters)</label>
                         <input
@@ -2888,7 +2903,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     {/* Google SERP Live Preview Card */}
                     <div className="bg-slate-50 border border-slate-200/80 p-5 rounded-2xl space-y-4">
                       <h3 className="text-xs font-bold text-slate-800 uppercase tracking-wider">Live Google Desktop Search Preview</h3>
-                      
+
                       <div className="bg-white border border-slate-200 p-5 rounded-xl shadow-xs space-y-1.5">
                         <div className="flex items-center gap-2 text-xs text-slate-700 truncate font-mono">
                           <span className="w-4 h-4 rounded-full bg-blue-600 text-white flex items-center justify-center text-[9px] font-bold">R</span>
@@ -2918,6 +2933,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
             } />
           )}
+
+          {/* TAB: ABOUT PAGE CMS */}
+          {activeTab === 'about' && <AboutCmsModule />}
+
+          {/* TAB: TECHNICAL LEADERSHIP TEAM CMS */}
+          {activeTab === 'team' && <TeamCmsModule />}
 
           {/* TAB 3: SERVICES CMS */}
           {/* TAB 4: SERVICES OFFERED CMS */}
@@ -2996,7 +3017,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                       <tbody className="divide-y divide-slate-100">
                         {adminServicesList.map((srv, idx) => (
                           <tr key={srv.id} className="hover:bg-slate-50/80 transition-colors">
-                            
+
                             {/* Order & Reorder arrows */}
                             <td className="py-3 px-3 font-mono font-bold text-slate-400">
                               <div className="flex items-center gap-1">
@@ -3027,11 +3048,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                               <div className="flex items-center gap-3">
                                 <div className="w-12 h-10 rounded-lg bg-slate-900 border border-slate-700 flex items-center justify-center p-0.5 overflow-hidden shrink-0">
                                   {srv.imageUrl ? (
-                                    <img 
-                                      src={srv.imageUrl} 
-                                      alt={srv.imageAlt || srv.title} 
+                                    <img
+                                      src={srv.imageUrl}
+                                      alt={srv.imageAlt || srv.title}
                                       onError={(e) => { (e.currentTarget as HTMLImageElement).src = "https://images.unsplash.com/photo-1497366811353-6870744d04b2?q=85&w=200&auto=format&fit=crop"; }}
-                                      className="w-full h-full object-cover rounded-md" 
+                                      className="w-full h-full object-cover rounded-md"
                                     />
                                   ) : (
                                     <Sparkles size={16} className="text-blue-400" />
@@ -3062,11 +3083,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                             <td className="py-3 px-3 text-center">
                               <button
                                 onClick={() => handleToggleServiceActive(srv)}
-                                className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border transition-colors ${
-                                  srv.active !== false
+                                className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border transition-colors ${srv.active !== false
                                     ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                                     : 'bg-slate-100 text-slate-500 border-slate-200'
-                                }`}
+                                  }`}
                               >
                                 {srv.active !== false ? 'ACTIVE' : 'HIDDEN'}
                               </button>
@@ -3104,9 +3124,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             <div className="space-y-6">
               {/* Toast Banner */}
               {projectToast && (
-                <div className={`p-4 rounded-2xl border text-xs font-semibold flex items-center justify-between animate-fadeIn ${
-                  projectToast.type === 'success' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-rose-50 text-rose-800 border-rose-200'
-                }`}>
+                <div className={`p-4 rounded-2xl border text-xs font-semibold flex items-center justify-between animate-fadeIn ${projectToast.type === 'success' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-rose-50 text-rose-800 border-rose-200'
+                  }`}>
                   <div className="flex items-center gap-2">
                     <CheckCircle2 size={16} className="shrink-0 text-emerald-600" />
                     <span>{projectToast.message}</span>
@@ -3281,11 +3300,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                               <td className="py-3 px-3 text-center">
                                 <button
                                   onClick={() => handleToggleProjectFeatured(proj.id, proj.featured)}
-                                  className={`p-1.5 rounded-lg border transition-colors ${
-                                    proj.featured
+                                  className={`p-1.5 rounded-lg border transition-colors ${proj.featured
                                       ? 'bg-amber-50 text-amber-500 border-amber-200 hover:bg-amber-100'
                                       : 'bg-slate-50 text-slate-300 border-slate-200 hover:text-slate-400'
-                                  }`}
+                                    }`}
                                   title={proj.featured ? 'Featured on Homepage' : 'Not Featured'}
                                 >
                                   <Star size={14} fill={proj.featured ? 'currentColor' : 'none'} />
@@ -3295,11 +3313,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                               <td className="py-3 px-3 text-center">
                                 <button
                                   onClick={() => handleToggleProjectStatus(proj.id, proj.status || 'PUBLISHED')}
-                                  className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border transition-colors ${
-                                    proj.status === 'PUBLISHED'
+                                  className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border transition-colors ${proj.status === 'PUBLISHED'
                                       ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
                                       : 'bg-slate-100 text-slate-500 border-slate-200'
-                                  }`}
+                                    }`}
                                 >
                                   {proj.status || 'PUBLISHED'}
                                 </button>
@@ -3477,7 +3494,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     />
                   </label>
                 </div>
-                
+
                 <div className="flex items-center gap-2">
                   <input
                     type="text"
@@ -3618,8 +3635,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   <input
                     type="text"
                     value={serviceForm.title}
-                    onChange={(e) => setServiceForm({ 
-                      ...serviceForm, 
+                    onChange={(e) => setServiceForm({
+                      ...serviceForm,
                       title: e.target.value,
                       slug: serviceForm.slug || e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '-'),
                       seoTitle: serviceForm.seoTitle || `${e.target.value} | Ryzite Agency`
@@ -3858,7 +3875,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       {showStatisticModal && (
         <div className="fixed inset-0 z-[100000] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white rounded-2xl max-w-xl w-full shadow-2xl border border-slate-200 overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200">
-            
+
             {/* Modal Header */}
             <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
               <div className="flex items-center gap-2">
@@ -3941,8 +3958,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   type="text"
                   maxLength={100}
                   value={statisticForm.label}
-                  onChange={(e) => setStatisticForm({ 
-                    ...statisticForm, 
+                  onChange={(e) => setStatisticForm({
+                    ...statisticForm,
                     label: e.target.value,
                     seoTitle: statisticForm.seoTitle || `${statisticForm.prefix}${statisticForm.value}${statisticForm.suffix} ${e.target.value}`
                   })}
@@ -3979,11 +3996,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                         type="button"
                         key={iconKey}
                         onClick={() => setStatisticForm({ ...statisticForm, iconName: iconKey })}
-                        className={`p-2.5 rounded-xl border flex flex-col items-center gap-1 transition-all ${
-                          isSelected 
-                            ? 'bg-blue-50 border-blue-600 text-blue-600 shadow-sm' 
+                        className={`p-2.5 rounded-xl border flex flex-col items-center gap-1 transition-all ${isSelected
+                            ? 'bg-blue-50 border-blue-600 text-blue-600 shadow-sm'
                             : 'bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100'
-                        }`}
+                          }`}
                       >
                         <IconComp size={18} />
                         <span className="text-[10px] font-bold truncate max-w-full">{iconKey}</span>
@@ -4108,7 +4124,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       {showProjectModal && (
         <div className="fixed inset-0 z-[100000] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
           <div className="bg-white rounded-2xl max-w-5xl w-full shadow-2xl border border-slate-200 overflow-hidden my-6 animate-in fade-in zoom-in-95 duration-200">
-            
+
             {/* Modal Header */}
             <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
               <div className="flex items-center gap-2">
@@ -4143,11 +4159,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                     key={tab.id}
                     type="button"
                     onClick={() => setProjectActiveTab(tab.id)}
-                    className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
-                      active
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${active
                         ? 'bg-blue-600 text-white shadow-xs'
                         : 'text-slate-600 hover:bg-slate-200/80 hover:text-slate-900'
-                    }`}
+                      }`}
                   >
                     <Icon size={14} />
                     <span>{tab.label}</span>
@@ -4804,7 +4819,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <div className="space-y-4">
                   <div className="p-4 bg-blue-50/60 border border-blue-200/80 rounded-2xl space-y-3">
                     <span className="text-xs font-bold text-blue-900 uppercase tracking-wider text-[11px]">Google SERP & AEO Search Config</span>
-                    
+
                     <div>
                       <label className="block text-xs font-bold text-slate-700 mb-1">Page Meta Title Tag</label>
                       <input
@@ -4960,11 +4975,10 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 <button
                   type="button"
                   onClick={() => setPrincipleForm({ ...principleForm, enabled: !principleForm.enabled })}
-                  className={`px-3 py-1 rounded-lg text-xs font-bold border transition-colors ${
-                    principleForm.enabled
+                  className={`px-3 py-1 rounded-lg text-xs font-bold border transition-colors ${principleForm.enabled
                       ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
                       : 'bg-slate-100 text-slate-500 border-slate-300'
-                  }`}
+                    }`}
                 >
                   {principleForm.enabled ? 'ACTIVE ON HOMEPAGE' : 'HIDDEN'}
                 </button>

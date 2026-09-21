@@ -1198,3 +1198,232 @@ model SeoAuditIssue {
 
   @@index([status, severity])
 }
+
+// ==========================================
+// ABOUT PAGE CMS MODULE
+// ==========================================
+
+model AboutPage {
+  id                    String          @id @default(uuid())
+  slug                  String          @unique @default("about")
+  
+  // Hero Section
+  heroLabel             String          @default("ABOUT RYZITE")
+  heroTitle             String          @default("Building Digital Solutions That Move Businesses Forward")
+  heroDescription       String          @db.Text
+  heroImageUrl          String?
+  heroImagePublicId     String?
+  heroImageAlt          String?
+  heroCtaText           String?         @default("Book Discovery Session")
+  heroCtaUrl            String?         @default("/#contact")
+  heroActive            Boolean         @default(true)
+
+  // Company Introduction
+  introTitle            String          @default("Engineering Precision Meets Product Mastery")
+  introShort            String          @db.Text
+  introFull             String          @db.Text
+  introActive           Boolean         @default(true)
+
+  // Who We Are & Mission / Vision
+  whoWeAreTitle         String          @default("Who We Are")
+  whoWeAreDescription   String          @db.Text
+  whoWeAreImageUrl      String?
+  whoWeAreImagePublicId String?
+  whoWeAreImageAlt      String?
+  whoWeAreActive        Boolean         @default(true)
+
+  missionTitle          String          @default("Our Mission")
+  missionDescription    String          @db.Text
+  missionImageUrl       String?
+  missionImagePublicId  String?
+  missionImageAlt       String?
+  missionActive         Boolean         @default(true)
+
+  visionTitle           String          @default("Our Vision")
+  visionDescription     String          @db.Text
+  visionImageUrl        String?
+  visionImagePublicId   String?
+  visionImageAlt        String?
+  visionActive          Boolean         @default(true)
+
+  // CTA Section
+  ctaTitle              String          @default("Ready to Build With Senior Architects?")
+  ctaDescription        String          @db.Text
+  ctaButtonText         String          @default("Start a Project")
+  ctaButtonUrl          String          @default("/#contact")
+  ctaSecondaryText      String?         @default("View Portfolio")
+  ctaSecondaryUrl       String?         @default("/portfolio")
+  ctaActive             Boolean         @default(true)
+
+  // Section Display Toggles (Reusing existing CMS tables)
+  showTrustedClients    Boolean         @default(true)
+  useGlobalWhyChooseUs  Boolean         @default(true)
+  showStatistics        Boolean         @default(true)
+  showCapabilities      Boolean         @default(true)
+  showTeam              Boolean         @default(true)
+  showTimeline          Boolean         @default(true)
+  showFaqs              Boolean         @default(true)
+  showIndustries        Boolean         @default(true)
+
+  // SEO & AEO Metadata
+  metaTitle             String          @default("About Ryzite | Software Engineering & Digital Marketing Agency")
+  metaDescription       String          @db.Text
+  canonicalUrl          String          @default("https://ryzite.com/about")
+  ogTitle               String?
+  ogDescription         String?         @db.Text
+  ogImageUrl            String?
+  ogImagePublicId       String?
+  robotsIndex           Boolean         @default(true)
+  robotsFollow          Boolean         @default(true)
+  focusTopic            String?         @default("Software Development Agency Identity")
+
+  // Direct AEO Answers
+  whoIsDirectAnswer     String?         @db.Text
+  whatWeDoDirectAnswer  String?         @db.Text
+
+  // Publishing & Versioning Workflow
+  status                StatisticStatus @default(PUBLISHED)
+  publishedAt           DateTime?       @default(now())
+  publishedBy           String?         @default("Admin User")
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+
+  highlights            AboutHighlight[]
+  capabilities          AboutCapability[]
+  values                AboutValue[]
+  timeline              AboutTimeline[]
+  teamMembers           AboutTeamMember[]
+  industries            AboutIndustry[]
+  versions              AboutPageVersion[]
+}
+
+model AboutHighlight {
+  id           String    @id @default(uuid())
+  aboutPageId  String
+  aboutPage    AboutPage @relation(fields: [aboutPageId], references: [id], onDelete: Cascade)
+  title        String
+  description  String    @db.Text
+  icon         String    @default("Sparkles")
+  displayOrder Int       @default(0)
+  active       Boolean   @default(true)
+
+  @@index([aboutPageId, displayOrder])
+}
+
+model AboutCapability {
+  id           String    @id @default(uuid())
+  aboutPageId  String
+  aboutPage    AboutPage @relation(fields: [aboutPageId], references: [id], onDelete: Cascade)
+  title        String
+  description  String    @db.Text
+  icon         String    @default("Cpu")
+  serviceId    String?   // Optional reference link to Service entity
+  displayOrder Int       @default(0)
+  active       Boolean   @default(true)
+
+  @@index([aboutPageId, displayOrder])
+}
+
+model AboutValue {
+  id           String    @id @default(uuid())
+  aboutPageId  String
+  aboutPage    AboutPage @relation(fields: [aboutPageId], references: [id], onDelete: Cascade)
+  title        String
+  description  String    @db.Text
+  icon         String    @default("ShieldCheck")
+  displayOrder Int       @default(0)
+  active       Boolean   @default(true)
+
+  @@index([aboutPageId, displayOrder])
+}
+
+model AboutTimeline {
+  id            String    @id @default(uuid())
+  aboutPageId   String
+  aboutPage     AboutPage @relation(fields: [aboutPageId], references: [id], onDelete: Cascade)
+  year          String
+  title         String
+  description   String    @db.Text
+  imageUrl      String?
+  imagePublicId String?
+  imageAlt      String?
+  displayOrder  Int       @default(0)
+  active        Boolean   @default(true)
+
+  @@index([aboutPageId, displayOrder])
+}
+
+model AboutTeamMember {
+  id            String    @id @default(uuid())
+  aboutPageId   String
+  aboutPage     AboutPage @relation(fields: [aboutPageId], references: [id], onDelete: Cascade)
+  name          String
+  role          String
+  shortBio      String    @db.Text
+  photoUrl      String?
+  photoPublicId String?
+  photoAlt      String?
+  linkedInUrl   String?
+  displayOrder  Int       @default(0)
+  active        Boolean   @default(true)
+
+  @@index([aboutPageId, displayOrder])
+}
+
+model AboutIndustry {
+  id              String    @id @default(uuid())
+  aboutPageId     String
+  aboutPage       AboutPage @relation(fields: [aboutPageId], references: [id], onDelete: Cascade)
+  industry        String
+  description     String    @db.Text
+  icon            String    @default("Building2")
+  relatedServices String[]
+  displayOrder    Int       @default(0)
+  active          Boolean   @default(true)
+
+  @@index([aboutPageId, displayOrder])
+}
+
+model AboutPageVersion {
+  id          String    @id @default(uuid())
+  aboutPageId String
+  aboutPage   AboutPage @relation(fields: [aboutPageId], references: [id], onDelete: Cascade)
+  snapshot    Json
+  changedBy   String    @default("Admin System")
+  reason      String?
+  createdAt   DateTime  @default(now())
+
+  @@index([aboutPageId, createdAt])
+}
+
+// ==========================================
+// TECHNICAL LEADERSHIP TEAM CMS MODULE
+// ==========================================
+
+model TechnicalLeadershipTeamMember {
+  id                   String          @id @default(uuid())
+  name                 String
+  slug                 String          @unique
+  title                String
+  shortBio             String          @db.Text
+  longBio              String?         @db.Text
+  profileImageUrl      String
+  profileImagePublicId String
+  profileImageAlt      String
+  profileImageWidth    Int?
+  profileImageHeight   Int?
+  expertise            String[]        @default([])
+  technologies         String[]        @default([])
+  linkedinUrl          String?
+  githubUrl            String?
+  displayOrder         Int             @default(0)
+  status               StatisticStatus @default(PUBLISHED)
+  isActive             Boolean         @default(true)
+  publishedAt          DateTime?       @default(now())
+  createdAt            DateTime        @default(now())
+  updatedAt            DateTime        @updatedAt
+
+  @@index([status, isActive, displayOrder])
+}
+
+

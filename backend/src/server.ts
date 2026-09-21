@@ -20,6 +20,8 @@ import { prisma } from './repositories/prisma.js';
 import { cloudinaryService } from './services/cloudinary.service.js';
 import { uploadMiddleware } from './middleware/upload.middleware.js';
 import { aeoRouter } from './routes/aeo.routes.js';
+import { aboutRouter } from './routes/about.routes.js';
+import { teamRouter } from './routes/team.routes.js';
 
 dotenv.config();
 
@@ -162,6 +164,12 @@ app.get('/api/company-facts', (req, res, next) => {
   aeoRouter(req, res, next);
 });
 app.use('/api/seo', aeoRouter);
+
+// About Page CMS Endpoints
+app.use('/api', aboutRouter);
+
+// Technical Leadership Team CMS Endpoints
+app.use('/api', teamRouter);
 
 // Services File Upload Endpoint (Powered by Cloudinary)
 app.post('/api/upload/service-image', async (req, res) => {

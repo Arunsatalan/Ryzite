@@ -517,3 +517,232 @@ export interface AeoAuditIssueItem {
   createdAt: string;
 }
 
+// ==========================================
+// ABOUT PAGE CMS TYPES
+// ==========================================
+
+export interface AboutHighlightItem {
+  id?: string;
+  aboutPageId?: string;
+  title: string;
+  description: string;
+  icon: string;
+  displayOrder: number;
+  active: boolean;
+}
+
+export interface AboutCapabilityItem {
+  id?: string;
+  aboutPageId?: string;
+  title: string;
+  description: string;
+  icon: string;
+  serviceId?: string | null;
+  displayOrder: number;
+  active: boolean;
+}
+
+export interface AboutValueItem {
+  id?: string;
+  aboutPageId?: string;
+  title: string;
+  description: string;
+  icon: string;
+  displayOrder: number;
+  active: boolean;
+}
+
+export interface AboutTimelineItem {
+  id?: string;
+  aboutPageId?: string;
+  year: string;
+  title: string;
+  description: string;
+  imageUrl?: string | null;
+  imagePublicId?: string | null;
+  imageAlt?: string | null;
+  displayOrder: number;
+  active: boolean;
+}
+
+export interface AboutTeamMemberItem {
+  id?: string;
+  aboutPageId?: string;
+  name: string;
+  role: string;
+  shortBio: string;
+  photoUrl?: string | null;
+  photoPublicId?: string | null;
+  photoAlt?: string | null;
+  linkedInUrl?: string | null;
+  displayOrder: number;
+  active: boolean;
+}
+
+export interface AboutIndustryItem {
+  id?: string;
+  aboutPageId?: string;
+  industry: string;
+  description: string;
+  icon: string;
+  relatedServices?: string[];
+  displayOrder: number;
+  active: boolean;
+}
+
+export interface AboutPageVersionItem {
+  id: string;
+  aboutPageId: string;
+  snapshot: any;
+  changedBy: string;
+  reason?: string | null;
+  createdAt: string;
+}
+
+export interface AboutPageConfig {
+  id?: string;
+  slug?: string;
+
+  // Hero Section
+  heroLabel: string;
+  heroTitle: string;
+  heroDescription: string;
+  heroImageUrl?: string | null;
+  heroImagePublicId?: string | null;
+  heroImageAlt?: string | null;
+  heroCtaText?: string | null;
+  heroCtaUrl?: string | null;
+  heroActive: boolean;
+
+  // Company Intro
+  introTitle: string;
+  introShort: string;
+  introFull: string;
+  introActive: boolean;
+
+  // Who We Are & Mission / Vision
+  whoWeAreTitle: string;
+  whoWeAreDescription: string;
+  whoWeAreImageUrl?: string | null;
+  whoWeAreImagePublicId?: string | null;
+  whoWeAreImageAlt?: string | null;
+  whoWeAreActive: boolean;
+
+  missionTitle: string;
+  missionDescription: string;
+  missionImageUrl?: string | null;
+  missionImagePublicId?: string | null;
+  missionImageAlt?: string | null;
+  missionActive: boolean;
+
+  visionTitle: string;
+  visionDescription: string;
+  visionImageUrl?: string | null;
+  visionImagePublicId?: string | null;
+  visionImageAlt?: string | null;
+  visionActive: boolean;
+
+  // CTA Section
+  ctaTitle: string;
+  ctaDescription: string;
+  ctaButtonText: string;
+  ctaButtonUrl: string;
+  ctaSecondaryText?: string | null;
+  ctaSecondaryUrl?: string | null;
+  ctaActive: boolean;
+
+  // Display Toggles
+  showTrustedClients: boolean;
+  useGlobalWhyChooseUs: boolean;
+  showStatistics: boolean;
+  showCapabilities: boolean;
+  showTeam: boolean;
+  showTimeline: boolean;
+  showFaqs: boolean;
+  showIndustries: boolean;
+
+  // SEO & AEO Metadata
+  metaTitle: string;
+  metaDescription: string;
+  canonicalUrl: string;
+  ogTitle?: string | null;
+  ogDescription?: string | null;
+  ogImageUrl?: string | null;
+  ogImagePublicId?: string | null;
+  robotsIndex: boolean;
+  robotsFollow: boolean;
+  focusTopic?: string | null;
+
+  whoIsDirectAnswer?: string | null;
+  whatWeDoDirectAnswer?: string | null;
+
+  status: StatisticStatus;
+  publishedAt?: string | null;
+  publishedBy?: string | null;
+  updatedAt?: string;
+
+  highlights?: AboutHighlightItem[];
+  capabilities?: AboutCapabilityItem[];
+  values?: AboutValueItem[];
+  timeline?: AboutTimelineItem[];
+  teamMembers?: AboutTeamMemberItem[];
+  industries?: AboutIndustryItem[];
+  versions?: AboutPageVersionItem[];
+}
+
+export interface AboutPageFullPayload {
+  page: AboutPageConfig;
+  highlights: AboutHighlightItem[];
+  capabilities: AboutCapabilityItem[];
+  values: AboutValueItem[];
+  timeline: AboutTimelineItem[];
+  teamMembers: AboutTeamMemberItem[];
+  industries: AboutIndustryItem[];
+
+  // Referenced Single Source of Truth CMS items
+  statistics?: CompanyStatisticItem[];
+  trustedClients?: TrustedClientItem[];
+  whyChooseUs?: WhyChooseUsItem[];
+  expertise?: CompanyExpertiseItem[];
+  faqs?: CompanyFaqItem[];
+}
+
+// ==========================================
+// TECHNICAL LEADERSHIP TEAM CMS TYPES
+// ==========================================
+
+export interface LeadershipTeamMemberItem {
+  id: string;
+  name: string;
+  slug: string;
+  title: string;
+  shortBio: string;
+  longBio?: string | null;
+  profileImageUrl: string;
+  profileImagePublicId: string;
+  profileImageAlt: string;
+  profileImageWidth?: number | null;
+  profileImageHeight?: number | null;
+  expertise: string[];
+  technologies: string[];
+  linkedinUrl?: string | null;
+  githubUrl?: string | null;
+  displayOrder: number;
+  status: StatisticStatus;
+  isActive: boolean;
+  publishedAt?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+
+  // Formatted public response image
+  profileImage?: {
+    url: string;
+    alt: string;
+    publicId?: string;
+    width?: number;
+    height?: number;
+  };
+}
+
+
+
