@@ -265,5 +265,69 @@ export const api = {
       reader.onerror = (err) => reject(err);
       reader.readAsDataURL(file);
     });
+  },
+
+  // Enterprise FAQ CMS API methods
+  getPublicFaqs: (params?: { category?: string; serviceId?: string; projectId?: string; featured?: boolean; searchQuery?: string; faqType?: string; status?: string }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.category) searchParams.append('category', params.category);
+    if (params?.serviceId) searchParams.append('serviceId', params.serviceId);
+    if (params?.projectId) searchParams.append('projectId', params.projectId);
+    if (params?.featured !== undefined) searchParams.append('featured', String(params.featured));
+    if (params?.searchQuery) searchParams.append('searchQuery', params.searchQuery);
+    if (params?.faqType) searchParams.append('faqType', params.faqType);
+    if (params?.status) searchParams.append('status', params.status);
+    const queryStr = searchParams.toString();
+    return fetchApi<any[]>(`/api/faqs${queryStr ? `?${queryStr}` : ''}`, { cache: 'no-store' });
+  },
+  getFaqs: (params?: { category?: string; serviceId?: string; projectId?: string; featured?: boolean; searchQuery?: string; faqType?: string; status?: string }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.category) searchParams.append('category', params.category);
+    if (params?.serviceId) searchParams.append('serviceId', params.serviceId);
+    if (params?.projectId) searchParams.append('projectId', params.projectId);
+    if (params?.featured !== undefined) searchParams.append('featured', String(params.featured));
+    if (params?.searchQuery) searchParams.append('searchQuery', params.searchQuery);
+    if (params?.faqType) searchParams.append('faqType', params.faqType);
+    if (params?.status) searchParams.append('status', params.status);
+    const queryStr = searchParams.toString();
+    return fetchApi<any[]>(`/api/faqs${queryStr ? `?${queryStr}` : ''}`, { cache: 'no-store' });
+  },
+  getFaqCategories: () => fetchApi<any[]>('/api/faqs/categories', { cache: 'no-store' }),
+  searchFaqs: (query: string) => fetchApi<any[]>(`/api/faqs/search?q=${encodeURIComponent(query)}`, { cache: 'no-store' }),
+  getFaqBySlug: (slug: string) => fetchApi<any>(`/api/faqs/${slug}`, { cache: 'no-store' }),
+  submitFaqFeedback: (faqId: string, helpful: boolean, sessionId?: string) => fetchApi<{ success: boolean }>(`/api/faqs/${faqId}/feedback`, { method: 'POST', body: JSON.stringify({ helpful, sessionId }) }),
+  getAdminFaqs: () => fetchApi<{ summary: any; categories: any[]; items: any[] }>('/api/admin/faqs', { cache: 'no-store' }),
+  createFaq: (data: any) => fetchApi<any>('/api/admin/faqs', { method: 'POST', body: JSON.stringify(data) }),
+  updateFaq: (id: string, data: any) => fetchApi<any>(`/api/admin/faqs/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteFaq: (id: string) => fetchApi<{ success: boolean; message?: string }>(`/api/admin/faqs/${id}`, { method: 'DELETE' }),
+  publishFaq: (id: string) => fetchApi<any>(`/api/admin/faqs/${id}/publish`, { method: 'POST' }),
+  unpublishFaq: (id: string) => fetchApi<any>(`/api/admin/faqs/${id}/unpublish`, { method: 'POST' }),
+  archiveFaq: (id: string) => fetchApi<any>(`/api/admin/faqs/${id}/archive`, { method: 'POST' }),
+  duplicateFaq: (id: string) => fetchApi<any>(`/api/admin/faqs/${id}/duplicate`, { method: 'POST' }),
+  getFaqVersions: (id: string) => fetchApi<any[]>(`/api/admin/faqs/${id}/versions`),
+  restoreFaqVersion: (id: string, versionId: string) => fetchApi<any>(`/api/admin/faqs/${id}/restore`, { method: 'POST', body: JSON.stringify({ versionId }) }),
+  checkFaqDuplicates: (question: string) => fetchApi<any[]>('/api/admin/faqs/check-duplicates', { method: 'POST', body: JSON.stringify({ question }) }),
+  saveFaqCategory: (data: any) => fetchApi<any>('/api/admin/faqs/categories', { method: 'POST', body: JSON.stringify(data) }),
+  deleteFaqCategory: (id: string) => fetchApi<{ success: boolean }>(`/api/admin/faqs/categories/${id}`, { method: 'DELETE' }),
+  uploadFaqImage: (file: File): Promise<{ url: string; public_id: string; width?: number; height?: number }> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          const res = await fetchApi<{ url: string; public_id: string; width?: number; height?: number }>('/api/admin/faqs/upload-image', {
+            method: 'POST',
+            body: JSON.stringify({
+              filename: file.name,
+              fileData: reader.result
+            })
+          });
+          resolve(res);
+        } catch (err) {
+          reject(err);
+        }
+      };
+      reader.onerror = (err) => reject(err);
+      reader.readAsDataURL(file);
+    });
   }
 };

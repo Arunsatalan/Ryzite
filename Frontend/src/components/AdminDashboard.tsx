@@ -43,6 +43,7 @@ import {
   Image as ImageIcon,
   MessageSquareQuote,
   FileCode,
+  HelpCircle,
   LucideIcon
 } from 'lucide-react';
 import { LeadItem, ServiceItem, ServiceCategory, ProjectItem, BlogPost, LeadStatus, PageMetadataConfig, HomeHeroConfig, TrustedClientItem, CompanyStatisticItem, StatisticStatus, WhyChooseUsItem } from '../types';
@@ -53,6 +54,7 @@ import { WhyChooseUs } from './WhyChooseUs';
 import { AeoKnowledgeHubModule } from './admin/AeoKnowledgeHubModule';
 import { AboutCmsModule } from './admin/AboutCmsModule';
 import { TeamCmsModule } from './admin/TeamCmsModule';
+import { FaqCmsModule } from './admin/FaqCmsModule';
 import { api } from '../lib/api';
 
 const STAT_ICON_MAP: Record<string, LucideIcon> = {
@@ -71,7 +73,7 @@ const STAT_ICON_MAP: Record<string, LucideIcon> = {
 
 interface AdminDashboardProps {
   isOpen?: boolean;
-  initialTab?: 'crm' | 'hero' | 'clients' | 'principles' | 'statistics' | 'services' | 'projects' | 'blogs' | 'seo' | 'about' | 'team' | 'analytics';
+  initialTab?: 'crm' | 'hero' | 'clients' | 'principles' | 'statistics' | 'services' | 'projects' | 'blogs' | 'seo' | 'about' | 'team' | 'faq' | 'analytics';
   onClose: () => void;
   services: ServiceItem[];
   projects: ProjectItem[];
@@ -92,7 +94,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onUpdateProjects,
   onUpdateBlogs
 }) => {
-  const [activeTab, setActiveTab] = useState<'crm' | 'hero' | 'clients' | 'principles' | 'statistics' | 'services' | 'projects' | 'blogs' | 'seo' | 'about' | 'team' | 'analytics'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'crm' | 'hero' | 'clients' | 'principles' | 'statistics' | 'services' | 'projects' | 'blogs' | 'seo' | 'about' | 'team' | 'faq' | 'analytics'>(initialTab);
   const [searchQuery, setSearchQuery] = useState('');
 
   if (!isOpen) return null;
@@ -1595,6 +1597,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </button>
 
             <button
+              onClick={() => setActiveTab('faq')}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${activeTab === 'faq'
+                  ? 'bg-blue-50 text-blue-600 border border-blue-200/60 shadow-xs'
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                }`}
+            >
+              <div className="flex items-center gap-3">
+                <HelpCircle size={18} className={activeTab === 'faq' ? 'text-blue-600' : 'text-slate-400'} />
+                <span>Frequently Asked Questions</span>
+              </div>
+              <span className="text-[10px] uppercase tracking-wide bg-[#0052FF] text-white px-1.5 py-0.5 rounded font-bold">
+                CMS
+              </span>
+            </button>
+
+            <button
               onClick={() => setActiveTab('services')}
               className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${activeTab === 'services'
                   ? 'bg-blue-50 text-blue-600 border border-blue-200/60 shadow-xs'
@@ -2939,6 +2957,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
           {/* TAB: TECHNICAL LEADERSHIP TEAM CMS */}
           {activeTab === 'team' && <TeamCmsModule />}
+
+          {/* TAB: ENTERPRISE FAQ CMS */}
+          {activeTab === 'faq' && <FaqCmsModule />}
 
           {/* TAB 3: SERVICES CMS */}
           {/* TAB 4: SERVICES OFFERED CMS */}

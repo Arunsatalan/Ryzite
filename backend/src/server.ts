@@ -22,6 +22,7 @@ import { uploadMiddleware } from './middleware/upload.middleware.js';
 import { aeoRouter } from './routes/aeo.routes.js';
 import { aboutRouter } from './routes/about.routes.js';
 import { teamRouter } from './routes/team.routes.js';
+import { faqRouter } from './routes/faq.routes.js';
 
 dotenv.config();
 
@@ -170,6 +171,9 @@ app.use('/api', aboutRouter);
 
 // Technical Leadership Team CMS Endpoints
 app.use('/api', teamRouter);
+
+// Enterprise FAQ CMS Endpoints
+app.use(faqRouter);
 
 // Services File Upload Endpoint (Powered by Cloudinary)
 app.post('/api/upload/service-image', async (req, res) => {

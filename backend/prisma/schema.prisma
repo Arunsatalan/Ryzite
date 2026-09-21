@@ -44,6 +44,19 @@ enum StatisticStatus {
   HIDDEN
 }
 
+enum FaqType {
+  GENERAL
+  SERVICE
+  PRODUCT
+  PROJECT
+  TECHNICAL
+  PRICING
+  PROCESS
+  SECURITY
+  COMPANY
+  SUPPORT
+}
+
 enum ServiceCategory {
   WEB_DEV
   MOBILE_DEV
@@ -400,6 +413,7 @@ model Service {
   technologies     ServiceTechnology[]
   solutions        SolutionService[]
   projects         ProjectService[]
+  faqItemServices  FaqServiceRelation[]
   serviceFaqs      ServiceFaq[]
   leads            Lead[]
   seoMetadata      SeoMetadata?
@@ -574,6 +588,7 @@ model Project {
   mediaGallery              ProjectMedia[]
   services                  ProjectService[]
   technologies              ProjectTechnology[]
+  faqItemProjects           FaqProjectRelation[]
   clients                   Client[]
   seoMetadata               SeoMetadata?
 
@@ -780,6 +795,150 @@ model RelatedBlogPost {
 // ==========================================
 // FAQ REPOSITORY
 // ==========================================
+
+model FaqCategory {
+  id           String    @id @default(uuid())
+  name         String
+  slug         String    @unique
+  description  String?
+  icon         String?   @default("HelpCircle")
+  displayOrder Int       @default(0)
+  isActive     Boolean   @default(true)
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  faqs         FaqItem[]
+
+  @@index([isActive, displayOrder])
+}
+
+model FaqItem {
+  id                 String               @id @default(uuid())
+  question           String
+  slug               String               @unique
+  shortAnswer        String               @db.Text
+  answerContent      String               @db.Text
+  plainTextAnswer    String?              @db.Text
+  categoryId         String?
+  category           FaqCategory?         @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  faqType            FaqType              @default(GENERAL)
+  status             ContentStatus        @default(PUBLISHED)
+  displayOrder       Int                  @default(0)
+  featured           Boolean              @default(false)
+  isGlobal           Boolean              @default(true)
+  indexable          Boolean              @default(true)
+  views              Int                  @default(0)
+  expands            Int                  @default(0)
+  helpfulCount       Int                  @default(0)
+  notHelpfulCount    Int                  @default(0)
+  qualityScore       Int                  @default(90)
+  imageUrl           String?
+  imagePublicId      String?
+  imageAlt           String?
+  imageWidth         Int?
+  imageHeight        Int?
+  seoTitle           String?
+  seoDescription     String?
+  canonicalUrl       String?
+  ogTitle            String?
+  ogDescription      String?
+  ogImageUrl         String?
+  ogImagePublicId    String?
+  sourceType         String?              @default("Company Documentation")
+  sourceUrl          String?
+  sourceNote         String?
+  lastReviewedAt     DateTime             @default(now())
+  reviewDueAt        DateTime?
+  publishedAt        DateTime             @default(now())
+  createdBy          String?
+  updatedBy          String?
+  authorId           String?
+  reviewerId         String?
+  createdAt          DateTime             @default(now())
+  updatedAt          DateTime             @updatedAt
+
+  services           FaqServiceRelation[]
+  projects           FaqProjectRelation[]
+  relatedFaqsFrom    FaqRelationItem[]    @relation("SourceFaq")
+  relatedFaqsTo      FaqRelationItem[]    @relation("TargetFaq")
+  feedback           FaqFeedback[]
+  versions           FaqVersion[]
+
+  @@index([status, displayOrder])
+  @@index([status, featured, displayOrder])
+  @@index([categoryId, status])
+  @@index([faqType, status])
+}
+
+model FaqServiceRelation {
+  faqId        String
+  faq          FaqItem  @relation(fields: [faqId], references: [id], onDelete: Cascade)
+  serviceId    String
+  service      Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+  displayOrder Int      @default(0)
+
+  @@id([faqId, serviceId])
+  @@index([serviceId])
+}
+
+model FaqProjectRelation {
+  faqId        String
+  faq          FaqItem  @relation(fields: [faqId], references: [id], onDelete: Cascade)
+  projectId    String
+  project      Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  displayOrder Int      @default(0)
+
+  @@id([faqId, projectId])
+  @@index([projectId])
+}
+
+model FaqRelationItem {
+  faqId        String
+  faq          FaqItem  @relation("SourceFaq", fields: [faqId], references: [id], onDelete: Cascade)
+  relatedFaqId String
+  relatedFaq   FaqItem  @relation("TargetFaq", fields: [relatedFaqId], references: [id], onDelete: Cascade)
+  displayOrder Int      @default(0)
+
+  @@id([faqId, relatedFaqId])
+}
+
+model FaqFeedback {
+  id        String   @id @default(uuid())
+  faqId     String
+  faq       FaqItem  @relation(fields: [faqId], references: [id], onDelete: Cascade)
+  sessionId String
+  helpful   Boolean
+  createdAt DateTime @default(now())
+
+  @@index([faqId, createdAt])
+}
+
+model FaqSearchLog {
+  id             String   @id @default(uuid())
+  searchQuery    String
+  resultCount    Int      @default(0)
+  selectedFaqId  String?
+  createdAt      DateTime @default(now())
+
+  @@index([searchQuery])
+  @@index([createdAt])
+}
+
+model FaqVersion {
+  id               String   @id @default(uuid())
+  faqId            String
+  faq              FaqItem  @relation(fields: [faqId], references: [id], onDelete: Cascade)
+  question         String
+  shortAnswer      String   @db.Text
+  answerContent    String   @db.Text
+  categoryId       String?
+  metadataSnapshot Json?
+  changedBy        String?
+  changeReason     String?
+  createdAt        DateTime @default(now())
+
+  @@index([faqId, createdAt])
+}
 
 model Faq {
   id           String        @id @default(uuid())

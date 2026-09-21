@@ -744,5 +744,84 @@ export interface LeadershipTeamMemberItem {
   };
 }
 
+// ==========================================
+// ENTERPRISE FAQ CMS TYPES
+// ==========================================
+
+export interface FaqCategoryItem {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string | null;
+  icon?: string | null;
+  displayOrder: number;
+  isActive: boolean;
+}
+
+export interface FaqCmsItem {
+  id: string;
+  question: string;
+  slug: string;
+  answer: string;
+  answerContent?: string;
+  shortAnswer?: string;
+  directAnswer?: string;
+  plainTextAnswer?: string;
+  categoryId?: string | null;
+  category?: FaqCategoryItem | null;
+  faqType: 'GENERAL' | 'SERVICE' | 'PRODUCT' | 'PROJECT' | 'TECHNICAL' | 'PRICING' | 'PROCESS' | 'SECURITY' | 'COMPANY' | 'SUPPORT';
+  status: 'DRAFT' | 'PUBLISHED' | 'SCHEDULED' | 'ARCHIVED';
+  displayOrder: number;
+  featured: boolean;
+  isGlobal: boolean;
+  indexable: boolean;
+  views: number;
+  expands: number;
+  helpfulCount: number;
+  unhelpfulCount: number;
+  notHelpfulCount?: number;
+  qualityScore: number;
+  imageUrl?: string | null;
+  imagePublicId?: string | null;
+  imageCaption?: string | null;
+  image?: {
+    url: string;
+    alt: string;
+    publicId?: string;
+  } | null;
+  seoTitle?: string;
+  seoDescription?: string;
+  keywords: string[];
+  seo?: {
+    seoTitle?: string;
+    seoDescription?: string;
+    canonicalUrl?: string;
+  };
+  source?: {
+    type?: string;
+    url?: string;
+    note?: string;
+  };
+  services?: Array<{ id: string; title: string; slug: string }>;
+  projects?: Array<{ id: string; title: string; slug: string }>;
+  relatedFaqs?: Array<{ id: string; question: string; slug: string; shortAnswer: string }>;
+  lastReviewedAt?: string;
+  reviewDueAt?: string | null;
+  publishedAt?: string;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface FaqAnalyticsSummary {
+  total: number;
+  published: number;
+  draft: number;
+  archived: number;
+  needsReview: number;
+  helpfulRatePercent: number;
+  topSearches: string[];
+  noResultSearches: string[];
+}
+
 
 
