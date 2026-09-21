@@ -823,5 +823,104 @@ export interface FaqAnalyticsSummary {
   noResultSearches: string[];
 }
 
+// ==========================================
+// ENTERPRISE BLOG CMS TYPES
+// ==========================================
+
+export interface BlogCategoryItem {
+  id: string;
+  name: string;
+  slug: string;
+  description?: string | null;
+  displayOrder: number;
+  active: boolean;
+  postsCount?: number;
+}
+
+export interface BlogAuthorItem {
+  id: string;
+  name: string;
+  slug: string;
+  role: string;
+  avatarUrl?: string | null;
+  avatarPublicId?: string | null;
+  avatarAlt?: string | null;
+  bio?: string | null;
+  email?: string | null;
+  linkedinUrl?: string | null;
+  twitterUrl?: string | null;
+  websiteUrl?: string | null;
+  postsCount?: number;
+}
+
+export interface BlogTagItem {
+  id: string;
+  name: string;
+  slug: string;
+  postsCount?: number;
+}
+
+export interface BlogPostItem {
+  id: string;
+  title: string;
+  slug: string;
+  excerpt: string;
+  content: string;
+  directAnswer?: string | null;
+  keyTakeaways: string[];
+  
+  categoryId?: string | null;
+  category?: BlogCategoryItem | null;
+  authorId?: string | null;
+  author?: BlogAuthorItem | null;
+  clusterId?: string | null;
+
+  status: 'DRAFT' | 'IN_REVIEW' | 'APPROVED' | 'PUBLISHED' | 'SCHEDULED' | 'ARCHIVED';
+  postType: 'ARTICLE' | 'GUIDE' | 'CASE_STUDY_INSIGHT' | 'TECHNICAL_WHITE_PAPER' | 'PILLAR_PAGE' | 'NEWS';
+  searchIntent: 'INFORMATIONAL' | 'COMMERCIAL' | 'TRANSACTIONAL' | 'NAVIGATIONAL';
+  
+  targetKeyword?: string | null;
+  secondaryKeywords: string[];
+  
+  featured: boolean;
+  coverImageUrl?: string | null;
+  coverImagePublicId?: string | null;
+  coverImageAlt?: string | null;
+  
+  wordCount: number;
+  readingTimeMinutes: number;
+  qualityScore: number;
+  views: number;
+  
+  tags?: BlogTagItem[];
+  services?: Array<{ id: string; title: string; slug: string }>;
+  projects?: Array<{ id: string; title: string; slug: string }>;
+  faqs?: Array<{ id: string; question: string; slug: string; shortAnswer: string }>;
+  relatedPosts?: BlogPostItem[];
+  
+  seoTitle?: string | null;
+  seoDescription?: string | null;
+  canonicalUrl?: string | null;
+  ogImageUrl?: string | null;
+  robotsIndex: boolean;
+  robotsFollow: boolean;
+  
+  publishedAt?: string | null;
+  scheduledFor?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface BlogAnalyticsSummary {
+  total: number;
+  published: number;
+  draft: number;
+  archived: number;
+  totalViews: number;
+  totalCategories: number;
+  totalAuthors: number;
+}
+
+
 
 

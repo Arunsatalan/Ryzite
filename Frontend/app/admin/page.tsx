@@ -11,7 +11,7 @@ export default function AdminRoutePage() {
   const [blogs, setBlogs] = useState<BlogPost[]>(INITIAL_BLOGS);
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans antialiased">
+    <div className="min-h-screen bg-slate-50 text-slate-900 font-sans antialiased" suppressHydrationWarning>
       <AdminDashboard
         isOpen={true}
         onClose={() => { window.location.href = '/'; }}

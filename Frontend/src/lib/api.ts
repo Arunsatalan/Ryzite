@@ -1,4 +1,4 @@
-import { ServiceItem, ProjectItem, BlogPost, PageMetadataConfig, LeadItem, SolutionItem, HomeHeroConfig, TrustedClientItem, CompanyStatisticItem, WhyChooseUsItem } from '../types';
+import { ServiceItem, ProjectItem, BlogPost, PageMetadataConfig, LeadItem, SolutionItem, HomeHeroConfig, TrustedClientItem, CompanyStatisticItem, WhyChooseUsItem, BlogPostItem, BlogCategoryItem, BlogAuthorItem, BlogTagItem, BlogAnalyticsSummary } from '../types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
@@ -329,5 +329,81 @@ export const api = {
       reader.onerror = (err) => reject(err);
       reader.readAsDataURL(file);
     });
+  },
+
+  // Enterprise Blog CMS API methods
+  getPublicBlogPosts: (params?: { category?: string; tag?: string; author?: string; type?: string; intent?: string; featured?: boolean; searchQuery?: string; limit?: number; offset?: number }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.category) searchParams.append('category', params.category);
+    if (params?.tag) searchParams.append('tag', params.tag);
+    if (params?.author) searchParams.append('author', params.author);
+    if (params?.type) searchParams.append('type', params.type);
+    if (params?.intent) searchParams.append('intent', params.intent);
+    if (params?.featured !== undefined) searchParams.append('featured', String(params.featured));
+    if (params?.searchQuery) searchParams.append('searchQuery', params.searchQuery);
+    if (params?.limit) searchParams.append('limit', String(params.limit));
+    if (params?.offset) searchParams.append('offset', String(params.offset));
+    const queryStr = searchParams.toString();
+    return fetchApi<{ posts: BlogPostItem[]; totalCount: number }>(`/api/blog${queryStr ? `?${queryStr}` : ''}`, { cache: 'no-store' });
+  },
+  getLatestBlogPosts: (limit: number = 3) => fetchApi<BlogPostItem[]>(`/api/blog/latest?limit=${limit}`, { cache: 'no-store' }),
+  getFeaturedBlogPosts: (limit: number = 3) => fetchApi<BlogPostItem[]>(`/api/blog/featured?limit=${limit}`, { cache: 'no-store' }),
+  getBlogCategories: () => fetchApi<BlogCategoryItem[]>('/api/blog/categories', { cache: 'no-store' }),
+  getBlogTags: () => fetchApi<BlogTagItem[]>('/api/blog/tags', { cache: 'no-store' }),
+  getBlogAuthors: () => fetchApi<BlogAuthorItem[]>('/api/blog/authors', { cache: 'no-store' }),
+  getBlogCategoryBySlug: (slug: string) => fetchApi<{ category: BlogCategoryItem; posts: BlogPostItem[]; totalCount: number }>(`/api/blog/category/${slug}`, { cache: 'no-store' }),
+  getBlogTagBySlug: (slug: string) => fetchApi<{ tag: BlogTagItem; posts: BlogPostItem[]; totalCount: number }>(`/api/blog/tag/${slug}`, { cache: 'no-store' }),
+  getBlogAuthorBySlug: (slug: string) => fetchApi<{ author: BlogAuthorItem; posts: BlogPostItem[]; totalCount: number }>(`/api/blog/author/${slug}`, { cache: 'no-store' }),
+  getBlogPostBySlug: (slug: string) => fetchApi<BlogPostItem>(`/api/blog/${slug}`, { cache: 'no-store' }),
+  recordBlogPostView: (id: string) => fetchApi<{ success: boolean }>(`/api/blog/${id}/view`, { method: 'POST' }),
+  logBlogSearch: (query: string, resultsCount: number, intent?: string) => fetchApi<{ success: boolean }>('/api/blog/search-log', { method: 'POST', body: JSON.stringify({ query, resultsCount, intent }) }),
+
+  getAdminBlogPosts: (params?: { searchQuery?: string; categoryId?: string; status?: string; postType?: string }) => {
+    const searchParams = new URLSearchParams();
+    if (params?.searchQuery) searchParams.append('searchQuery', params.searchQuery);
+    if (params?.categoryId) searchParams.append('categoryId', params.categoryId);
+    if (params?.status) searchParams.append('status', params.status);
+    if (params?.postType) searchParams.append('postType', params.postType);
+    const queryStr = searchParams.toString();
+    return fetchApi<{ summary: BlogAnalyticsSummary; categories: BlogCategoryItem[]; authors: BlogAuthorItem[]; tags: BlogTagItem[]; items: BlogPostItem[] }>(`/api/admin/blog${queryStr ? `?${queryStr}` : ''}`, { cache: 'no-store' });
+  },
+  createBlogPost: (data: any) => fetchApi<BlogPostItem>('/api/admin/blog', { method: 'POST', body: JSON.stringify(data) }),
+  updateBlogPost: (id: string, data: any) => fetchApi<BlogPostItem>(`/api/admin/blog/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteBlogPost: (id: string) => fetchApi<{ success: boolean; message?: string }>(`/api/admin/blog/${id}`, { method: 'DELETE' }),
+  publishBlogPost: (id: string) => fetchApi<BlogPostItem>(`/api/admin/blog/${id}/publish`, { method: 'POST' }),
+  unpublishBlogPost: (id: string) => fetchApi<BlogPostItem>(`/api/admin/blog/${id}/unpublish`, { method: 'POST' }),
+  archiveBlogPost: (id: string) => fetchApi<BlogPostItem>(`/api/admin/blog/${id}/archive`, { method: 'POST' }),
+  duplicateBlogPost: (id: string) => fetchApi<BlogPostItem>(`/api/admin/blog/${id}/duplicate`, { method: 'POST' }),
+  getBlogPostVersions: (id: string) => fetchApi<any[]>(`/api/admin/blog/${id}/versions`),
+  restoreBlogPostVersion: (id: string, versionId: string) => fetchApi<BlogPostItem>(`/api/admin/blog/${id}/restore`, { method: 'POST', body: JSON.stringify({ versionId }) }),
+  saveBlogCategory: (data: any) => fetchApi<BlogCategoryItem>('/api/admin/blog/categories', { method: 'POST', body: JSON.stringify(data) }),
+  deleteBlogCategory: (id: string) => fetchApi<{ success: boolean }>(`/api/admin/blog/categories/${id}`, { method: 'DELETE' }),
+  saveBlogTag: (data: any) => fetchApi<BlogTagItem>('/api/admin/blog/tags', { method: 'POST', body: JSON.stringify(data) }),
+  deleteBlogTag: (id: string) => fetchApi<{ success: boolean }>(`/api/admin/blog/tags/${id}`, { method: 'DELETE' }),
+  saveBlogAuthor: (data: any) => fetchApi<BlogAuthorItem>('/api/admin/blog/authors', { method: 'POST', body: JSON.stringify(data) }),
+  deleteBlogAuthor: (id: string) => fetchApi<{ success: boolean }>(`/api/admin/blog/authors/${id}`, { method: 'DELETE' }),
+  getBlogSearchLogs: () => fetchApi<any[]>('/api/admin/blog/search-logs'),
+  getBlogRedirects: () => fetchApi<any[]>('/api/admin/blog/redirects'),
+  uploadBlogImage: (file: File, folder: string = 'ryzite/blog'): Promise<{ url: string; public_id: string; width?: number; height?: number }> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          const res = await fetchApi<{ url: string; public_id: string; width?: number; height?: number }>(`/api/admin/blog/upload-image?folder=${encodeURIComponent(folder)}`, {
+            method: 'POST',
+            body: JSON.stringify({
+              filename: file.name,
+              fileData: reader.result
+            })
+          });
+          resolve(res);
+        } catch (err) {
+          reject(err);
+        }
+      };
+      reader.onerror = (err) => reject(err);
+      reader.readAsDataURL(file);
+    });
   }
 };
+

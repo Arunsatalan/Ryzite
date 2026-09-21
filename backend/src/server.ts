@@ -23,6 +23,7 @@ import { aeoRouter } from './routes/aeo.routes.js';
 import { aboutRouter } from './routes/about.routes.js';
 import { teamRouter } from './routes/team.routes.js';
 import { faqRouter } from './routes/faq.routes.js';
+import { blogRouter } from './routes/blog.routes.js';
 
 dotenv.config();
 
@@ -174,6 +175,9 @@ app.use('/api', teamRouter);
 
 // Enterprise FAQ CMS Endpoints
 app.use(faqRouter);
+
+// Enterprise Blog CMS Endpoints
+app.use(blogRouter);
 
 // Services File Upload Endpoint (Powered by Cloudinary)
 app.post('/api/upload/service-image', async (req, res) => {

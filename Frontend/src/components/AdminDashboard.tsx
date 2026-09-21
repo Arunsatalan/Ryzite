@@ -55,6 +55,7 @@ import { AeoKnowledgeHubModule } from './admin/AeoKnowledgeHubModule';
 import { AboutCmsModule } from './admin/AboutCmsModule';
 import { TeamCmsModule } from './admin/TeamCmsModule';
 import { FaqCmsModule } from './admin/FaqCmsModule';
+import { BlogCmsModule } from './admin/BlogCmsModule';
 import { api } from '../lib/api';
 
 const STAT_ICON_MAP: Record<string, LucideIcon> = {
@@ -2960,6 +2961,9 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
           {/* TAB: ENTERPRISE FAQ CMS */}
           {activeTab === 'faq' && <FaqCmsModule />}
+
+          {/* TAB: ENTERPRISE BLOG CMS */}
+          {activeTab === 'blogs' && <BlogCmsModule />}
 
           {/* TAB 3: SERVICES CMS */}
           {/* TAB 4: SERVICES OFFERED CMS */}

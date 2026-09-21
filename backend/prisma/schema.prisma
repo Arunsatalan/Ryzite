@@ -414,6 +414,7 @@ model Service {
   solutions        SolutionService[]
   projects         ProjectService[]
   faqItemServices  FaqServiceRelation[]
+  blogItemServices BlogServiceRelation[]
   serviceFaqs      ServiceFaq[]
   leads            Lead[]
   seoMetadata      SeoMetadata?
@@ -589,6 +590,7 @@ model Project {
   services                  ProjectService[]
   technologies              ProjectTechnology[]
   faqItemProjects           FaqProjectRelation[]
+  blogItemProjects          BlogProjectRelation[]
   clients                   Client[]
   seoMetadata               SeoMetadata?
 
@@ -713,50 +715,157 @@ model Author {
   blogPosts   BlogPost[]
 }
 
+enum BlogPostStatus {
+  DRAFT
+  IN_REVIEW
+  APPROVED
+  PUBLISHED
+  SCHEDULED
+  ARCHIVED
+}
+
+enum BlogPostType {
+  ARTICLE
+  GUIDE
+  HOW_TO
+  TUTORIAL
+  NEWS
+  CASE_STUDY
+  TECHNICAL
+  OPINION
+  REPORT
+  ANNOUNCEMENT
+  RESEARCH
+}
+
+enum SearchIntent {
+  INFORMATIONAL
+  COMMERCIAL
+  TRANSACTIONAL
+  NAVIGATIONAL
+  COMPARISON
+  HOW_TO
+}
+
 model BlogCategory {
+  id             String     @id @default(uuid())
+  name           String
+  slug           String     @unique
+  description    String?    @db.Text
+  icon           String?    @default("Sparkles")
+  seoTitle       String?
+  seoDescription String?
+  displayOrder   Int        @default(0)
+  isActive       Boolean    @default(true)
+  blogPosts      BlogPost[]
+  createdAt      DateTime   @default(now())
+  updatedAt      DateTime   @updatedAt
+}
+
+model BlogAuthor {
+  id                   String     @id @default(uuid())
+  name                 String
+  slug                 String     @unique
+  jobTitle             String
+  bio                  String     @db.Text
+  profileImageUrl      String?
+  profileImagePublicId String?
+  linkedInUrl          String?
+  websiteUrl           String?
+  expertise            String?
+  isActive             Boolean    @default(true)
+  blogPosts            BlogPost[]
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
+}
+
+model ContentCluster {
   id           String     @id @default(uuid())
   name         String
   slug         String     @unique
-  description  String?
-  enabled      Boolean    @default(true)
-  displayOrder Int        @default(0)
+  description  String?    @db.Text
+  pillarPostId String?
+  status       String     @default("ACTIVE")
   blogPosts    BlogPost[]
+  createdAt    DateTime   @default(now())
+  updatedAt    DateTime   @updatedAt
 }
 
 model BlogPost {
-  id                 String           @id @default(uuid())
-  slug               String           @unique
+  id                 String          @id @default(uuid())
+  slug               String          @unique
   title              String
-  excerpt            String
-  content            String           @db.Text
-  aeoDirectAnswer    String           @db.Text
-  featuredImageId    String?
-  featuredImage      MediaAsset?      @relation("BlogCoverImage", fields: [featuredImageId], references: [id], onDelete: SetNull)
-  coverImage         String           // Fallback URL string
+  excerpt            String          @db.Text
+  content            String          @db.Text
+  plainTextContent   String?         @db.Text
+  status             BlogPostStatus  @default(PUBLISHED)
+  postType           BlogPostType    @default(ARTICLE)
+  categoryId         String?
+  category           BlogCategory?   @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  authorId           String?
+  author             BlogAuthor?     @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  featured           Boolean         @default(false)
+  featuredOrder      Int             @default(0)
+  displayOrder       Int             @default(0)
+  publishedAt        DateTime        @default(now())
+  scheduledAt        DateTime?
+  updatedAt          DateTime        @updatedAt
+  createdAt          DateTime        @default(now())
+  lastReviewedAt     DateTime?
+  reviewDueAt        DateTime?
+  readingTimeMinutes Int             @default(5)
+  wordCount          Int             @default(0)
+
+  // Cover image
   coverImageUrl      String?
   coverImagePublicId String?
-  avatarUrl          String?
-  avatarPublicId     String?
-  authorId           String?
-  authorRef          Author?          @relation(fields: [authorId], references: [id], onDelete: SetNull)
-  userId             String?
-  userRef            User?            @relation(fields: [userId], references: [id], onDelete: SetNull)
-  authorName         String?
-  categoryId         String?
-  categoryRef        BlogCategory?    @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  category           String           // Fallback category string
-  status             ContentStatus    @default(PUBLISHED)
-  featured           Boolean          @default(false)
-  readingTimeMinutes Int              @default(5)
-  readTime           String           @default("5 min read")
-  publishedAt        DateTime         @default(now())
-  scheduledAt        DateTime?
-  createdAt          DateTime         @default(now())
-  updatedAt          DateTime         @updatedAt
+  coverImageAlt      String?
+  coverImageWidth    Int?
+  coverImageHeight   Int?
 
+  // OG image
+  ogImageUrl         String?
+  ogImagePublicId    String?
+
+  // SEO & AEO
+  seoTitle           String?
+  seoDescription     String?
+  canonicalUrl       String?
+  robotsIndex        Boolean         @default(true)
+  robotsFollow       Boolean         @default(true)
+  focusKeyword       String?
+  secondaryKeywords  String?
+  searchIntent       SearchIntent    @default(INFORMATIONAL)
+  pillarId           String?
+  contentClusterId   String?
+  contentCluster     ContentCluster? @relation(fields: [contentClusterId], references: [id], onDelete: SetNull)
+  sourceUrl          String?
+  sourceName         String?
+  isOriginal         Boolean         @default(true)
+  directAnswer       String?         @db.Text
+  keyTakeaways       String?         @db.Text
+  qualityScore       Int             @default(90)
+
+  // Analytics
+  views              Int             @default(0)
+  reads              Int             @default(0)
+  createdBy          String?
+  updatedBy          String?
+
+  // Relations & legacy fallbacks
+  featuredImageId    String?
+  featuredImage      MediaAsset?     @relation("BlogCoverImage", fields: [featuredImageId], references: [id], onDelete: SetNull)
+  userId             String?
+  userRef            User?           @relation(fields: [userId], references: [id], onDelete: SetNull)
+  legacyAuthorId     String?
+  authorRef          Author?         @relation(fields: [legacyAuthorId], references: [id], onDelete: SetNull)
   tags               BlogPostTag[]
-  relatedFrom        RelatedBlogPost[] @relation("SourcePost")
-  relatedTo          RelatedBlogPost[] @relation("TargetPost")
+  services           BlogServiceRelation[]
+  projects           BlogProjectRelation[]
+  faqs               BlogFaqRelation[]
+  relatedFrom        RelatedBlogPost[] @relation("BlogSourcePost")
+  relatedTo          RelatedBlogPost[] @relation("BlogTargetPost")
+  versions           BlogPostVersion[]
   seoMetadata        SeoMetadata?
 
   @@index([status, publishedAt])
@@ -770,6 +879,8 @@ model BlogTag {
   name      String
   slug      String        @unique
   blogPosts BlogPostTag[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
 }
 
 model BlogPostTag {
@@ -782,14 +893,66 @@ model BlogPostTag {
   @@index([tagId])
 }
 
+model BlogServiceRelation {
+  postId    String
+  post      BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  serviceId String
+  service   Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@id([postId, serviceId])
+}
+
+model BlogProjectRelation {
+  postId    String
+  post      BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@id([postId, projectId])
+}
+
+model BlogFaqRelation {
+  postId String
+  post   BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  faqId  String
+  faq    FaqItem  @relation(fields: [faqId], references: [id], onDelete: Cascade)
+
+  @@id([postId, faqId])
+}
+
 model RelatedBlogPost {
   postId        String
-  post          BlogPost @relation("SourcePost", fields: [postId], references: [id], onDelete: Cascade)
+  post          BlogPost @relation("BlogSourcePost", fields: [postId], references: [id], onDelete: Cascade)
   relatedPostId String
-  relatedPost   BlogPost @relation("TargetPost", fields: [relatedPostId], references: [id], onDelete: Cascade)
+  relatedPost   BlogPost @relation("BlogTargetPost", fields: [relatedPostId], references: [id], onDelete: Cascade)
   displayOrder  Int      @default(0)
 
   @@id([postId, relatedPostId])
+}
+
+model BlogPostVersion {
+  id        String   @id @default(uuid())
+  postId    String
+  post      BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  snapshot  Json
+  changedBy String   @default("Admin")
+  reason    String?
+  createdAt DateTime @default(now())
+}
+
+model BlogSearchLog {
+  id           String   @id @default(uuid())
+  query        String
+  resultsCount Int      @default(0)
+  createdAt    DateTime @default(now())
+}
+
+model BlogRedirect {
+  id         String   @id @default(uuid())
+  oldPath    String   @unique
+  newPath    String
+  statusCode Int      @default(301)
+  createdAt  DateTime @default(now())
 }
 
 // ==========================================
@@ -859,6 +1022,7 @@ model FaqItem {
 
   services           FaqServiceRelation[]
   projects           FaqProjectRelation[]
+  blogPosts          BlogFaqRelation[]
   relatedFaqsFrom    FaqRelationItem[]    @relation("SourceFaq")
   relatedFaqsTo      FaqRelationItem[]    @relation("TargetFaq")
   feedback           FaqFeedback[]
@@ -1584,5 +1748,247 @@ model TechnicalLeadershipTeamMember {
 
   @@index([status, isActive, displayOrder])
 }
+
+// ==========================================
+// ENTERPRISE BLOG CMS MODULE
+// ==========================================
+
+enum BlogPostStatus {
+  DRAFT
+  IN_REVIEW
+  APPROVED
+  PUBLISHED
+  SCHEDULED
+  ARCHIVED
+}
+
+enum BlogPostType {
+  ARTICLE
+  GUIDE
+  HOW_TO
+  TUTORIAL
+  NEWS
+  CASE_STUDY
+  TECHNICAL
+  OPINION
+  REPORT
+  ANNOUNCEMENT
+  RESEARCH
+}
+
+enum SearchIntent {
+  INFORMATIONAL
+  COMMERCIAL
+  TRANSACTIONAL
+  NAVIGATIONAL
+  COMPARISON
+  HOW_TO
+}
+
+model BlogCategory {
+  id             String      @id @default(uuid())
+  name           String
+  slug           String      @unique
+  description    String?     @db.Text
+  icon           String?     @default("Sparkles")
+  seoTitle       String?
+  seoDescription String?     @db.Text
+  displayOrder   Int         @default(0)
+  isActive       Boolean     @default(true)
+  createdAt      DateTime    @default(now())
+  updatedAt      DateTime    @updatedAt
+
+  posts          BlogPost[]
+
+  @@index([isActive, displayOrder])
+}
+
+model BlogAuthor {
+  id                   String     @id @default(uuid())
+  name                 String
+  slug                 String     @unique
+  jobTitle             String
+  bio                  String     @db.Text
+  profileImageUrl      String?
+  profileImagePublicId String?
+  linkedInUrl          String?
+  websiteUrl           String?
+  expertise            String?    @db.Text
+  isActive             Boolean    @default(true)
+  createdAt            DateTime   @default(now())
+  updatedAt            DateTime   @updatedAt
+
+  posts                BlogPost[]
+
+  @@index([isActive])
+}
+
+model ContentCluster {
+  id          String     @id @default(uuid())
+  name        String
+  slug        String     @unique
+  description String?    @db.Text
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  posts       BlogPost[]
+}
+
+model BlogPost {
+  id                  String             @id @default(uuid())
+  title               String
+  slug                String             @unique
+  excerpt             String             @db.Text
+  content             String             @db.Text
+  plainTextContent    String?            @db.Text
+  status              BlogPostStatus     @default(PUBLISHED)
+  postType            BlogPostType       @default(ARTICLE)
+  
+  categoryId          String?
+  category            BlogCategory?      @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  authorId            String?
+  author              BlogAuthor?        @relation(fields: [authorId], references: [id], onDelete: SetNull)
+  contentClusterId    String?
+  contentCluster      ContentCluster?    @relation(fields: [contentClusterId], references: [id], onDelete: SetNull)
+
+  featured            Boolean            @default(false)
+  featuredOrder       Int                @default(0)
+  displayOrder        Int                @default(0)
+  views               Int                @default(0)
+  readingTimeMinutes  Int                @default(5)
+  wordCount           Int                @default(0)
+  qualityScore        Int                @default(80)
+  
+  publishedAt         DateTime?          @default(now())
+  scheduledAt         DateTime?
+  
+  coverImageUrl       String?
+  coverImagePublicId  String?
+  coverImageAlt       String?
+  ogImageUrl          String?
+  ogImagePublicId     String?
+  
+  seoTitle            String?
+  seoDescription      String?            @db.Text
+  canonicalUrl        String?
+  robotsIndex         Boolean            @default(true)
+  robotsFollow        Boolean            @default(true)
+  focusKeyword        String?
+  secondaryKeywords   String?
+  searchIntent        SearchIntent       @default(INFORMATIONAL)
+  
+  sourceUrl           String?
+  sourceName          String?
+  isOriginal          Boolean            @default(true)
+  directAnswer        String?            @db.Text
+  keyTakeaways        Json?
+  
+  createdAt           DateTime           @default(now())
+  updatedAt           DateTime           @updatedAt
+
+  tags                BlogPostTag[]
+  services            BlogServiceRelation[]
+  projects            BlogProjectRelation[]
+  faqs                BlogFaqRelation[]
+  relatedFrom         RelatedBlogPost[]  @relation("RelatedSourcePost")
+  relatedTo           RelatedBlogPost[]  @relation("RelatedTargetPost")
+  versions            BlogPostVersion[]
+
+  @@index([status, publishedAt])
+  @@index([categoryId, status])
+  @@index([authorId, status])
+  @@index([featured, status])
+}
+
+model BlogTag {
+  id        String        @id @default(uuid())
+  name      String        @unique
+  slug      String        @unique
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+
+  posts     BlogPostTag[]
+}
+
+model BlogPostTag {
+  id        String   @id @default(uuid())
+  postId    String
+  post      BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tagId     String
+  tag       BlogTag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, tagId])
+}
+
+model BlogServiceRelation {
+  id        String   @id @default(uuid())
+  postId    String
+  post      BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  serviceId String
+  service   Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, serviceId])
+}
+
+model BlogProjectRelation {
+  id        String   @id @default(uuid())
+  postId    String
+  post      BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  projectId String
+  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, projectId])
+}
+
+model BlogFaqRelation {
+  id        String   @id @default(uuid())
+  postId    String
+  post      BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  faqId     String
+  faq       FaqItem  @relation(fields: [faqId], references: [id], onDelete: Cascade)
+
+  @@unique([postId, faqId])
+}
+
+model RelatedBlogPost {
+  id            String   @id @default(uuid())
+  sourcePostId  String
+  sourcePost    BlogPost @relation("RelatedSourcePost", fields: [sourcePostId], references: [id], onDelete: Cascade)
+  relatedPostId String
+  relatedPost   BlogPost @relation("RelatedTargetPost", fields: [relatedPostId], references: [id], onDelete: Cascade)
+
+  @@unique([sourcePostId, relatedPostId])
+}
+
+model BlogPostVersion {
+  id           String   @id @default(uuid())
+  postId       String
+  post         BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  snapshot     Json
+  changedBy    String   @default("Admin System")
+  changeReason String?
+  createdAt    DateTime @default(now())
+
+  @@index([postId, createdAt])
+}
+
+model BlogSearchLog {
+  id           String   @id @default(uuid())
+  query        String
+  resultsCount Int      @default(0)
+  searchIntent String?  @default("INFORMATIONAL")
+  createdAt    DateTime @default(now())
+
+  @@index([query, createdAt])
+}
+
+model BlogRedirect {
+  id         String   @id @default(uuid())
+  oldPath    String   @unique
+  newPath    String
+  statusCode Int      @default(301)
+  createdAt  DateTime @default(now())
+}
+
 
 

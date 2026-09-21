@@ -1,213 +1,86 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import Link from 'next/link';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
-import { Breadcrumbs } from '@/components/Breadcrumbs';
-import { INITIAL_BLOGS, INITIAL_SERVICES, getBlogBySlug } from '@/data/initialData';
-import { ArrowRight, Calendar, Clock, Sparkles, Tag, User } from 'lucide-react';
+import { BlogPostItem } from '@/types';
+import { BlogDetailClient } from '@/components/BlogDetailClient';
 
-type Props = {
-  params: Promise<{
-    slug: string;
-  }>;
-};
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
-export async function generateStaticParams() {
-  return INITIAL_BLOGS.map((blog) => ({
-    slug: blog.slug,
-  }));
+interface PageProps {
+  params: Promise<{ slug: string }>;
 }
 
-export async function generateMetadata(
-  { params }: Props
-): Promise<Metadata> {
-  const { slug } = await params;
-  const blog = getBlogBySlug(slug);
+export const revalidate = 60; // Revalidate dynamic blog post page every 60 seconds
 
-  if (!blog) {
+async function fetchBlogPostBySlug(slug: string): Promise<BlogPostItem | null> {
+  try {
+    let res = await fetch(`${API_URL}/api/blog/slug/${encodeURIComponent(slug)}`, {
+      cache: 'no-store'
+    });
+    if (!res.ok) {
+      res = await fetch(`${API_URL}/api/blog/${encodeURIComponent(slug)}`, {
+        cache: 'no-store'
+      });
+    }
+    if (!res.ok) return null;
+    const json = await res.json();
+    return json.success && json.data ? json.data : null;
+  } catch (err) {
+    console.error(`Failed to fetch blog post by slug '${slug}':`, err);
+    return null;
+  }
+}
+
+export async function generateMetadata(props: PageProps): Promise<Metadata> {
+  const { slug } = await props.params;
+  const post = await fetchBlogPostBySlug(slug);
+
+  if (!post) {
     return {
-      title: 'Article Not Found | Ryzite',
+      title: 'Blog Post Not Found | Ryzite',
+      description: 'The requested technical article could not be found.'
     };
   }
 
+  const title = post.seoTitle || `${post.title} | Ryzite Technical Blog`;
+  const description = post.seoDescription || post.excerpt || post.content.slice(0, 160);
+
   return {
-    title: blog.metaTitle || `${blog.title} | Ryzite`,
-    description: blog.metaDescription || blog.excerpt,
-    alternates: {
-      canonical: `https://ryzite.com/blog/${slug}`,
-    },
+    title,
+    description,
+    keywords: post.secondaryKeywords?.join(', '),
     openGraph: {
-      title: blog.metaTitle || blog.title,
-      description: blog.metaDescription || blog.excerpt,
-      url: `https://ryzite.com/blog/${slug}`,
-      siteName: 'Ryzite',
+      title,
+      description,
+      url: post.canonicalUrl || `https://ryzite.com/blog/${post.slug}`,
+      siteName: 'Ryzite Digital Product Studio',
       type: 'article',
-      publishedTime: blog.publishedAt,
-      authors: [blog.author?.name || 'Ryzite Technical Lead'],
-      images: [blog.coverImage],
+      images: post.coverImageUrl ? [{ url: post.coverImageUrl, alt: post.coverImageAlt || post.title }] : undefined
     },
-    twitter: {
-      card: 'summary_large_image',
-      title: blog.metaTitle || blog.title,
-      description: blog.metaDescription || blog.excerpt,
-      images: [blog.coverImage],
-    },
+    alternates: {
+      canonical: post.canonicalUrl || `https://ryzite.com/blog/${post.slug}`
+    }
   };
 }
 
-export default async function BlogArticlePage({ params }: Props) {
-  const { slug } = await params;
-  const blog = getBlogBySlug(slug);
+export default async function BlogDetailPage(props: PageProps) {
+  const { slug } = await props.params;
+  const post = await fetchBlogPostBySlug(slug);
 
-  if (!blog) {
+  if (!post) {
     notFound();
   }
 
-  const jsonLd = {
-    '@context': 'https://schema.org',
-    '@type': 'Article',
-    headline: blog.title,
-    description: blog.excerpt,
-    image: blog.coverImage,
-    datePublished: blog.publishedAt,
-    author: {
-      '@type': 'Person',
-      name: blog.author?.name || 'Ryzite Technical Lead',
-      jobTitle: blog.author?.role || 'Senior Software Architect',
-    },
-    publisher: {
-      '@type': 'Organization',
-      name: 'Ryzite',
-      url: 'https://ryzite.com',
-    },
-  };
-
   return (
-    <div className="min-h-screen bg-white text-[#0F172A] flex flex-col">
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-      />
-      <Navbar services={INITIAL_SERVICES} activeSection="blog" />
+    <main className="min-h-screen bg-[#F8FAFC] text-[#0F172A] flex flex-col font-sans selection:bg-[#0052FF] selection:text-white" suppressHydrationWarning>
+      <Navbar activeSection="blog" />
 
-      <main className="flex-1 pt-32 pb-24">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          
-          <Breadcrumbs
-            items={[
-              { label: 'Blog', url: '/blog' },
-              { label: blog.title },
-            ]}
-          />
+      <div className="pt-20 flex-1">
+        <BlogDetailClient post={post} />
+      </div>
 
-          {/* Article Header */}
-          <div className="space-y-6 mb-10 text-left">
-            <div className="flex items-center gap-3">
-              <span className="px-3.5 py-1 bg-blue-50 text-[#0052FF] text-xs font-bold rounded-full border border-blue-200">
-                {blog.category}
-              </span>
-              <span className="text-xs text-slate-400 font-medium flex items-center gap-1">
-                <Clock className="w-3.5 h-3.5" />
-                {blog.readTime}
-              </span>
-            </div>
-
-            <h1 className="text-3xl sm:text-5xl font-black tracking-tight text-[#0F172A] font-display leading-[1.1]">
-              {blog.title}
-            </h1>
-
-            <p className="text-lg text-slate-600 leading-relaxed font-normal">
-              {blog.excerpt}
-            </p>
-
-            <div className="flex items-center gap-4 pt-4 border-t border-b border-slate-100 py-4">
-              <img
-                src={blog.author?.avatar || 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format&fit=crop'}
-                alt={blog.author?.name || 'Ryzite Technical Lead'}
-                className="w-12 h-12 rounded-full object-cover border-2 border-[#0052FF]"
-              />
-              <div>
-                <div className="text-sm font-bold text-[#0F172A]">{blog.author?.name || 'Ryzite Technical Lead'}</div>
-                <div className="text-xs text-slate-500">{blog.author?.role || 'Senior Architect'} • Published {blog.publishedAt}</div>
-              </div>
-            </div>
-          </div>
-
-          {/* Cover Image */}
-          <div className="relative aspect-[21/9] rounded-3xl overflow-hidden mb-12 shadow-xl border border-slate-200">
-            <img src={blog.coverImage} alt={blog.title} className="w-full h-full object-cover" />
-          </div>
-
-          {/* AEO Direct Answer Block */}
-          {blog.aeoDirectAnswer && (
-            <div className="p-6 bg-blue-50/80 rounded-3xl border border-blue-200 mb-12 space-y-2">
-              <div className="text-xs font-extrabold text-[#0052FF] uppercase tracking-wider flex items-center gap-2">
-                <Sparkles className="w-4 h-4" />
-                <span>Generative AI Direct Answer Summary</span>
-              </div>
-              <p className="text-sm text-slate-800 font-medium leading-relaxed">
-                {blog.aeoDirectAnswer}
-              </p>
-            </div>
-          )}
-
-          {/* Article Content Body */}
-          <div className="prose prose-lg max-w-none text-slate-700 leading-relaxed space-y-6 mb-12">
-            {blog.content.split('\n\n').map((paragraph, pIdx) => {
-              if (paragraph.startsWith('### ')) {
-                return (
-                  <h2 key={pIdx} className="text-2xl font-bold text-[#0F172A] pt-4 font-display">
-                    {paragraph.replace('### ', '')}
-                  </h2>
-                );
-              }
-              if (paragraph.startsWith('- ')) {
-                const items = paragraph.split('\n');
-                return (
-                  <ul key={pIdx} className="space-y-2 list-disc pl-6 text-sm sm:text-base">
-                    {items.map((item, itemIdx) => (
-                      <li key={itemIdx}>{item.replace('- ', '')}</li>
-                    ))}
-                  </ul>
-                );
-              }
-              return (
-                <p key={pIdx} className="text-sm sm:text-base leading-relaxed text-slate-700">
-                  {paragraph}
-                </p>
-              );
-            })}
-          </div>
-
-          {/* Tags */}
-          <div className="pt-8 border-t border-slate-200 flex flex-wrap gap-2 mb-16">
-            {blog.tags.map((tag, tIdx) => (
-              <span key={tIdx} className="px-3.5 py-1.5 bg-slate-100 text-slate-600 text-xs font-semibold rounded-lg flex items-center gap-1.5">
-                <Tag className="w-3.5 h-3.5 text-slate-400" />
-                {tag}
-              </span>
-            ))}
-          </div>
-
-          {/* CTA Box */}
-          <div className="p-8 sm:p-12 rounded-3xl bg-[#0F172A] text-white flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl">
-            <div className="space-y-2">
-              <h3 className="text-2xl font-bold font-display">Want to Implement These Architectural Patterns?</h3>
-              <p className="text-xs sm:text-sm text-slate-300">Schedule a 1-on-1 architecture discovery call with Ryzite senior engineers.</p>
-            </div>
-            <Link
-              href="/#contact"
-              className="px-6 py-3 bg-[#0052FF] hover:bg-[#0040cc] text-white text-xs sm:text-sm font-bold rounded-full transition-all shrink-0"
-            >
-              Book Architecture Discovery
-            </Link>
-          </div>
-
-        </div>
-      </main>
-
-      <Footer services={INITIAL_SERVICES} />
-    </div>
+      <Footer />
+    </main>
   );
 }
