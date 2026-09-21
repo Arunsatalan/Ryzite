@@ -103,7 +103,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({ project, onClose, on
           <div className="space-y-2">
             <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Technology Stack</h4>
             <div className="flex flex-wrap gap-2">
-              {(project.techStack || []).map((tech, idx) => {
+              {(project.techStack || []).map((tech: any, idx: number) => {
                 const techName = typeof tech === 'string' ? tech : (tech && typeof tech === 'object' && 'technology' in tech ? tech.technology?.name : '');
                 if (!techName) return null;
                 return (

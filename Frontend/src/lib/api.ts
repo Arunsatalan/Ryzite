@@ -193,5 +193,38 @@ export const api = {
 
   getAnalyticsSummary: () => fetchApi<any>('/api/analytics/summary', { cache: 'no-store' }),
   getSiteSettings: () => fetchApi<any>('/api/settings'),
-  getHomePageContent: () => fetchApi<any>('/api/home')
+  getHomePageContent: () => fetchApi<any>('/api/home'),
+
+  // AEO & Entity Knowledge Hub API methods
+  getCompanyEntity: () => fetchApi<any>('/api/company/entity', { cache: 'no-store' }),
+  updateCompanyEntity: (data: any) => fetchApi<any>('/api/company/entity', { method: 'PUT', body: JSON.stringify(data) }),
+
+  getCompanyFacts: (params?: { verifiedStatus?: string; category?: string; claimType?: string; status?: string; search?: string }) => {
+    const query = new URLSearchParams();
+    if (params?.verifiedStatus) query.append('verifiedStatus', params.verifiedStatus);
+    if (params?.category) query.append('category', params.category);
+    if (params?.claimType) query.append('claimType', params.claimType);
+    if (params?.status) query.append('status', params.status);
+    if (params?.search) query.append('search', params.search);
+    return fetchApi<any[]>(`/api/company/facts?${query.toString()}`, { cache: 'no-store' });
+  },
+
+  getPublicCompanyFacts: () => fetchApi<any>('/api/company-facts', { cache: 'no-store' }),
+  createCompanyFact: (data: any) => fetchApi<any>('/api/company/facts', { method: 'POST', body: JSON.stringify(data) }),
+  updateCompanyFact: (id: string, data: any) => fetchApi<any>(`/api/company/facts/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteCompanyFact: (id: string) => fetchApi<{ success: boolean }>(`/api/company/facts/${id}`, { method: 'DELETE' }),
+
+  getCompanyFaqs: () => fetchApi<any[]>('/api/company/faqs', { cache: 'no-store' }),
+  createCompanyFaq: (data: any) => fetchApi<any>('/api/company/faqs', { method: 'POST', body: JSON.stringify(data) }),
+  updateCompanyFaq: (id: string, data: any) => fetchApi<any>(`/api/company/faqs/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteCompanyFaq: (id: string) => fetchApi<{ success: boolean }>(`/api/company/faqs/${id}`, { method: 'DELETE' }),
+
+  getCompanyExpertise: () => fetchApi<any[]>('/api/company/expertise', { cache: 'no-store' }),
+  createCompanyExpertise: (data: any) => fetchApi<any>('/api/company/expertise', { method: 'POST', body: JSON.stringify(data) }),
+  updateCompanyExpertise: (id: string, data: any) => fetchApi<any>(`/api/company/expertise/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteCompanyExpertise: (id: string) => fetchApi<{ success: boolean }>(`/api/company/expertise/${id}`, { method: 'DELETE' }),
+
+  getAeoHealthScore: () => fetchApi<any>('/api/seo/health', { cache: 'no-store' }),
+  runAeoAudit: () => fetchApi<any>('/api/seo/audit', { method: 'POST' }),
+  getAeoIssues: () => fetchApi<any[]>('/api/seo/issues', { cache: 'no-store' })
 };

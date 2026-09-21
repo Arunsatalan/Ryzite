@@ -39,6 +39,10 @@ import {
   Shield,
   Eye,
   EyeOff,
+  Upload,
+  Image as ImageIcon,
+  MessageSquareQuote,
+  FileCode,
   LucideIcon
 } from 'lucide-react';
 import { LeadItem, ServiceItem, ServiceCategory, ProjectItem, BlogPost, LeadStatus, PageMetadataConfig, HomeHeroConfig, TrustedClientItem, CompanyStatisticItem, StatisticStatus, WhyChooseUsItem } from '../types';
@@ -46,6 +50,7 @@ import { SerpOptimizerModal } from './SerpOptimizerModal';
 import { Hero } from './Hero';
 import { TrustedClients } from './TrustedClients';
 import { WhyChooseUs } from './WhyChooseUs';
+import { AeoKnowledgeHubModule } from './admin/AeoKnowledgeHubModule';
 import { api } from '../lib/api';
 
 const STAT_ICON_MAP: Record<string, LucideIcon> = {
@@ -64,6 +69,7 @@ const STAT_ICON_MAP: Record<string, LucideIcon> = {
 
 interface AdminDashboardProps {
   isOpen?: boolean;
+  initialTab?: 'crm' | 'hero' | 'clients' | 'principles' | 'statistics' | 'services' | 'projects' | 'blogs' | 'seo' | 'analytics';
   onClose: () => void;
   services: ServiceItem[];
   projects: ProjectItem[];
@@ -75,6 +81,7 @@ interface AdminDashboardProps {
 
 export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   isOpen = true,
+  initialTab = 'crm',
   onClose,
   services,
   projects,
@@ -83,7 +90,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onUpdateProjects,
   onUpdateBlogs
 }) => {
-  const [activeTab, setActiveTab] = useState<'crm' | 'hero' | 'clients' | 'principles' | 'statistics' | 'services' | 'projects' | 'blogs' | 'seo' | 'analytics'>('crm');
+  const [activeTab, setActiveTab] = useState<'crm' | 'hero' | 'clients' | 'principles' | 'statistics' | 'services' | 'projects' | 'blogs' | 'seo' | 'analytics'>(initialTab);
   const [searchQuery, setSearchQuery] = useState('');
   
   if (!isOpen) return null;
@@ -224,52 +231,90 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const [uploadingProjectImg, setUploadingProjectImg] = useState(false);
   const [tempProjectPreviewUrl, setTempProjectPreviewUrl] = useState<string | null>(null);
 
+  const [projectActiveTab, setProjectActiveTab] = useState<number>(1);
+  const [uploadingArchDiagram, setUploadingArchDiagram] = useState(false);
+  const [uploadingClientLogo, setUploadingClientLogo] = useState(false);
+  const [uploadingGalleryImg, setUploadingGalleryImg] = useState(false);
+
   const [projectForm, setProjectForm] = useState<{
     title: string;
     slug: string;
     client: string;
+    clientLogoUrl: string;
+    clientWebsiteUrl: string;
     category: string;
     mockupType: string;
+    subtitle: string;
     shortDescription: string;
     fullDescription: string;
-    challenge: string;
-    solution: string;
-    results: string;
+    businessImpactText: string;
     heroImage: string;
+    architectureDiagramUrl: string;
     websiteUrl: string;
     githubUrl: string;
+    ctaText: string;
+    ctaLink: string;
     status: 'PUBLISHED' | 'DRAFT' | 'ARCHIVED';
     featured: boolean;
     metrics: { label: string; value: string; trend?: string; description?: string }[];
-    highlights: { title: string; description?: string }[];
+    techStack: string[];
+    challengesList: { title: string; description?: string; impact?: string }[];
+    solutionsList: { title: string; description?: string; codeSnippet?: string; diagramUrl?: string }[];
+    resultsList: { metricName: string; beforeValue?: string; afterValue?: string; percentageChange?: string; timeframe?: string }[];
+    galleryImages: { url: string; caption?: string; alt?: string }[];
     seoTitle: string;
     seoDescription: string;
+    seoKeywords: string;
+    focusKeywords: string;
     testimonialQuote: string;
     testimonialAuthor: string;
     testimonialRole: string;
+    testimonialCompany: string;
+    testimonialAvatar: string;
   }>({
     title: '',
     slug: '',
     client: '',
+    clientLogoUrl: '',
+    clientWebsiteUrl: '',
     category: 'SaaS Platform',
     mockupType: 'dark-dashboard',
+    subtitle: '',
     shortDescription: '',
     fullDescription: '',
-    challenge: '',
-    solution: '',
-    results: '',
+    businessImpactText: '',
     heroImage: '',
+    architectureDiagramUrl: '',
     websiteUrl: '',
     githubUrl: '',
+    ctaText: 'Book Discovery Call',
+    ctaLink: '#contact',
     status: 'PUBLISHED',
     featured: true,
-    metrics: [{ label: 'Performance Metric', value: '100%', trend: '+40% YoY' }],
-    highlights: [{ title: 'Key Feature Highlighting Architecture' }],
+    metrics: [
+      { label: 'Latency Reduction', value: '-85%', trend: 'Real-time' },
+      { label: 'System Throughput', value: '50k RPS', trend: 'Scalable' }
+    ],
+    techStack: ['Next.js 14', 'PostgreSQL', 'Express.js', 'TypeScript', 'Cloudinary CDN', 'Prisma ORM'],
+    challengesList: [
+      { title: 'Legacy Concurrency Bottlenecks', description: 'Database locks during peak spikes caused 4s delays for enterprise users.', impact: 'Critical latency spikes' }
+    ],
+    solutionsList: [
+      { title: 'Event-Driven Async Workers', description: 'Migrated long-running operations to asynchronous worker pools and Redis queues.', codeSnippet: '// Worker queue implementation snippet' }
+    ],
+    resultsList: [
+      { metricName: 'API Response Time', beforeValue: '4,200ms', afterValue: '85ms', percentageChange: '-97.9%', timeframe: 'Immediate post-launch' }
+    ],
+    galleryImages: [],
     seoTitle: '',
     seoDescription: '',
+    seoKeywords: '',
+    focusKeywords: '',
     testimonialQuote: '',
     testimonialAuthor: '',
-    testimonialRole: ''
+    testimonialRole: '',
+    testimonialCompany: '',
+    testimonialAvatar: ''
   });
 
   const fetchAdminProjects = async () => {
@@ -316,8 +361,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       if (res && res.url) {
         setProjectForm(prev => ({
           ...prev,
-          heroImage: res.url,
-          heroImagePublicId: res.public_id || res.filename
+          heroImage: res.url
         }));
         setProjectToast({ message: 'Project hero image uploaded to Cloudinary CDN', type: 'success' });
         setTimeout(() => setProjectToast(null), 3000);
@@ -329,38 +373,108 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   };
 
+  const handleClientLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingClientLogo(true);
+    try {
+      const res = await api.uploadCloudinaryImage(file, `ryzite/portfolio/projects/${projectForm.slug || 'general'}/logo`);
+      if (res && res.url) {
+        setProjectForm(prev => ({ ...prev, clientLogoUrl: res.url }));
+        setProjectToast({ message: 'Client logo uploaded to Cloudinary CDN', type: 'success' });
+      }
+    } catch (err: any) {
+      setProjectError(err.message || 'Failed to upload client logo');
+    } finally {
+      setUploadingClientLogo(false);
+    }
+  };
+
+  const handleArchDiagramUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingArchDiagram(true);
+    try {
+      const res = await api.uploadCloudinaryImage(file, `ryzite/portfolio/projects/${projectForm.slug || 'general'}/architecture`);
+      if (res && res.url) {
+        setProjectForm(prev => ({ ...prev, architectureDiagramUrl: res.url }));
+        setProjectToast({ message: 'Architecture diagram uploaded to Cloudinary CDN', type: 'success' });
+      }
+    } catch (err: any) {
+      setProjectError(err.message || 'Failed to upload architecture diagram');
+    } finally {
+      setUploadingArchDiagram(false);
+    }
+  };
+
+  const handleGalleryImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploadingGalleryImg(true);
+    try {
+      const res = await api.uploadCloudinaryImage(file, `ryzite/portfolio/projects/${projectForm.slug || 'general'}/gallery`);
+      if (res && res.url) {
+        setProjectForm(prev => ({
+          ...prev,
+          galleryImages: [...prev.galleryImages, { url: res.url, caption: file.name.split('.')[0], alt: `${prev.title} gallery screenshot` }]
+        }));
+        setProjectToast({ message: 'Gallery screenshot uploaded to Cloudinary CDN', type: 'success' });
+      }
+    } catch (err: any) {
+      setProjectError(err.message || 'Failed to upload gallery screenshot');
+    } finally {
+      setUploadingGalleryImg(false);
+    }
+  };
+
   const handleOpenAddProject = () => {
     setEditingProject(null);
     setTempProjectPreviewUrl(null);
+    setProjectActiveTab(1);
     setProjectForm({
       title: '',
       slug: '',
       client: '',
+      clientLogoUrl: '',
+      clientWebsiteUrl: '',
       category: 'SaaS Platform',
       mockupType: 'dark-dashboard',
+      subtitle: '',
       shortDescription: '',
       fullDescription: '',
-      challenge: '',
-      solution: '',
-      results: '',
+      businessImpactText: '',
       heroImage: '',
+      architectureDiagramUrl: '',
       websiteUrl: '',
       githubUrl: '',
+      ctaText: 'Book Discovery Call',
+      ctaLink: '#contact',
       status: 'PUBLISHED',
       featured: true,
       metrics: [
         { label: 'Latency Reduction', value: '-85%', trend: 'Real-time' },
         { label: 'System Throughput', value: '50k RPS', trend: 'Scalable' }
       ],
-      highlights: [
-        { title: 'Sub-50ms Global Query Optimization' },
-        { title: 'Autonomous Auto-scaling Kubernetes Infrastructure' }
+      techStack: ['Next.js 14', 'PostgreSQL', 'Express.js', 'TypeScript', 'Cloudinary CDN', 'Prisma ORM'],
+      challengesList: [
+        { title: 'Sub-second Processing Bottleneck', description: 'Legacy synchronous REST API could not sustain 20k concurrent webhook bursts.', impact: 'Service timeouts' }
       ],
+      solutionsList: [
+        { title: 'Asynchronous Event-Driven Bus', description: 'Architected distributed Redis queue handling high concurrency with zero drops.', codeSnippet: 'const queue = new WorkerQueue();' }
+      ],
+      resultsList: [
+        { metricName: 'API Throughput', beforeValue: '1,200 req/s', afterValue: '50,000 req/s', percentageChange: '+4,066%', timeframe: 'Immediate post-cutover' }
+      ],
+      galleryImages: [],
       seoTitle: '',
       seoDescription: '',
+      seoKeywords: '',
+      focusKeywords: '',
       testimonialQuote: '',
       testimonialAuthor: '',
-      testimonialRole: ''
+      testimonialRole: '',
+      testimonialCompany: '',
+      testimonialAvatar: ''
     });
     setProjectError(null);
     setShowProjectModal(true);
@@ -369,33 +483,54 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   const handleOpenEditProject = (project: ProjectItem) => {
     setEditingProject(project);
     setTempProjectPreviewUrl(null);
+    setProjectActiveTab(1);
     setProjectForm({
       title: project.title || '',
       slug: project.slug || '',
       client: project.client || project.clientName || '',
+      clientLogoUrl: project.clientLogoUrl || '',
+      clientWebsiteUrl: project.clientWebsiteUrl || '',
       category: project.category || 'SaaS Platform',
       mockupType: project.mockupType || 'dark-dashboard',
+      subtitle: project.subtitle || project.heroTitle || '',
       shortDescription: project.shortDescription || project.description || '',
       fullDescription: project.fullDescription || project.longDescription || project.shortDescription || '',
-      challenge: project.challenge || (project.challenges ? project.challenges.join('\n') : ''),
-      solution: project.solution || (project.solutions ? project.solutions.join('\n') : ''),
-      results: project.results || '',
+      businessImpactText: project.businessImpactText || '',
       heroImage: project.heroImage || '',
+      architectureDiagramUrl: project.architectureDiagramUrl || '',
       websiteUrl: project.websiteUrl || project.liveUrl || '',
       githubUrl: project.githubUrl || '',
+      ctaText: project.ctaText || 'Book Discovery Call',
+      ctaLink: project.ctaLink || '#contact',
       status: project.status || 'PUBLISHED',
       featured: project.featured ?? true,
       metrics: project.metrics && project.metrics.length > 0
-        ? project.metrics.map(m => ({ label: m.label, value: m.value, trend: m.trend || '', description: m.description || '' }))
+        ? project.metrics.map((m: any) => ({ label: m.label, value: m.value, trend: m.trend || '', description: m.description || '' }))
         : [{ label: 'Performance Benchmark', value: '99.9%', trend: 'SLA' }],
-      highlights: project.highlights && project.highlights.length > 0
-        ? project.highlights.map(h => ({ title: h.title, description: h.description || '' }))
-        : [{ title: 'Enterprise Core Architecture' }],
+      techStack: project.techStack && project.techStack.length > 0
+        ? project.techStack.map((t: any) => typeof t === 'string' ? t : (t?.name || t?.technology?.name || ''))
+        : ['Next.js', 'TypeScript', 'PostgreSQL'],
+      challengesList: project.challengesList && project.challengesList.length > 0
+        ? project.challengesList.map((c: any) => ({ title: c.title, description: c.description || '', impact: c.impact || '' }))
+        : project.challenge ? [{ title: 'Core Challenge', description: project.challenge }] : [],
+      solutionsList: project.solutionsList && project.solutionsList.length > 0
+        ? project.solutionsList.map((s: any) => ({ title: s.title, description: s.description || '', codeSnippet: s.codeSnippet || '', diagramUrl: s.diagramUrl || '' }))
+        : project.solution ? [{ title: 'Engineered Solution', description: project.solution }] : [],
+      resultsList: project.resultsList && project.resultsList.length > 0
+        ? project.resultsList.map((r: any) => ({ metricName: r.metricName || 'Metric', beforeValue: r.beforeValue || '', afterValue: r.afterValue || '', percentageChange: r.percentageChange || '', timeframe: r.timeframe || '' }))
+        : [],
+      galleryImages: project.galleryImages && project.galleryImages.length > 0
+        ? project.galleryImages.map((g: any) => ({ url: g.imageUrl || g.url || '', caption: g.caption || '', alt: g.altText || g.alt || '' }))
+        : [],
       seoTitle: project.seoTitle || project.seoMetadata?.metaTitle || '',
       seoDescription: project.seoDescription || project.seoMetadata?.metaDescription || '',
+      seoKeywords: project.seoKeywords || project.seoMetadata?.focusKeywords || '',
+      focusKeywords: project.seoMetadata?.focusKeywords || '',
       testimonialQuote: project.testimonial?.quote || '',
       testimonialAuthor: project.testimonial?.author || '',
-      testimonialRole: project.testimonial?.role || ''
+      testimonialRole: project.testimonial?.role || '',
+      testimonialCompany: project.testimonial?.company || '',
+      testimonialAvatar: project.testimonial?.avatarUrl || ''
     });
     setProjectError(null);
     setShowProjectModal(true);
@@ -414,31 +549,41 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         title: projectForm.title,
         slug,
         client: projectForm.client || 'Enterprise Partner',
+        clientLogoUrl: projectForm.clientLogoUrl,
+        clientWebsiteUrl: projectForm.clientWebsiteUrl,
         category: projectForm.category,
         mockupType: projectForm.mockupType,
+        heroTitle: projectForm.title,
+        subtitle: projectForm.subtitle,
         description: projectForm.shortDescription,
         longDescription: projectForm.fullDescription,
-        challenge: projectForm.challenge,
-        solution: projectForm.solution,
-        results: projectForm.results,
+        businessImpactText: projectForm.businessImpactText,
         heroImage: projectForm.heroImage || 'https://images.unsplash.com/photo-1551288049-bebda4e38f71',
+        architectureDiagramUrl: projectForm.architectureDiagramUrl,
         websiteUrl: projectForm.websiteUrl,
         githubUrl: projectForm.githubUrl,
+        ctaText: projectForm.ctaText,
+        ctaLink: projectForm.ctaLink,
         status: projectForm.status,
         featured: projectForm.featured,
         metrics: projectForm.metrics,
-        highlights: projectForm.highlights,
+        techStack: projectForm.techStack,
+        challengesList: projectForm.challengesList,
+        solutionsList: projectForm.solutionsList,
+        resultsList: projectForm.resultsList,
+        galleryImages: projectForm.galleryImages,
         seoTitle: projectForm.seoTitle || `${projectForm.title} Case Study | Ryzite`,
-        seoDescription: projectForm.seoDescription || projectForm.shortDescription
-      };
-
-      if (projectForm.testimonialQuote) {
-        payload.testimonial = {
+        seoDescription: projectForm.seoDescription || projectForm.shortDescription,
+        seoKeywords: projectForm.seoKeywords,
+        focusKeywords: projectForm.focusKeywords || projectForm.seoKeywords,
+        testimonial: projectForm.testimonialQuote ? {
           quote: projectForm.testimonialQuote,
           author: projectForm.testimonialAuthor || 'Executive Leader',
-          role: projectForm.testimonialRole || 'VP of Technology'
-        };
-      }
+          role: projectForm.testimonialRole || 'VP of Technology',
+          company: projectForm.testimonialCompany || projectForm.client,
+          avatarUrl: projectForm.testimonialAvatar
+        } : undefined
+      };
 
       if (editingProject) {
         await api.updateProject(editingProject.id, payload);
@@ -2658,7 +2803,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
           {/* TAB 2: SEO & AEO ENGINE */}
           {activeTab === 'seo' && (
-            <div className="space-y-6">
+            <AeoKnowledgeHubModule renderSerpSection={
               <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs space-y-6">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-slate-100 pb-5">
                   <div>
@@ -2771,7 +2916,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   </div>
                 )}
               </div>
-            </div>
+            } />
           )}
 
           {/* TAB 3: SERVICES CMS */}
@@ -3959,17 +4104,17 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         </div>
       )}
 
-      {/* ADD / EDIT PROJECT CASE STUDY MODAL */}
+      {/* ADD / EDIT PROJECT CASE STUDY MODAL (7-TAB ENTERPRISE EDITOR) */}
       {showProjectModal && (
         <div className="fixed inset-0 z-[100000] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white rounded-2xl max-w-4xl w-full shadow-2xl border border-slate-200 overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-white rounded-2xl max-w-5xl w-full shadow-2xl border border-slate-200 overflow-hidden my-6 animate-in fade-in zoom-in-95 duration-200">
             
             {/* Modal Header */}
-            <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+            <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between border-b border-slate-800">
               <div className="flex items-center gap-2">
                 <FolderKanban size={18} className="text-purple-400" />
                 <h3 className="font-bold text-sm">
-                  {editingProject ? 'Edit Project Case Study' : 'Create New Project Case Study'}
+                  {editingProject ? `Edit Case Study: ${editingProject.title}` : 'Create New Enterprise Case Study'}
                 </h3>
               </div>
               <button
@@ -3980,8 +4125,39 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </button>
             </div>
 
+            {/* Editor Tab Strip */}
+            <div className="bg-slate-100 border-b border-slate-200 px-6 py-2 flex items-center gap-1 overflow-x-auto scrollbar-none">
+              {[
+                { id: 1, label: 'Basic Info', icon: Building2 },
+                { id: 2, label: 'Hero & Media', icon: ImageIcon },
+                { id: 3, label: 'Story & Narrative', icon: FileText },
+                { id: 4, label: 'Metrics & Results', icon: TrendingUp },
+                { id: 5, label: 'Tech & Architecture', icon: Code },
+                { id: 6, label: 'Gallery & Quote', icon: MessageSquareQuote },
+                { id: 7, label: 'SEO & Schema', icon: Globe }
+              ].map(tab => {
+                const Icon = tab.icon;
+                const active = projectActiveTab === tab.id;
+                return (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setProjectActiveTab(tab.id)}
+                    className={`px-3.5 py-1.5 rounded-lg text-xs font-bold transition-all flex items-center gap-1.5 whitespace-nowrap ${
+                      active
+                        ? 'bg-blue-600 text-white shadow-xs'
+                        : 'text-slate-600 hover:bg-slate-200/80 hover:text-slate-900'
+                    }`}
+                  >
+                    <Icon size={14} />
+                    <span>{tab.label}</span>
+                  </button>
+                );
+              })}
+            </div>
+
             {/* Modal Body */}
-            <div className="p-6 space-y-6 max-h-[80vh] overflow-y-auto">
+            <div className="p-6 space-y-6 max-h-[75vh] overflow-y-auto">
               {projectError && (
                 <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-xs font-bold text-rose-700 flex items-center gap-2">
                   <AlertTriangle size={16} />
@@ -3989,369 +4165,721 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 </div>
               )}
 
-              {/* Basic Fields */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Project Title <span className="text-rose-500">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={projectForm.title}
-                    onChange={(e) => setProjectForm({
-                      ...projectForm,
-                      title: e.target.value,
-                      slug: projectForm.slug || e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '-'),
-                      seoTitle: projectForm.seoTitle || `${e.target.value} Case Study | Ryzite`
-                    })}
-                    placeholder="e.g. PineGen AI Platform"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                  />
-                </div>
+              {/* TAB 1: BASIC INFO */}
+              {projectActiveTab === 1 && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        Project Title <span className="text-rose-500">*</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={projectForm.title}
+                        onChange={(e) => setProjectForm({
+                          ...projectForm,
+                          title: e.target.value,
+                          slug: projectForm.slug || e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '-'),
+                          seoTitle: projectForm.seoTitle || `${e.target.value} Case Study | Ryzite`
+                        })}
+                        placeholder="e.g. PineGen AI Platform"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      />
+                    </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    URL Slug
-                  </label>
-                  <input
-                    type="text"
-                    value={projectForm.slug}
-                    onChange={(e) => setProjectForm({ ...projectForm, slug: e.target.value })}
-                    placeholder="pinegen-ai-platform"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-mono font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
-                  />
-                </div>
-              </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">
+                        URL Slug <span className="text-xs font-normal text-slate-400">(/portfolio/[slug])</span>
+                      </label>
+                      <input
+                        type="text"
+                        value={projectForm.slug}
+                        onChange={(e) => setProjectForm({ ...projectForm, slug: e.target.value })}
+                        placeholder="pinegen-ai-platform"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-mono font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      />
+                    </div>
+                  </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Client Name
-                  </label>
-                  <input
-                    type="text"
-                    value={projectForm.client}
-                    onChange={(e) => setProjectForm({ ...projectForm, client: e.target.value })}
-                    placeholder="PineGen Inc."
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-semibold text-slate-900"
-                  />
-                </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">Client / Company Name</label>
+                      <input
+                        type="text"
+                        value={projectForm.client}
+                        onChange={(e) => setProjectForm({ ...projectForm, client: e.target.value })}
+                        placeholder="PineGen Inc."
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-semibold text-slate-900"
+                      />
+                    </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Category
-                  </label>
-                  <select
-                    value={projectForm.category}
-                    onChange={(e) => setProjectForm({ ...projectForm, category: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 cursor-pointer"
-                  >
-                    <option value="SaaS Platform">SaaS Platform</option>
-                    <option value="AI & Automation">AI & Automation</option>
-                    <option value="Mobile Engineering">Mobile Engineering</option>
-                    <option value="Cloud Infrastructure">Cloud Infrastructure</option>
-                  </select>
-                </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">Category</label>
+                      <select
+                        value={projectForm.category}
+                        onChange={(e) => setProjectForm({ ...projectForm, category: e.target.value })}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 cursor-pointer"
+                      >
+                        <option value="SaaS Platform">SaaS Platform</option>
+                        <option value="AI & Automation">AI & Automation</option>
+                        <option value="Web Application">Web Application</option>
+                        <option value="Mobile Engineering">Mobile Engineering</option>
+                        <option value="Cloud Infrastructure">Cloud Infrastructure</option>
+                        <option value="Enterprise Software">Enterprise Software</option>
+                      </select>
+                    </div>
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">
-                    Mockup Style
-                  </label>
-                  <select
-                    value={projectForm.mockupType}
-                    onChange={(e) => setProjectForm({ ...projectForm, mockupType: e.target.value })}
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 cursor-pointer"
-                  >
-                    <option value="dark-dashboard">Dark Dashboard</option>
-                    <option value="mobile-cards">Mobile Cards</option>
-                    <option value="bot-interface">Bot Interface</option>
-                    <option value="analytics-suite">Analytics Suite</option>
-                  </select>
-                </div>
-              </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">Mockup UI Accent</label>
+                      <select
+                        value={projectForm.mockupType}
+                        onChange={(e) => setProjectForm({ ...projectForm, mockupType: e.target.value })}
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 cursor-pointer"
+                      >
+                        <option value="dark-dashboard">Dark Dashboard</option>
+                        <option value="mobile-cards">Mobile Cards</option>
+                        <option value="bot-interface">Bot Interface</option>
+                        <option value="analytics-suite">Analytics Suite</option>
+                      </select>
+                    </div>
+                  </div>
 
-              {/* Local Hero Image Upload */}
-              <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
-                <div className="flex items-center justify-between">
-                  <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider">
-                    Hero Media (Cloudinary Cloud Storage)
-                  </label>
-                  <label className="cursor-pointer text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1 bg-white px-2.5 py-1 rounded-lg border border-blue-200 shadow-2xs">
-                    <Plus size={13} />
-                    <span>{uploadingProjectImg ? 'Uploading...' : 'Upload Image File'}</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleProjectImageFileUpload}
-                      disabled={uploadingProjectImg}
-                      className="hidden"
-                    />
-                  </label>
-                </div>
+                  {/* Client Logo Upload */}
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-slate-800">Client Logo (Cloudinary Storage)</label>
+                      <label className="cursor-pointer text-xs font-bold text-blue-600 hover:underline flex items-center gap-1 bg-white px-2.5 py-1 rounded-lg border border-blue-200">
+                        <Upload size={13} />
+                        <span>{uploadingClientLogo ? 'Uploading...' : 'Upload Logo'}</span>
+                        <input type="file" accept="image/*" onChange={handleClientLogoUpload} disabled={uploadingClientLogo} className="hidden" />
+                      </label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={projectForm.clientLogoUrl}
+                        onChange={(e) => setProjectForm({ ...projectForm, clientLogoUrl: e.target.value })}
+                        placeholder="Cloudinary Logo URL or path..."
+                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-mono text-slate-900"
+                      />
+                      {projectForm.clientLogoUrl && (
+                        <div className="w-8 h-8 rounded bg-slate-900 p-1 flex items-center justify-center shrink-0 border border-slate-700">
+                          <img src={projectForm.clientLogoUrl} alt="Client Logo" className="max-h-full max-w-full object-contain" />
+                        </div>
+                      )}
+                    </div>
+                  </div>
 
-                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
-                  <div className="sm:col-span-8">
+                  <div className="flex items-center gap-6 pt-2 border-t border-slate-100">
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={projectForm.status === 'PUBLISHED'}
+                        onChange={(e) => setProjectForm({ ...projectForm, status: e.target.checked ? 'PUBLISHED' : 'DRAFT' })}
+                        className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
+                      />
+                      <span className="text-xs font-semibold text-slate-700">Status: Published Live</span>
+                    </label>
+
+                    <label className="flex items-center gap-2 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={projectForm.featured}
+                        onChange={(e) => setProjectForm({ ...projectForm, featured: e.target.checked })}
+                        className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
+                      />
+                      <span className="text-xs font-semibold text-slate-700">Featured on Homepage Grid</span>
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 2: HERO & MEDIA */}
+              {projectActiveTab === 2 && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Hero Subtitle / Tagline</label>
                     <input
                       type="text"
-                      value={projectForm.heroImage}
-                      onChange={(e) => setProjectForm({ ...projectForm, heroImage: e.target.value })}
-                      placeholder="Upload image file above or paste URL (e.g. /uploads/projects/hero.png)"
-                      className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                      value={projectForm.subtitle}
+                      onChange={(e) => setProjectForm({ ...projectForm, subtitle: e.target.value })}
+                      placeholder="e.g. Next-Generation Autonomous AI Worker Infrastructure"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-900"
                     />
                   </div>
 
-                  <div className="sm:col-span-4 flex flex-col items-center justify-center p-2 bg-slate-900 border border-slate-700 rounded-xl text-center min-h-[80px]">
-                    {tempProjectPreviewUrl ? (
-                      <img src={tempProjectPreviewUrl} alt="Temp Preview" className="max-h-16 max-w-full object-contain mx-auto rounded" />
-                    ) : projectForm.heroImage ? (
-                      <img src={projectForm.heroImage} alt="Saved Preview" className="max-h-16 max-w-full object-contain mx-auto rounded" />
-                    ) : (
-                      <span className="text-slate-500 text-[11px]">No Image Selected</span>
-                    )}
+                  {/* Main Hero Image Cloudinary Upload */}
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+                    <div className="flex items-center justify-between">
+                      <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider">
+                        Hero Cover Image (Cloudinary CDN)
+                      </label>
+                      <label className="cursor-pointer text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1 bg-white px-2.5 py-1 rounded-lg border border-blue-200 shadow-2xs">
+                        <Upload size={13} />
+                        <span>{uploadingProjectImg ? 'Uploading File...' : 'Upload Cover Image'}</span>
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={handleProjectImageFileUpload}
+                          disabled={uploadingProjectImg}
+                          className="hidden"
+                        />
+                      </label>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+                      <div className="sm:col-span-8">
+                        <input
+                          type="text"
+                          value={projectForm.heroImage}
+                          onChange={(e) => setProjectForm({ ...projectForm, heroImage: e.target.value })}
+                          placeholder="Upload cover file or enter CDN URL..."
+                          className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                        />
+                      </div>
+                      <div className="sm:col-span-4 flex flex-col items-center justify-center p-2 bg-slate-900 border border-slate-700 rounded-xl text-center min-h-[80px]">
+                        {tempProjectPreviewUrl ? (
+                          <img src={tempProjectPreviewUrl} alt="Temp Preview" className="max-h-16 max-w-full object-contain mx-auto rounded" />
+                        ) : projectForm.heroImage ? (
+                          <img src={projectForm.heroImage} alt="Saved Cover" className="max-h-16 max-w-full object-contain mx-auto rounded" />
+                        ) : (
+                          <span className="text-slate-500 text-[11px]">No Cover Selected</span>
+                        )}
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">Live Application URL</label>
+                      <input
+                        type="text"
+                        value={projectForm.websiteUrl}
+                        onChange={(e) => setProjectForm({ ...projectForm, websiteUrl: e.target.value })}
+                        placeholder="https://app.client.com"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-mono text-slate-900"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">GitHub Repo / Source</label>
+                      <input
+                        type="text"
+                        value={projectForm.githubUrl}
+                        onChange={(e) => setProjectForm({ ...projectForm, githubUrl: e.target.value })}
+                        placeholder="https://github.com/org/repo"
+                        className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-mono text-slate-900"
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
-              {/* Descriptions & Story */}
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Short Overview (Teaser)</label>
-                <textarea
-                  rows={2}
-                  value={projectForm.shortDescription}
-                  onChange={(e) => setProjectForm({ ...projectForm, shortDescription: e.target.value })}
-                  placeholder="Bespoke generative AI content engine handling high concurrency..."
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">Full Case Study Narrative</label>
-                <textarea
-                  rows={4}
-                  value={projectForm.fullDescription}
-                  onChange={(e) => setProjectForm({ ...projectForm, fullDescription: e.target.value })}
-                  placeholder="Detailed breakdown of system architecture, technology choices, and operational benchmarks..."
-                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900"
-                />
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Challenge / Problem</label>
-                  <textarea
-                    rows={3}
-                    value={projectForm.challenge}
-                    onChange={(e) => setProjectForm({ ...projectForm, challenge: e.target.value })}
-                    placeholder="Legacy infrastructure bottlenecked under high request spikes..."
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900"
-                  />
-                </div>
-
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Engineered Solution</label>
-                  <textarea
-                    rows={3}
-                    value={projectForm.solution}
-                    onChange={(e) => setProjectForm({ ...projectForm, solution: e.target.value })}
-                    placeholder="Migrated to event-driven serverless worker architecture..."
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900"
-                  />
-                </div>
-              </div>
-
-              {/* Dynamic Metrics Repeater */}
-              <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">Key Impact Metrics</span>
-                  <button
-                    type="button"
-                    onClick={() => setProjectForm(prev => ({
-                      ...prev,
-                      metrics: [...prev.metrics, { label: 'Metric Name', value: '100%', trend: '+20%' }]
-                    }))}
-                    className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 bg-white px-2.5 py-1 rounded-lg border border-blue-200"
-                  >
-                    <Plus size={13} /> Add Metric
-                  </button>
-                </div>
-
-                {projectForm.metrics.map((m, idx) => (
-                  <div key={idx} className="grid grid-cols-12 gap-2 items-center bg-white p-2.5 rounded-xl border border-slate-200">
-                    <input
-                      type="text"
-                      value={m.label}
-                      onChange={(e) => {
-                        const updated = [...projectForm.metrics];
-                        updated[idx].label = e.target.value;
-                        setProjectForm({ ...projectForm, metrics: updated });
-                      }}
-                      placeholder="Label (e.g. Uptime)"
-                      className="col-span-4 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 text-xs font-bold text-slate-900"
+              {/* TAB 3: STORY & NARRATIVE */}
+              {projectActiveTab === 3 && (
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Short Overview (Teaser)</label>
+                    <textarea
+                      rows={2}
+                      value={projectForm.shortDescription}
+                      onChange={(e) => setProjectForm({ ...projectForm, shortDescription: e.target.value })}
+                      placeholder="Bespoke generative AI content engine handling high concurrency..."
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900"
                     />
-                    <input
-                      type="text"
-                      value={m.value}
-                      onChange={(e) => {
-                        const updated = [...projectForm.metrics];
-                        updated[idx].value = e.target.value;
-                        setProjectForm({ ...projectForm, metrics: updated });
-                      }}
-                      placeholder="Value (e.g. 99.99%)"
-                      className="col-span-4 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 text-xs font-bold text-blue-600"
-                    />
-                    <input
-                      type="text"
-                      value={m.trend || ''}
-                      onChange={(e) => {
-                        const updated = [...projectForm.metrics];
-                        updated[idx].trend = e.target.value;
-                        setProjectForm({ ...projectForm, metrics: updated });
-                      }}
-                      placeholder="Trend/Badge"
-                      className="col-span-3 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs text-slate-700"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const updated = projectForm.metrics.filter((_, i) => i !== idx);
-                        setProjectForm({ ...projectForm, metrics: updated });
-                      }}
-                      className="col-span-1 text-slate-400 hover:text-rose-600 p-1 flex justify-center"
-                    >
-                      <Trash2 size={14} />
-                    </button>
                   </div>
-                ))}
-              </div>
 
-              {/* Dynamic Highlights Repeater */}
-              <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">Architecture Highlights</span>
-                  <button
-                    type="button"
-                    onClick={() => setProjectForm(prev => ({
-                      ...prev,
-                      highlights: [...prev.highlights, { title: 'Highlight Feature Title' }]
-                    }))}
-                    className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 bg-white px-2.5 py-1 rounded-lg border border-blue-200"
-                  >
-                    <Plus size={13} /> Add Highlight
-                  </button>
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Full Case Study Narrative / Story</label>
+                    <textarea
+                      rows={5}
+                      value={projectForm.fullDescription}
+                      onChange={(e) => setProjectForm({ ...projectForm, fullDescription: e.target.value })}
+                      placeholder="Detailed architectural story, engineering evolution, and client outcomes..."
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Executive Business Impact Summary</label>
+                    <textarea
+                      rows={2}
+                      value={projectForm.businessImpactText}
+                      onChange={(e) => setProjectForm({ ...projectForm, businessImpactText: e.target.value })}
+                      placeholder="e.g. Enabled PineGen Inc. to scale from $5M ARR to $32M ARR with zero downtime spikes."
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-medium text-slate-900"
+                    />
+                  </div>
                 </div>
+              )}
 
-                {projectForm.highlights.map((h, idx) => (
-                  <div key={idx} className="flex items-center gap-2 bg-white p-2.5 rounded-xl border border-slate-200">
+              {/* TAB 4: METRICS & RESULTS */}
+              {projectActiveTab === 4 && (
+                <div className="space-y-6">
+                  {/* Dynamic Metrics Repeater */}
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">Key Impact Metrics Pills</span>
+                      <button
+                        type="button"
+                        onClick={() => setProjectForm(prev => ({
+                          ...prev,
+                          metrics: [...prev.metrics, { label: 'Metric Name', value: '100%', trend: '+20%' }]
+                        }))}
+                        className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 bg-white px-2.5 py-1 rounded-lg border border-blue-200"
+                      >
+                        <Plus size={13} /> Add Metric Pill
+                      </button>
+                    </div>
+
+                    {projectForm.metrics.map((m, idx) => (
+                      <div key={idx} className="grid grid-cols-12 gap-2 items-center bg-white p-2.5 rounded-xl border border-slate-200">
+                        <input
+                          type="text"
+                          value={m.label}
+                          onChange={(e) => {
+                            const updated = [...projectForm.metrics];
+                            updated[idx].label = e.target.value;
+                            setProjectForm({ ...projectForm, metrics: updated });
+                          }}
+                          placeholder="Label (e.g. Uptime)"
+                          className="col-span-4 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 text-xs font-bold text-slate-900"
+                        />
+                        <input
+                          type="text"
+                          value={m.value}
+                          onChange={(e) => {
+                            const updated = [...projectForm.metrics];
+                            updated[idx].value = e.target.value;
+                            setProjectForm({ ...projectForm, metrics: updated });
+                          }}
+                          placeholder="Value (e.g. 99.99%)"
+                          className="col-span-4 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 text-xs font-bold text-blue-600"
+                        />
+                        <input
+                          type="text"
+                          value={m.trend || ''}
+                          onChange={(e) => {
+                            const updated = [...projectForm.metrics];
+                            updated[idx].trend = e.target.value;
+                            setProjectForm({ ...projectForm, metrics: updated });
+                          }}
+                          placeholder="Trend/Badge"
+                          className="col-span-3 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs text-slate-700"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updated = projectForm.metrics.filter((_, i) => i !== idx);
+                            setProjectForm({ ...projectForm, metrics: updated });
+                          }}
+                          className="col-span-1 text-slate-400 hover:text-rose-600 p-1 flex justify-center"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Quantitative Before vs After Repeater */}
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">Quantitative Results (Before vs. After)</span>
+                      <button
+                        type="button"
+                        onClick={() => setProjectForm(prev => ({
+                          ...prev,
+                          resultsList: [...prev.resultsList, { metricName: 'API Latency', beforeValue: '3.5s', afterValue: '90ms', percentageChange: '-97.4%', timeframe: 'Immediate' }]
+                        }))}
+                        className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 bg-white px-2.5 py-1 rounded-lg border border-blue-200"
+                      >
+                        <Plus size={13} /> Add Result Row
+                      </button>
+                    </div>
+
+                    {projectForm.resultsList.map((r, idx) => (
+                      <div key={idx} className="grid grid-cols-12 gap-2 items-center bg-white p-2.5 rounded-xl border border-slate-200">
+                        <input
+                          type="text"
+                          value={r.metricName}
+                          onChange={(e) => {
+                            const updated = [...projectForm.resultsList];
+                            updated[idx].metricName = e.target.value;
+                            setProjectForm({ ...projectForm, resultsList: updated });
+                          }}
+                          placeholder="Metric Name"
+                          className="col-span-3 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 text-xs font-bold text-slate-900"
+                        />
+                        <input
+                          type="text"
+                          value={r.beforeValue || ''}
+                          onChange={(e) => {
+                            const updated = [...projectForm.resultsList];
+                            updated[idx].beforeValue = e.target.value;
+                            setProjectForm({ ...projectForm, resultsList: updated });
+                          }}
+                          placeholder="Before (e.g. 4.2s)"
+                          className="col-span-2 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs text-rose-600 font-semibold"
+                        />
+                        <input
+                          type="text"
+                          value={r.afterValue || ''}
+                          onChange={(e) => {
+                            const updated = [...projectForm.resultsList];
+                            updated[idx].afterValue = e.target.value;
+                            setProjectForm({ ...projectForm, resultsList: updated });
+                          }}
+                          placeholder="After (e.g. 85ms)"
+                          className="col-span-2 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs text-emerald-600 font-bold"
+                        />
+                        <input
+                          type="text"
+                          value={r.percentageChange || ''}
+                          onChange={(e) => {
+                            const updated = [...projectForm.resultsList];
+                            updated[idx].percentageChange = e.target.value;
+                            setProjectForm({ ...projectForm, resultsList: updated });
+                          }}
+                          placeholder="Diff (e.g. -98%)"
+                          className="col-span-2 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs font-extrabold text-blue-600"
+                        />
+                        <input
+                          type="text"
+                          value={r.timeframe || ''}
+                          onChange={(e) => {
+                            const updated = [...projectForm.resultsList];
+                            updated[idx].timeframe = e.target.value;
+                            setProjectForm({ ...projectForm, resultsList: updated });
+                          }}
+                          placeholder="Timeframe"
+                          className="col-span-2 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs text-slate-500"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => {
+                            const updated = projectForm.resultsList.filter((_, i) => i !== idx);
+                            setProjectForm({ ...projectForm, resultsList: updated });
+                          }}
+                          className="col-span-1 text-slate-400 hover:text-rose-600 p-1 flex justify-center"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 5: TECH & ARCHITECTURE */}
+              {projectActiveTab === 5 && (
+                <div className="space-y-6">
+                  {/* Tech Stack Input */}
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">Tech Stack (Comma-separated)</label>
                     <input
                       type="text"
-                      value={h.title}
-                      onChange={(e) => {
-                        const updated = [...projectForm.highlights];
-                        updated[idx].title = e.target.value;
-                        setProjectForm({ ...projectForm, highlights: updated });
-                      }}
-                      placeholder="Highlight feature (e.g. Sub-50ms Global Query Optimization)"
-                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 text-xs font-semibold text-slate-900"
+                      value={projectForm.techStack.join(', ')}
+                      onChange={(e) => setProjectForm({
+                        ...projectForm,
+                        techStack: e.target.value.split(',').map(s => s.trim()).filter(Boolean)
+                      })}
+                      placeholder="Next.js 14, TypeScript, PostgreSQL, Prisma, Cloudinary, Tailwind CSS"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-mono font-medium text-slate-900"
                     />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        const updated = projectForm.highlights.filter((_, i) => i !== idx);
-                        setProjectForm({ ...projectForm, highlights: updated });
-                      }}
-                      className="text-slate-400 hover:text-rose-600 p-1 shrink-0"
-                    >
-                      <Trash2 size={14} />
-                    </button>
                   </div>
-                ))}
-              </div>
 
-              {/* Testimonial & Links */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">Target Website URL</label>
-                  <input
-                    type="text"
-                    value={projectForm.websiteUrl}
-                    onChange={(e) => setProjectForm({ ...projectForm, websiteUrl: e.target.value })}
-                    placeholder="https://clientwebsite.com"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900"
-                  />
+                  {/* Architecture Diagram Upload */}
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-2">
+                    <div className="flex items-center justify-between">
+                      <label className="text-xs font-bold text-slate-800">System Architecture Diagram (Cloudinary Storage)</label>
+                      <label className="cursor-pointer text-xs font-bold text-blue-600 hover:underline flex items-center gap-1 bg-white px-2.5 py-1 rounded-lg border border-blue-200">
+                        <Upload size={13} />
+                        <span>{uploadingArchDiagram ? 'Uploading Diagram...' : 'Upload Diagram'}</span>
+                        <input type="file" accept="image/*" onChange={handleArchDiagramUpload} disabled={uploadingArchDiagram} className="hidden" />
+                      </label>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="text"
+                        value={projectForm.architectureDiagramUrl}
+                        onChange={(e) => setProjectForm({ ...projectForm, architectureDiagramUrl: e.target.value })}
+                        placeholder="Cloudinary Diagram URL or path..."
+                        className="w-full bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-mono text-slate-900"
+                      />
+                      {projectForm.architectureDiagramUrl && (
+                        <div className="w-8 h-8 rounded bg-slate-900 p-1 flex items-center justify-center shrink-0 border border-slate-700">
+                          <img src={projectForm.architectureDiagramUrl} alt="Arch Diagram" className="max-h-full max-w-full object-contain" />
+                        </div>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Engineering Challenges Repeater */}
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">Engineering Challenges List</span>
+                      <button
+                        type="button"
+                        onClick={() => setProjectForm(prev => ({
+                          ...prev,
+                          challengesList: [...prev.challengesList, { title: 'Challenge Title', description: 'Problem description', impact: 'Business impact' }]
+                        }))}
+                        className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 bg-white px-2.5 py-1 rounded-lg border border-blue-200"
+                      >
+                        <Plus size={13} /> Add Challenge
+                      </button>
+                    </div>
+
+                    {projectForm.challengesList.map((c, idx) => (
+                      <div key={idx} className="space-y-2 bg-white p-3 rounded-xl border border-slate-200">
+                        <div className="flex items-center justify-between">
+                          <input
+                            type="text"
+                            value={c.title}
+                            onChange={(e) => {
+                              const updated = [...projectForm.challengesList];
+                              updated[idx].title = e.target.value;
+                              setProjectForm({ ...projectForm, challengesList: updated });
+                            }}
+                            placeholder="Challenge Title"
+                            className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 text-xs font-bold text-slate-900"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = projectForm.challengesList.filter((_, i) => i !== idx);
+                              setProjectForm({ ...projectForm, challengesList: updated });
+                            }}
+                            className="text-slate-400 hover:text-rose-600 p-1 ml-2"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                        <textarea
+                          rows={2}
+                          value={c.description || ''}
+                          onChange={(e) => {
+                            const updated = [...projectForm.challengesList];
+                            updated[idx].description = e.target.value;
+                            setProjectForm({ ...projectForm, challengesList: updated });
+                          }}
+                          placeholder="Challenge Details..."
+                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 text-xs text-slate-700"
+                        />
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Architectural Solutions Repeater */}
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">Architectural Solutions List</span>
+                      <button
+                        type="button"
+                        onClick={() => setProjectForm(prev => ({
+                          ...prev,
+                          solutionsList: [...prev.solutionsList, { title: 'Solution Title', description: 'Architectural breakdown', codeSnippet: '// snippet' }]
+                        }))}
+                        className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 bg-white px-2.5 py-1 rounded-lg border border-blue-200"
+                      >
+                        <Plus size={13} /> Add Solution
+                      </button>
+                    </div>
+
+                    {projectForm.solutionsList.map((s, idx) => (
+                      <div key={idx} className="space-y-2 bg-white p-3 rounded-xl border border-slate-200">
+                        <div className="flex items-center justify-between">
+                          <input
+                            type="text"
+                            value={s.title}
+                            onChange={(e) => {
+                              const updated = [...projectForm.solutionsList];
+                              updated[idx].title = e.target.value;
+                              setProjectForm({ ...projectForm, solutionsList: updated });
+                            }}
+                            placeholder="Solution Title"
+                            className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 text-xs font-bold text-slate-900"
+                          />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = projectForm.solutionsList.filter((_, i) => i !== idx);
+                              setProjectForm({ ...projectForm, solutionsList: updated });
+                            }}
+                            className="text-slate-400 hover:text-rose-600 p-1 ml-2"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                        <textarea
+                          rows={2}
+                          value={s.description || ''}
+                          onChange={(e) => {
+                            const updated = [...projectForm.solutionsList];
+                            updated[idx].description = e.target.value;
+                            setProjectForm({ ...projectForm, solutionsList: updated });
+                          }}
+                          placeholder="Solution Architectural Details..."
+                          className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 text-xs text-slate-700"
+                        />
+                      </div>
+                    ))}
+                  </div>
                 </div>
+              )}
 
-                <div>
-                  <label className="block text-xs font-bold text-slate-700 mb-1">GitHub Repository URL</label>
-                  <input
-                    type="text"
-                    value={projectForm.githubUrl}
-                    onChange={(e) => setProjectForm({ ...projectForm, githubUrl: e.target.value })}
-                    placeholder="https://github.com/org/repo"
-                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 font-mono"
-                  />
+              {/* TAB 6: GALLERY & TESTIMONIAL */}
+              {projectActiveTab === 6 && (
+                <div className="space-y-6">
+                  {/* Media Screenshots Gallery Upload */}
+                  <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">Screenshots & UI Gallery</span>
+                      <label className="cursor-pointer text-xs font-bold text-blue-600 hover:underline flex items-center gap-1 bg-white px-2.5 py-1 rounded-lg border border-blue-200">
+                        <Upload size={13} />
+                        <span>{uploadingGalleryImg ? 'Uploading Screenshot...' : 'Add Screenshot to Gallery'}</span>
+                        <input type="file" accept="image/*" onChange={handleGalleryImageUpload} disabled={uploadingGalleryImg} className="hidden" />
+                      </label>
+                    </div>
+
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                      {projectForm.galleryImages.map((img, idx) => (
+                        <div key={idx} className="relative group bg-slate-900 border border-slate-700 rounded-xl overflow-hidden p-1">
+                          <img src={img.url} alt={img.caption || 'Gallery Image'} className="h-24 w-full object-cover rounded-lg" />
+                          <button
+                            type="button"
+                            onClick={() => {
+                              const updated = projectForm.galleryImages.filter((_, i) => i !== idx);
+                              setProjectForm({ ...projectForm, galleryImages: updated });
+                            }}
+                            className="absolute top-2 right-2 p-1 bg-rose-600 text-white rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
+                          >
+                            <Trash2 size={12} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Client Testimonial */}
+                  <div className="p-4 bg-purple-50/50 border border-purple-200/80 rounded-2xl space-y-3">
+                    <span className="text-xs font-bold text-purple-900 uppercase tracking-wider">Client Endorsement / Testimonial</span>
+                    <textarea
+                      rows={3}
+                      value={projectForm.testimonialQuote}
+                      onChange={(e) => setProjectForm({ ...projectForm, testimonialQuote: e.target.value })}
+                      placeholder="Executive Quote (e.g. Ryzite delivered our platform 2 weeks ahead of schedule with flawless precision...)"
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 font-medium"
+                    />
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                      <input
+                        type="text"
+                        value={projectForm.testimonialAuthor}
+                        onChange={(e) => setProjectForm({ ...projectForm, testimonialAuthor: e.target.value })}
+                        placeholder="Author Name (e.g. Sarah Jenkins)"
+                        className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900 font-semibold"
+                      />
+                      <input
+                        type="text"
+                        value={projectForm.testimonialRole}
+                        onChange={(e) => setProjectForm({ ...projectForm, testimonialRole: e.target.value })}
+                        placeholder="Role (e.g. Chief Technology Officer)"
+                        className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900"
+                      />
+                      <input
+                        type="text"
+                        value={projectForm.testimonialCompany}
+                        onChange={(e) => setProjectForm({ ...projectForm, testimonialCompany: e.target.value })}
+                        placeholder="Company Name"
+                        className="bg-white border border-slate-200 rounded-xl px-3 py-1.5 text-xs text-slate-900"
+                      />
+                    </div>
+                  </div>
                 </div>
-              </div>
+              )}
 
-              {/* SEO & Status Switches */}
-              <div className="p-4 bg-blue-50/50 border border-blue-200/70 rounded-2xl space-y-3">
-                <span className="text-xs font-bold text-blue-900 uppercase tracking-wider text-[11px]">SEO Metadata Settings</span>
-                <input
-                  type="text"
-                  value={projectForm.seoTitle}
-                  onChange={(e) => setProjectForm({ ...projectForm, seoTitle: e.target.value })}
-                  placeholder="Meta Title Tag (e.g. PineGen AI Case Study | Ryzite)"
-                  className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-1.5 text-xs text-slate-900"
-                />
-                <textarea
-                  rows={2}
-                  value={projectForm.seoDescription}
-                  onChange={(e) => setProjectForm({ ...projectForm, seoDescription: e.target.value })}
-                  placeholder="Meta Description..."
-                  className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-1.5 text-xs text-slate-900"
-                />
-              </div>
+              {/* TAB 7: SEO & AEO METADATA */}
+              {projectActiveTab === 7 && (
+                <div className="space-y-4">
+                  <div className="p-4 bg-blue-50/60 border border-blue-200/80 rounded-2xl space-y-3">
+                    <span className="text-xs font-bold text-blue-900 uppercase tracking-wider text-[11px]">Google SERP & AEO Search Config</span>
+                    
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">Page Meta Title Tag</label>
+                      <input
+                        type="text"
+                        value={projectForm.seoTitle}
+                        onChange={(e) => setProjectForm({ ...projectForm, seoTitle: e.target.value })}
+                        placeholder="e.g. PineGen AI - Generative Platform Case Study | Ryzite"
+                        className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 font-semibold"
+                      />
+                    </div>
 
-              <div className="flex items-center gap-6 pt-2 border-t border-slate-100">
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={projectForm.status === 'PUBLISHED'}
-                    onChange={(e) => setProjectForm({ ...projectForm, status: e.target.checked ? 'PUBLISHED' : 'DRAFT' })}
-                    className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
-                  />
-                  <span className="text-xs font-semibold text-slate-700">Published Live</span>
-                </label>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">Page Meta Description</label>
+                      <textarea
+                        rows={2}
+                        value={projectForm.seoDescription}
+                        onChange={(e) => setProjectForm({ ...projectForm, seoDescription: e.target.value })}
+                        placeholder="Search engine meta description snippet..."
+                        className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900"
+                      />
+                    </div>
 
-                <label className="flex items-center gap-2 cursor-pointer">
-                  <input
-                    type="checkbox"
-                    checked={projectForm.featured}
-                    onChange={(e) => setProjectForm({ ...projectForm, featured: e.target.checked })}
-                    className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
-                  />
-                  <span className="text-xs font-semibold text-slate-700">Featured on Homepage</span>
-                </label>
-              </div>
+                    <div>
+                      <label className="block text-xs font-bold text-slate-700 mb-1">Focus Keywords (Comma-separated)</label>
+                      <input
+                        type="text"
+                        value={projectForm.seoKeywords}
+                        onChange={(e) => setProjectForm({ ...projectForm, seoKeywords: e.target.value, focusKeywords: e.target.value })}
+                        placeholder="AI case study, SaaS architecture, Next.js 14, real-time analytics"
+                        className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 font-mono"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
             </div>
 
             {/* Modal Footer */}
-            <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-3">
-              <button
-                type="button"
-                onClick={() => setShowProjectModal(false)}
-                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 rounded-xl hover:bg-slate-200 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveProject}
-                disabled={projectSaving}
-                className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-2 disabled:opacity-50"
-              >
-                {projectSaving ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
-                <span>{projectSaving ? 'Saving...' : 'Save Case Study'}</span>
-              </button>
+            <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-between">
+              <div className="text-xs text-slate-400 font-medium">
+                Step {projectActiveTab} of 7 • Stored in PostgreSQL
+              </div>
+
+              <div className="flex items-center gap-3">
+                {projectActiveTab > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => setProjectActiveTab(prev => prev - 1)}
+                    className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 rounded-xl hover:bg-slate-200 transition-colors"
+                  >
+                    Back
+                  </button>
+                )}
+
+                {projectActiveTab < 7 ? (
+                  <button
+                    type="button"
+                    onClick={() => setProjectActiveTab(prev => prev + 1)}
+                    className="px-5 py-2 bg-slate-900 hover:bg-slate-800 text-white font-bold text-xs rounded-xl transition-all"
+                  >
+                    Next Tab →
+                  </button>
+                ) : null}
+
+                <button
+                  type="button"
+                  onClick={handleSaveProject}
+                  disabled={projectSaving}
+                  className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-2 disabled:opacity-50"
+                >
+                  {projectSaving ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
+                  <span>{projectSaving ? 'Saving to PostgreSQL...' : 'Save Case Study'}</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>

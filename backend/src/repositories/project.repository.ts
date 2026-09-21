@@ -4,48 +4,26 @@ import { cloudinaryService } from '../services/cloudinary.service.js';
 export const projectRepository = {
   async getAllPublished(category?: string) {
     const whereCondition: any = { status: 'PUBLISHED' };
-    if (category && category !== 'All') {
+    if (category && category !== 'All' && category !== 'ALL') {
       whereCondition.category = category;
     }
 
     return prisma.project.findMany({
       where: whereCondition,
       orderBy: { displayOrder: 'asc' },
-      select: {
-        id: true,
-        slug: true,
-        title: true,
-        clientName: true,
-        category: true,
-        shortDescription: true,
-        fullDescription: true,
-        heroImage: true,
-        coverImageUrl: true,
-        coverImagePublicId: true,
-        galleryImages: true,
-        mockupType: true,
-        testimonial: true,
-        websiteUrl: true,
-        githubUrl: true,
-        featured: true,
-        displayOrder: true,
-        status: true,
-        metrics: {
-          orderBy: { displayOrder: 'asc' },
-          select: { id: true, label: true, value: true, trend: true, description: true }
-        },
-        highlights: {
-          orderBy: { displayOrder: 'asc' },
-          select: { id: true, title: true, description: true }
-        },
+      include: {
+        metrics: { orderBy: { displayOrder: 'asc' } },
+        highlights: { orderBy: { displayOrder: 'asc' } },
+        challengesList: { orderBy: { displayOrder: 'asc' } },
+        solutionsList: { orderBy: { displayOrder: 'asc' } },
+        resultsList: { orderBy: { displayOrder: 'asc' } },
         technologies: {
           orderBy: { displayOrder: 'asc' },
           select: {
-            technology: {
-              select: { id: true, name: true, slug: true, iconUrl: true }
-            }
+            technology: { select: { id: true, name: true, slug: true, iconUrl: true } }
           }
-        }
+        },
+        seoMetadata: true
       }
     });
   },
@@ -53,44 +31,19 @@ export const projectRepository = {
   async getBySlug(slug: string) {
     return prisma.project.findFirst({
       where: { slug, status: 'PUBLISHED' },
-      select: {
-        id: true,
-        slug: true,
-        title: true,
-        clientName: true,
-        category: true,
-        shortDescription: true,
-        fullDescription: true,
-        challenge: true,
-        solution: true,
-        results: true,
-        heroImage: true,
-        coverImageUrl: true,
-        coverImagePublicId: true,
-        galleryImages: true,
-        mockupType: true,
-        testimonial: true,
-        websiteUrl: true,
-        githubUrl: true,
-        featured: true,
-        displayOrder: true,
-        metrics: {
-          orderBy: { displayOrder: 'asc' },
-          select: { id: true, label: true, value: true, trend: true, description: true }
-        },
-        highlights: {
-          orderBy: { displayOrder: 'asc' },
-          select: { id: true, title: true, description: true }
-        },
+      include: {
+        metrics: { orderBy: { displayOrder: 'asc' } },
+        highlights: { orderBy: { displayOrder: 'asc' } },
+        challengesList: { orderBy: { displayOrder: 'asc' } },
+        solutionsList: { orderBy: { displayOrder: 'asc' } },
+        resultsList: { orderBy: { displayOrder: 'asc' } },
         technologies: {
           orderBy: { displayOrder: 'asc' },
           select: {
             technology: { select: { id: true, name: true, slug: true, iconUrl: true } }
           }
         },
-        seoMetadata: {
-          select: { metaTitle: true, metaDescription: true, canonicalUrl: true }
-        }
+        seoMetadata: true
       }
     });
   },
@@ -130,6 +83,9 @@ export const projectRepository = {
         include: {
           metrics: { orderBy: { displayOrder: 'asc' } },
           highlights: { orderBy: { displayOrder: 'asc' } },
+          challengesList: { orderBy: { displayOrder: 'asc' } },
+          solutionsList: { orderBy: { displayOrder: 'asc' } },
+          resultsList: { orderBy: { displayOrder: 'asc' } },
           seoMetadata: true
         }
       }),
@@ -162,6 +118,9 @@ export const projectRepository = {
     const {
       metrics = [],
       highlights = [],
+      challengesList = [],
+      solutionsList = [],
+      resultsList = [],
       client,
       mockupType,
       description,
@@ -187,16 +146,28 @@ export const projectRepository = {
       data: {
         title: projectData.title,
         slug: projectData.slug,
+        heroTitle: projectData.heroTitle || null,
+        subtitle: projectData.subtitle || null,
         category: projectData.category || 'SaaS Platform',
         clientName,
+        clientLogoUrl: projectData.clientLogoUrl || null,
+        clientLogoPublicId: projectData.clientLogoPublicId || null,
+        clientWebsiteUrl: projectData.clientWebsiteUrl || null,
         shortDescription,
         fullDescription,
         challenge: projectData.challenge || null,
         solution: projectData.solution || null,
         results: projectData.results || null,
+        businessImpactText: projectData.businessImpactText || null,
         heroImage,
+        heroImagePublicId: projectData.heroImagePublicId || null,
         coverImageUrl: coverImageUrl || heroImage,
         coverImagePublicId: coverImagePublicId || projectData.publicId || null,
+        architectureDiagramUrl: projectData.architectureDiagramUrl || null,
+        architectureDiagramPublicId: projectData.architectureDiagramPublicId || null,
+        liveUrl: projectData.liveUrl || projectData.websiteUrl || null,
+        ctaText: projectData.ctaText || 'Visit Live Platform Demo',
+        ctaLink: projectData.ctaLink || projectData.websiteUrl || null,
         galleryImages: galleryImages || null,
         mockupType: mockupTypeEnum,
         testimonial: projectData.testimonial || null,
@@ -211,6 +182,7 @@ export const projectRepository = {
             value: typeof m === 'string' ? '100%' : m.value,
             trend: typeof m === 'string' ? null : (m.trend || null),
             description: typeof m === 'string' ? null : (m.description || null),
+            icon: typeof m === 'string' ? 'TrendingUp' : (m.icon || 'TrendingUp'),
             displayOrder: idx + 1
           }))
         },
@@ -221,16 +193,45 @@ export const projectRepository = {
             displayOrder: idx + 1
           }))
         },
-        seoMetadata: (seoTitle || seoDescription) ? {
+        challengesList: {
+          create: challengesList.map((c: any, idx: number) => ({
+            title: typeof c === 'string' ? c : c.title,
+            description: typeof c === 'string' ? null : (c.description || null),
+            icon: typeof c === 'string' ? 'AlertTriangle' : (c.icon || 'AlertTriangle'),
+            displayOrder: idx + 1
+          }))
+        },
+        solutionsList: {
+          create: solutionsList.map((s: any, idx: number) => ({
+            title: typeof s === 'string' ? s : s.title,
+            description: typeof s === 'string' ? null : (s.description || null),
+            icon: typeof s === 'string' ? 'CheckCircle2' : (s.icon || 'CheckCircle2'),
+            displayOrder: idx + 1
+          }))
+        },
+        resultsList: {
+          create: resultsList.map((r: any, idx: number) => ({
+            title: r.title || `Outcome ${idx + 1}`,
+            beforeText: r.beforeText || 'Manual Workflow',
+            afterText: r.afterText || 'Automated Pipeline',
+            displayOrder: idx + 1
+          }))
+        },
+        seoMetadata: (seoTitle || seoDescription || projectData.canonicalUrl) ? {
           create: {
             metaTitle: seoTitle || projectData.title,
-            metaDescription: seoDescription || shortDescription
+            metaDescription: seoDescription || shortDescription,
+            canonicalUrl: projectData.canonicalUrl || null,
+            focusKeywords: projectData.focusKeywords || null
           }
         } : undefined
       },
       include: {
         metrics: true,
         highlights: true,
+        challengesList: true,
+        solutionsList: true,
+        resultsList: true,
         seoMetadata: true
       }
     });
@@ -251,11 +252,14 @@ export const projectRepository = {
   },
 
   async updateProject(id: string, data: any, userId?: string) {
-    const existing = await prisma.project.findUnique({ where: { id }, select: { coverImagePublicId: true } });
+    const existing = await prisma.project.findUnique({ where: { id }, select: { coverImagePublicId: true, architectureDiagramPublicId: true, clientLogoPublicId: true } });
 
     const {
       metrics,
       highlights,
+      challengesList,
+      solutionsList,
+      resultsList,
       client,
       mockupType,
       description,
@@ -304,6 +308,7 @@ export const projectRepository = {
           value: typeof m === 'string' ? '100%' : m.value,
           trend: typeof m === 'string' ? null : (m.trend || null),
           description: typeof m === 'string' ? null : (m.description || null),
+          icon: typeof m === 'string' ? 'TrendingUp' : (m.icon || 'TrendingUp'),
           displayOrder: idx + 1
         }))
       };
@@ -320,16 +325,56 @@ export const projectRepository = {
       };
     }
 
-    if (seoTitle !== undefined || seoDescription !== undefined) {
+    if (challengesList && Array.isArray(challengesList)) {
+      await prisma.projectChallenge.deleteMany({ where: { projectId: id } });
+      updatePayload.challengesList = {
+        create: challengesList.map((c: any, idx: number) => ({
+          title: typeof c === 'string' ? c : c.title,
+          description: typeof c === 'string' ? null : (c.description || null),
+          icon: typeof c === 'string' ? 'AlertTriangle' : (c.icon || 'AlertTriangle'),
+          displayOrder: idx + 1
+        }))
+      };
+    }
+
+    if (solutionsList && Array.isArray(solutionsList)) {
+      await prisma.projectSolution.deleteMany({ where: { projectId: id } });
+      updatePayload.solutionsList = {
+        create: solutionsList.map((s: any, idx: number) => ({
+          title: typeof s === 'string' ? s : s.title,
+          description: typeof s === 'string' ? null : (s.description || null),
+          icon: typeof s === 'string' ? 'CheckCircle2' : (s.icon || 'CheckCircle2'),
+          displayOrder: idx + 1
+        }))
+      };
+    }
+
+    if (resultsList && Array.isArray(resultsList)) {
+      await prisma.projectResult.deleteMany({ where: { projectId: id } });
+      updatePayload.resultsList = {
+        create: resultsList.map((r: any, idx: number) => ({
+          title: r.title || `Outcome ${idx + 1}`,
+          beforeText: r.beforeText || 'Manual Workflow',
+          afterText: r.afterText || 'Automated Pipeline',
+          displayOrder: idx + 1
+        }))
+      };
+    }
+
+    if (seoTitle !== undefined || seoDescription !== undefined || projectData.canonicalUrl !== undefined) {
       updatePayload.seoMetadata = {
         upsert: {
           create: {
             metaTitle: seoTitle || projectData.title || 'Project',
-            metaDescription: seoDescription || updatePayload.shortDescription || 'Case Study'
+            metaDescription: seoDescription || updatePayload.shortDescription || 'Case Study',
+            canonicalUrl: projectData.canonicalUrl || null,
+            focusKeywords: projectData.focusKeywords || null
           },
           update: {
             ...(seoTitle !== undefined ? { metaTitle: seoTitle } : {}),
-            ...(seoDescription !== undefined ? { metaDescription: seoDescription } : {})
+            ...(seoDescription !== undefined ? { metaDescription: seoDescription } : {}),
+            ...(projectData.canonicalUrl !== undefined ? { canonicalUrl: projectData.canonicalUrl } : {}),
+            ...(projectData.focusKeywords !== undefined ? { focusKeywords: projectData.focusKeywords } : {})
           }
         }
       };
@@ -341,6 +386,9 @@ export const projectRepository = {
       include: {
         metrics: true,
         highlights: true,
+        challengesList: true,
+        solutionsList: true,
+        resultsList: true,
         seoMetadata: true
       }
     });

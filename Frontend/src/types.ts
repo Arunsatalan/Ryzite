@@ -65,26 +65,71 @@ export interface ProjectHighlightItem {
   displayOrder?: number;
 }
 
+export interface ProjectChallengeItem {
+  id?: string;
+  title: string;
+  description?: string | null;
+  impact?: string | null;
+  icon?: string | null;
+  displayOrder?: number;
+}
+
+export interface ProjectSolutionItem {
+  id?: string;
+  title: string;
+  description?: string | null;
+  codeSnippet?: string | null;
+  diagramUrl?: string | null;
+  icon?: string | null;
+  displayOrder?: number;
+}
+
+export interface ProjectResultItem {
+  id?: string;
+  title?: string | null;
+  metricName?: string | null;
+  beforeValue?: string | null;
+  afterValue?: string | null;
+  percentageChange?: string | null;
+  timeframe?: string | null;
+  beforeText?: string;
+  afterText?: string;
+  displayOrder?: number;
+}
+
 export interface ProjectItem {
   id: string;
   slug: string;
   title: string;
+  heroTitle?: string | null;
+  subtitle?: string | null;
   client?: string;
   clientName?: string;
+  clientLogoUrl?: string | null;
+  clientLogoPublicId?: string | null;
+  clientWebsiteUrl?: string | null;
   category: string;
   description?: string;
   shortDescription?: string;
   longDescription?: string;
   fullDescription?: string;
   heroImage: string;
-  heroImagePublicId?: string;
-  coverImageUrl?: string;
-  coverImagePublicId?: string;
-  galleryImages?: string[];
+  heroImagePublicId?: string | null;
+  coverImageUrl?: string | null;
+  coverImagePublicId?: string | null;
+  architectureDiagramUrl?: string | null;
+  architectureDiagramPublicId?: string | null;
+  ctaText?: string | null;
+  ctaLink?: string | null;
+  businessImpactText?: string | null;
+  galleryImages?: (string | { url: string; publicId?: string; caption?: string; order?: number })[] | any;
   mockupType: 'dark-dashboard' | 'mobile-cards' | 'bot-interface' | 'analytics-suite' | string;
   metrics: ProjectMetricItem[];
   highlights?: ProjectHighlightItem[];
-  techStack?: string[] | { technology: { id: string; name: string; slug: string; iconUrl?: string | null } }[];
+  challengesList?: ProjectChallengeItem[];
+  solutionsList?: ProjectSolutionItem[];
+  resultsList?: ProjectResultItem[];
+  techStack?: string[] | { category?: string; technology: { id: string; name: string; slug: string; iconUrl?: string | null } }[] | any;
   challenges?: string[];
   challenge?: string | null;
   solutions?: string[];
@@ -94,9 +139,11 @@ export interface ProjectItem {
     quote: string;
     author: string;
     role: string;
+    company?: string;
+    photoUrl?: string;
     avatar?: string;
   } | any;
-  liveUrl?: string;
+  liveUrl?: string | null;
   websiteUrl?: string | null;
   githubUrl?: string | null;
   featured: boolean;
@@ -104,10 +151,14 @@ export interface ProjectItem {
   displayOrder?: number;
   seoTitle?: string;
   seoDescription?: string;
+  seoKeywords?: string;
+  focusKeywords?: string;
+  canonicalUrl?: string;
   seoMetadata?: {
     metaTitle?: string;
     metaDescription?: string;
     canonicalUrl?: string;
+    focusKeywords?: string;
   } | null;
 }
 
@@ -306,3 +357,163 @@ export interface SiteAnalyticsSummary {
   referrers: { source: string; count: number }[];
   dailyViews: { date: string; views: number; leads: number }[];
 }
+
+// ==========================================
+// AEO / COMPANY FACTS / ENTITY KNOWLEDGE HUB
+// ==========================================
+
+export type FactCategory =
+  | 'COMPANY'
+  | 'SERVICES'
+  | 'PRICING'
+  | 'LOCATIONS'
+  | 'CLIENTS'
+  | 'PROJECTS'
+  | 'TEAM'
+  | 'SECURITY'
+  | 'SUPPORT'
+  | 'CONTACT'
+  | 'POLICIES';
+
+export type FactVerifiedStatus = 'VERIFIED' | 'UNVERIFIED' | 'REQUIRES_REVIEW' | 'EXPIRED';
+
+export type ClaimType =
+  | 'FACTUAL'
+  | 'MARKETING'
+  | 'ESTIMATE'
+  | 'TESTIMONIAL'
+  | 'CASE_STUDY_RESULT'
+  | 'INTERNAL';
+
+export type AuditSeverity = 'CRITICAL' | 'WARNING' | 'INFO';
+
+export interface CompanyEntityConfig {
+  id?: string;
+  entityId: string;
+  entityType: string;
+  legalName: string;
+  tradingName: string;
+  shortDescription: string;
+  longDescription: string;
+  companyType: string;
+  industry: string;
+  foundedYear: number;
+  canonicalUrl: string;
+  logoUrl?: string | null;
+  logoPublicId?: string | null;
+  email: string;
+  phone?: string | null;
+  primaryCountry: string;
+  headquarters: string;
+  serviceAreas: string[];
+  languages: string[];
+  sameAs: string[];
+  status?: string;
+  updatedAt?: string;
+}
+
+export interface CompanyEvidenceItem {
+  id: string;
+  factId?: string | null;
+  evidenceUrl: string;
+  evidenceType: string;
+  description?: string | null;
+  evidenceDate?: string;
+  status: FactVerifiedStatus;
+}
+
+export interface CompanyFactVersionItem {
+  id: string;
+  factId: string;
+  oldValue: any;
+  newValue: any;
+  changedBy: string;
+  reason?: string | null;
+  createdAt: string;
+}
+
+export interface CompanyFactItem {
+  id: string;
+  category: FactCategory;
+  claimType: ClaimType;
+  question: string;
+  shortAnswer: string;
+  detailedAnswer: string;
+  sourceUrl?: string | null;
+  sourceType?: string | null;
+  evidenceNote?: string | null;
+  verifiedStatus: FactVerifiedStatus;
+  verifiedBy?: string | null;
+  verifiedAt?: string | null;
+  status: StatisticStatus;
+  priority: number;
+  displayOrder: number;
+  createdAt?: string;
+  updatedAt?: string;
+  evidence?: CompanyEvidenceItem[];
+  versions?: CompanyFactVersionItem[];
+}
+
+export interface CompanyFaqItem {
+  id: string;
+  question: string;
+  shortAnswer: string;
+  detailedAnswer: string;
+  relatedServiceId?: string | null;
+  relatedPage?: string | null;
+  evidenceUrl?: string | null;
+  status: StatisticStatus;
+  displayOrder: number;
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface CompanyExpertiseItem {
+  id: string;
+  topic: string;
+  description: string;
+  priority: number;
+  active: boolean;
+  displayOrder: number;
+  relatedServices: string[];
+  relatedProjects: string[];
+  createdAt?: string;
+  updatedAt?: string;
+}
+
+export interface AeoHealthScore {
+  score: number;
+  grade: 'A+' | 'A' | 'B' | 'C' | 'D' | 'F';
+  breakdown: {
+    entityIdentity: number;
+    factCompleteness: number;
+    evidenceCitations: number;
+    structuredSchema: number;
+    contentStructure: number;
+    internalLinking: number;
+    freshness: number;
+    consistency: number;
+  };
+  totals: {
+    totalFacts: number;
+    verifiedFacts: number;
+    unverifiedFacts: number;
+    requiresReviewFacts: number;
+    totalFaqs: number;
+    totalExpertise: number;
+    openAuditIssues: number;
+  };
+  lastEvaluatedAt: string;
+}
+
+export interface AeoAuditIssueItem {
+  id: string;
+  severity: AuditSeverity;
+  category: string;
+  issue: string;
+  recommendation: string;
+  pageRoute?: string | null;
+  status: string;
+  createdAt: string;
+}
+

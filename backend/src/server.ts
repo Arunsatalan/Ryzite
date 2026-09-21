@@ -19,6 +19,7 @@ import { z } from 'zod';
 import { prisma } from './repositories/prisma.js';
 import { cloudinaryService } from './services/cloudinary.service.js';
 import { uploadMiddleware } from './middleware/upload.middleware.js';
+import { aeoRouter } from './routes/aeo.routes.js';
 
 dotenv.config();
 
@@ -153,6 +154,14 @@ app.post('/api/upload', async (req, res) => {
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
+
+// AEO & Company Entity Knowledge Hub Endpoints
+app.use('/api/company', aeoRouter);
+app.get('/api/company-facts', (req, res, next) => {
+  req.url = '/public-facts';
+  aeoRouter(req, res, next);
+});
+app.use('/api/seo', aeoRouter);
 
 // Services File Upload Endpoint (Powered by Cloudinary)
 app.post('/api/upload/service-image', async (req, res) => {
