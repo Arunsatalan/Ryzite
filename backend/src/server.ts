@@ -13,9 +13,12 @@ import { settingsRepository } from './repositories/settings.repository.js';
 import { homeRepository } from './repositories/home.repository.js';
 import { clientRepository } from './repositories/client.repository.js';
 import { statisticRepository } from './repositories/statistic.repository.js';
+import { principleRepository } from './repositories/principle.repository.js';
 import { verifyAdminToken } from './middleware/auth.middleware.js';
 import { z } from 'zod';
 import { prisma } from './repositories/prisma.js';
+import { cloudinaryService } from './services/cloudinary.service.js';
+import { uploadMiddleware } from './middleware/upload.middleware.js';
 
 dotenv.config();
 
@@ -23,11 +26,6 @@ const DEFAULT_SERVICES = [
   { id: 'srv-1', slug: 'web-application-development', title: 'Custom Web Application Architecture', category: 'web', startingPrice: '$10,000', shortDescription: 'High-throughput Next.js 16 & Node.js backend systems built for enterprise reliability.', timeline: '4 - 8 Weeks' },
   { id: 'srv-2', slug: 'ai-automation-solutions', title: 'Enterprise AI & Workflow Automation', category: 'ai', startingPrice: '$12,500', shortDescription: 'Autonomous LLM agents, RAG document pipelines, and bespoke internal workflow bots.', timeline: '3 - 6 Weeks' },
   { id: 'srv-3', slug: 'mobile-app-development', title: 'Cross-Platform Mobile Engineering', category: 'mobile', startingPrice: '$15,000', shortDescription: 'Native-feel iOS and Android mobile solutions with real-time push sync.', timeline: '6 - 10 Weeks' }
-];
-
-const DEFAULT_PROJECTS = [
-  { id: 'proj-1', slug: 'pinegen-ai', title: 'PineGen AI - Generative Platform', client: 'PineGen Inc', description: 'Enterprise AI content pipeline handling 2M daily API generations.', metrics: '99.99% Uptime • 2M Daily Calls' },
-  { id: 'proj-2', slug: 'dinefy-ai-call-bot', title: 'Dinefy Voice AI Agent', client: 'Dinefy Group', description: 'Autonomous real-time telephone booking assistant handling multi-line calls.', metrics: '12k Calls Handled • 0.4s Latency' }
 ];
 
 const DEFAULT_BLOGS = [
@@ -61,40 +59,92 @@ app.use((req, res, next) => {
   next();
 });
 
-// Local File Upload Endpoint
-app.post('/api/upload', async (req, res) => {
+// Dedicated Cloudinary Upload Endpoint (Base64)
+app.post('/api/upload/cloudinary', async (req, res) => {
   try {
-    const { filename, fileData } = req.body;
+    const { fileData, folder = 'ryzite/uploads', filename, altText } = req.body;
     if (!fileData) {
       return res.status(400).json({ success: false, error: 'No file data provided.' });
     }
 
-    const matches = fileData.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
-    if (!matches || matches.length !== 3) {
-      return res.status(400).json({ success: false, error: 'Invalid base64 data format.' });
+    const uploadResult = await cloudinaryService.uploadImage(fileData, {
+      folder,
+      filename,
+      altText
+    });
+
+    res.json({
+      success: true,
+      data: uploadResult
+    });
+  } catch (err: any) {
+    console.error('[CLOUDINARY UPLOAD ERROR]', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Dedicated Cloudinary Multer File Upload Endpoint
+app.post('/api/upload/cloudinary/file', uploadMiddleware.single('file'), (req, res) => {
+  try {
+    if (!req.file) {
+      return res.status(400).json({ success: false, error: 'No file uploaded.' });
     }
 
-    const mimeType = matches[1];
-    const extMatch = mimeType.split('/')[1] || 'png';
-    const cleanExt = extMatch.replace(/[^a-z0-9]/gi, '');
-    const safeBaseName = (filename || 'image').replace(/\.[^/.]+$/, '').replace(/[^a-z0-9]/gi, '-').toLowerCase();
-    const uniqueFilename = `${safeBaseName}-${Date.now()}.${cleanExt}`;
-    const filePath = path.join(UPLOADS_DIR, uniqueFilename);
-
-    const buffer = Buffer.from(matches[2], 'base64');
-    await fs.promises.writeFile(filePath, buffer);
-
-    const fileUrl = `${req.protocol}://${req.get('host')}/uploads/${uniqueFilename}`;
     res.json({
       success: true,
       data: {
-        url: fileUrl,
-        filename: uniqueFilename,
-        relativePath: `/uploads/${uniqueFilename}`
+        url: req.file.path,
+        public_id: req.file.filename,
+        originalName: req.file.originalname,
+        size: req.file.size
       }
     });
   } catch (err: any) {
-    console.error('[LOCAL UPLOAD ERROR]', err);
+    console.error('[CLOUDINARY MULTER ERROR]', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// Dedicated Cloudinary Delete Endpoint
+app.delete('/api/upload/cloudinary', async (req, res) => {
+  try {
+    const { publicId } = req.body;
+    if (!publicId) {
+      return res.status(400).json({ success: false, error: 'publicId is required.' });
+    }
+
+    await cloudinaryService.deleteImage(publicId);
+    res.json({ success: true, message: 'Image deleted from Cloudinary.' });
+  } catch (err: any) {
+    console.error('[CLOUDINARY DELETE ERROR]', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// General File Upload Endpoint (Powered by Cloudinary)
+app.post('/api/upload', async (req, res) => {
+  try {
+    const { filename, fileData, folder = 'ryzite/uploads' } = req.body;
+    if (!fileData) {
+      return res.status(400).json({ success: false, error: 'No file data provided.' });
+    }
+
+    const uploadResult = await cloudinaryService.uploadImage(fileData, {
+      folder,
+      filename
+    });
+
+    res.json({
+      success: true,
+      data: {
+        url: uploadResult.url,
+        public_id: uploadResult.public_id,
+        filename: uploadResult.public_id,
+        relativePath: uploadResult.url
+      }
+    });
+  } catch (err: any) {
+    console.error('[GENERAL UPLOAD ERROR]', err);
     res.status(500).json({ success: false, error: err.message });
   }
 });
@@ -104,7 +154,7 @@ app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
 });
 
-// Services File Upload Endpoint
+// Services File Upload Endpoint (Powered by Cloudinary)
 app.post('/api/upload/service-image', async (req, res) => {
   try {
     const { filename, fileData } = req.body;
@@ -112,44 +162,18 @@ app.post('/api/upload/service-image', async (req, res) => {
       return res.status(400).json({ success: false, error: 'No image file data provided.' });
     }
 
-    const matches = fileData.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
-    if (!matches || matches.length !== 3) {
-      return res.status(400).json({ success: false, error: 'Invalid base64 image data format.' });
-    }
+    const uploadResult = await cloudinaryService.uploadImage(fileData, {
+      folder: 'ryzite/services',
+      filename
+    });
 
-    const mimeType = matches[1];
-    const buffer = Buffer.from(matches[2], 'base64');
-
-    // 5MB file size limit check
-    if (buffer.length > 5 * 1024 * 1024) {
-      return res.status(400).json({ success: false, error: 'Image file size exceeds maximum 5MB limit.' });
-    }
-
-    const extMatch = mimeType.split('/')[1] || 'webp';
-    const cleanExt = extMatch.replace(/[^a-z0-9]/gi, '').toLowerCase();
-    const allowedExts = ['jpg', 'jpeg', 'png', 'webp', 'svg'];
-    if (!allowedExts.includes(cleanExt)) {
-      return res.status(400).json({ success: false, error: `Invalid image extension .${cleanExt}. Allowed: jpg, jpeg, png, webp, svg` });
-    }
-
-    const SERVICES_UPLOADS_DIR = path.join(process.cwd(), 'uploads', 'services');
-    if (!fs.existsSync(SERVICES_UPLOADS_DIR)) {
-      fs.mkdirSync(SERVICES_UPLOADS_DIR, { recursive: true });
-    }
-
-    const safeBaseName = (filename || 'service').replace(/\.[^/.]+$/, '').replace(/[^a-z0-9]/gi, '-').toLowerCase();
-    const uniqueFilename = `${safeBaseName}-${Date.now()}.${cleanExt}`;
-    const filePath = path.join(SERVICES_UPLOADS_DIR, uniqueFilename);
-
-    await fs.promises.writeFile(filePath, buffer);
-
-    const fileUrl = `${req.protocol}://${req.get('host')}/uploads/services/${uniqueFilename}`;
     res.json({
       success: true,
       data: {
-        url: fileUrl,
-        filename: uniqueFilename,
-        relativePath: `/uploads/services/${uniqueFilename}`
+        url: uploadResult.url,
+        public_id: uploadResult.public_id,
+        filename: uploadResult.public_id,
+        relativePath: uploadResult.url
       }
     });
   } catch (err: any) {
@@ -235,14 +259,44 @@ app.patch('/api/services/reorder', async (req, res) => {
   }
 });
 
-// --- PROJECTS ENDPOINTS ---
+// Project Image Upload Endpoint (Powered by Cloudinary)
+app.post('/api/upload/project-image', async (req, res) => {
+  try {
+    const { filename, fileData } = req.body;
+    if (!fileData) {
+      return res.status(400).json({ success: false, error: 'No image file data provided.' });
+    }
+
+    const uploadResult = await cloudinaryService.uploadImage(fileData, {
+      folder: 'ryzite/projects',
+      filename
+    });
+
+    res.json({
+      success: true,
+      data: {
+        url: uploadResult.url,
+        public_id: uploadResult.public_id,
+        filename: uploadResult.public_id,
+        relativePath: uploadResult.url
+      }
+    });
+  } catch (err: any) {
+    console.error('[PROJECT IMAGE UPLOAD ERROR]', err);
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+
+// --- PUBLIC PROJECTS ENDPOINTS ---
 app.get('/api/projects', async (req, res) => {
   try {
-    const projects = await projectRepository.getAllPublished();
-    res.json({ data: projects.length > 0 ? projects : DEFAULT_PROJECTS });
+    const category = req.query.category as string | undefined;
+    const projects = await projectRepository.getAllPublished(category);
+    res.json({ data: projects });
   } catch (err: any) {
-    console.warn('[DB FALLBACK] Database query failed for projects, returning fallback data:', err.message);
-    res.json({ data: DEFAULT_PROJECTS });
+    console.error('[DB ERROR] Failed to fetch published projects:', err.message);
+    res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: err.message }, data: [] });
   }
 });
 
@@ -250,15 +304,12 @@ app.get('/api/projects/:slug', async (req, res) => {
   try {
     const project = await projectRepository.getBySlug(req.params.slug);
     if (!project) {
-      const match = DEFAULT_PROJECTS.find(p => p.slug === req.params.slug);
-      if (match) return res.json({ data: match });
-      return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Project not found' } });
+      return res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Project case study not found' } });
     }
     res.json({ data: project });
   } catch (err: any) {
-    const match = DEFAULT_PROJECTS.find(p => p.slug === req.params.slug);
-    if (match) return res.json({ data: match });
-    res.status(404).json({ error: { code: 'NOT_FOUND', message: 'Project not found' } });
+    console.error('[DB ERROR] Failed to fetch project by slug:', err.message);
+    res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: err.message } });
   }
 });
 
@@ -289,6 +340,111 @@ app.delete('/api/projects/:id', async (req, res) => {
   } catch (err: any) {
     console.error('[DB ERROR] Failed to delete project:', err.message);
     res.status(500).json({ error: { code: 'INTERNAL_ERROR', message: err.message } });
+  }
+});
+
+// --- ADMIN PROJECTS ENDPOINTS ---
+app.get('/api/admin/projects/counts', verifyAdminToken, async (req, res) => {
+  try {
+    const counts = await projectRepository.getCounts();
+    res.json({ success: true, data: counts });
+  } catch (err: any) {
+    console.error('[DB ERROR] Failed to fetch project counts:', err.message);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+app.get('/api/admin/projects', verifyAdminToken, async (req, res) => {
+  try {
+    const search = req.query.search as string;
+    const category = req.query.category as string;
+    const status = req.query.status as string;
+    const page = req.query.page ? parseInt(req.query.page as string, 10) : 1;
+    const limit = req.query.limit ? parseInt(req.query.limit as string, 10) : 50;
+
+    const result = await projectRepository.getAdminProjects({ search, category, status, page, limit });
+    res.json({ success: true, data: result.projects, pagination: result.pagination });
+  } catch (err: any) {
+    console.error('[DB ERROR] Failed to fetch admin projects:', err.message);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+app.post('/api/admin/projects', verifyAdminToken, async (req, res) => {
+  try {
+    const userId = (req as any).user?.id;
+    const newProject = await projectRepository.createProject(req.body, userId);
+    res.status(201).json({ success: true, data: newProject });
+  } catch (err: any) {
+    console.error('[DB ERROR] Failed to create admin project:', err.message);
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+app.put('/api/admin/projects/:id', verifyAdminToken, async (req, res) => {
+  try {
+    const userId = (req as any).user?.id;
+    const updated = await projectRepository.updateProject(req.params.id, req.body, userId);
+    res.json({ success: true, data: updated });
+  } catch (err: any) {
+    console.error('[DB ERROR] Failed to update admin project:', err.message);
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+app.delete('/api/admin/projects/:id', verifyAdminToken, async (req, res) => {
+  try {
+    const userId = (req as any).user?.id;
+    await projectRepository.deleteProject(req.params.id, userId);
+    res.json({ success: true, message: 'Project deleted successfully' });
+  } catch (err: any) {
+    console.error('[DB ERROR] Failed to delete admin project:', err.message);
+    res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+app.patch('/api/admin/projects/:id/status', verifyAdminToken, async (req, res) => {
+  try {
+    const userId = (req as any).user?.id;
+    const { status } = req.body;
+    if (!status || !['PUBLISHED', 'DRAFT', 'ARCHIVED'].includes(status)) {
+      return res.status(400).json({ success: false, message: 'Invalid status parameter' });
+    }
+    const updated = await projectRepository.toggleStatus(req.params.id, status, userId);
+    res.json({ success: true, data: updated });
+  } catch (err: any) {
+    console.error('[DB ERROR] Failed to toggle project status:', err.message);
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+app.patch('/api/admin/projects/:id/featured', verifyAdminToken, async (req, res) => {
+  try {
+    const userId = (req as any).user?.id;
+    const { featured } = req.body;
+    if (typeof featured !== 'boolean') {
+      return res.status(400).json({ success: false, message: 'Invalid featured parameter' });
+    }
+    const updated = await projectRepository.toggleFeatured(req.params.id, featured, userId);
+    res.json({ success: true, data: updated });
+  } catch (err: any) {
+    console.error('[DB ERROR] Failed to toggle project featured:', err.message);
+    res.status(400).json({ success: false, message: err.message });
+  }
+});
+
+app.patch('/api/admin/projects/order', verifyAdminToken, async (req, res) => {
+  try {
+    const userId = (req as any).user?.id;
+    const { items } = req.body;
+    if (!Array.isArray(items)) {
+      return res.status(400).json({ success: false, message: 'items array required' });
+    }
+    const updatedList = await projectRepository.reorderProjects(items, userId);
+    res.json({ success: true, data: updatedList });
+  } catch (err: any) {
+    console.error('[DB ERROR] Failed to reorder projects:', err.message);
+    res.status(400).json({ success: false, message: err.message });
   }
 });
 
@@ -446,6 +602,67 @@ app.patch('/api/trusted-clients/reorder', async (req, res) => {
     res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: err.message } });
   }
 });
+
+// --- WHY CHOOSE US ENDPOINTS ---
+app.get('/api/why-choose-us', async (req, res) => {
+  try {
+    const principles = await principleRepository.getAllActive();
+    res.json({ success: true, data: principles });
+  } catch (err: any) {
+    console.error('[DB ERROR] Failed to fetch why choose us principles:', err.message);
+    res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: err.message } });
+  }
+});
+
+app.get('/api/why-choose-us/admin', async (req, res) => {
+  try {
+    const principles = await principleRepository.getAllAdmin();
+    res.json({ success: true, data: principles });
+  } catch (err: any) {
+    res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: err.message } });
+  }
+});
+
+app.post('/api/why-choose-us', async (req, res) => {
+  try {
+    const newPrinciple = await principleRepository.createPrinciple(req.body);
+    res.status(201).json({ success: true, data: newPrinciple });
+  } catch (err: any) {
+    console.error('[DB ERROR] Failed to create why choose us principle:', err.message);
+    res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: err.message } });
+  }
+});
+
+app.put('/api/why-choose-us/:id', async (req, res) => {
+  try {
+    const updated = await principleRepository.updatePrinciple(req.params.id, req.body);
+    res.json({ success: true, data: updated });
+  } catch (err: any) {
+    console.error('[DB ERROR] Failed to update why choose us principle:', err.message);
+    res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: err.message } });
+  }
+});
+
+app.delete('/api/why-choose-us/:id', async (req, res) => {
+  try {
+    await principleRepository.deletePrinciple(req.params.id);
+    res.json({ success: true, data: { success: true } });
+  } catch (err: any) {
+    console.error('[DB ERROR] Failed to delete why choose us principle:', err.message);
+    res.status(500).json({ success: false, error: { code: 'INTERNAL_ERROR', message: err.message } });
+  }
+});
+
+app.patch('/api/why-choose-us/reorder', async (req, res) => {
+  try {
+    const updatedList = await principleRepository.reorderPrinciples(req.body.orderedIds);
+    res.json({ success: true, data: updatedList });
+  } catch (err: any) {
+    console.error('[DB ERROR] Failed to reorder why choose us principles:', err.message);
+    res.status(400).json({ success: false, error: { code: 'VALIDATION_ERROR', message: err.message } });
+  }
+});
+
 
 // --- COMPANY STATISTICS ENDPOINTS ---
 const companyStatisticZodSchema = z.object({

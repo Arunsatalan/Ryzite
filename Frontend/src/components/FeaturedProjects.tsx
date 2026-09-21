@@ -24,14 +24,20 @@ export const FeaturedProjects: React.FC<FeaturedProjectsProps> = ({
   const [activeCategory, setActiveCategory] = useState<string>('ALL');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
-  const categories = ['ALL', 'AI Platform', 'Digital Business Card', 'AI Automation', 'Chatbot Platform'];
+  const derivedCategories = Array.from(new Set(projects.map(p => p.category).filter(Boolean)));
+  const categories = ['ALL', ...derivedCategories];
 
   const filteredProjects = projects.filter((proj) => {
-    const matchesCat = activeCategory === 'ALL' || (proj.category?.toLowerCase() || '').includes(activeCategory.toLowerCase());
+    const projCategory = proj.category || '';
+    const projClient = proj.clientName || proj.client || '';
+    const projDesc = proj.shortDescription || proj.description || '';
+    const projTitle = proj.title || '';
+
+    const matchesCat = activeCategory === 'ALL' || projCategory.toLowerCase() === activeCategory.toLowerCase();
     const matchesSearch = searchQuery === '' || 
-      (proj.title?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
-      (proj.client?.toLowerCase() || '').includes(searchQuery.toLowerCase()) ||
-      (proj.techStack || []).some(t => (t?.toLowerCase() || '').includes(searchQuery.toLowerCase()));
+      projTitle.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      projClient.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      projDesc.toLowerCase().includes(searchQuery.toLowerCase());
     return matchesCat && matchesSearch;
   });
 
@@ -96,14 +102,14 @@ export const FeaturedProjects: React.FC<FeaturedProjectsProps> = ({
             >
               <div className="order-2 lg:order-1 text-left">
                 <div className="w-24 h-24 rounded-full bg-[#F1F4F8] flex items-center justify-center mb-6 shadow-sm">
-                  <span className="text-xs font-black text-[#0052FF] text-center leading-tight px-4">{project.client}</span>
+                  <span className="text-xs font-black text-[#0052FF] text-center leading-tight px-4">{project.clientName || project.client || 'Client'}</span>
                 </div>
                 <h3 className="text-2xl sm:text-3xl font-black text-[#0F172A] group-hover:text-[#0052FF] transition-colors leading-tight font-display mb-4">
                   <Link href={`/portfolio/${project.slug}`}>
                     {project.title}
                   </Link>
                 </h3>
-                <p className="text-sm sm:text-base text-[#19345d] leading-relaxed mb-6 max-w-xl">{project.description}</p>
+                <p className="text-sm sm:text-base text-[#19345d] leading-relaxed mb-6 max-w-xl">{project.shortDescription || project.description}</p>
                 <ul className="space-y-3 max-w-xl mb-6">
                   {(project.solutions || ['Custom Full-Stack System', 'High-Throughput Architecture']).slice(0, 3).map((solution) => (
                     <li key={solution} className="flex items-start gap-3 text-sm text-[#19345d] leading-relaxed">
@@ -126,7 +132,12 @@ export const FeaturedProjects: React.FC<FeaturedProjectsProps> = ({
                 className="order-1 lg:order-2 relative min-h-[280px] sm:min-h-[380px] lg:min-h-[460px] overflow-hidden rounded-t-[28px] rounded-bl-[28px] bg-[#EDF4FF] block group"
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-[#EAF2FF] via-white/40 to-[#D7E8FF]" />
-                <img src={project.heroImage} alt={project.title} className="absolute inset-y-0 right-0 w-[105%] h-full object-cover opacity-85 mix-blend-multiply group-hover:scale-105 transition-transform duration-700" />
+                <img 
+                  src={project.heroImage || "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1200&auto=format&fit=crop"} 
+                  alt={project.title} 
+                  onError={(e) => { (e.currentTarget as HTMLImageElement).src = "https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1200&auto=format&fit=crop"; }}
+                  className="absolute inset-y-0 right-0 w-[105%] h-full object-cover opacity-85 mix-blend-multiply group-hover:scale-105 transition-transform duration-700" 
+                />
                 <div className="absolute inset-0 bg-gradient-to-r from-[#EDF4FF] via-transparent to-transparent" />
                 <div className="absolute bottom-4 right-4 bg-slate-900/80 backdrop-blur-md text-white text-xs font-bold px-3 py-1.5 rounded-full flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity">
                   <span>Explore Case Study</span>

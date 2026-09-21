@@ -76,7 +76,12 @@ export const ServiceDetailModal: React.FC<ServiceDetailModalProps> = ({ service,
           </div>
 
           <div className="service-image-enter relative min-h-[360px] sm:min-h-[520px] overflow-hidden bg-[#F4F4F1]">
-            <img src={service.imageUrl || "https://images.unsplash.com/photo-1497366811353-6870744d04b2?q=85&w=1400&auto=format&fit=crop"} alt={service.imageAlt || service.title} className="absolute inset-0 w-full h-full object-cover grayscale-[15%]" />
+            <img 
+              src={service.imageUrl || "https://images.unsplash.com/photo-1497366811353-6870744d04b2?q=85&w=1400&auto=format&fit=crop"} 
+              alt={service.imageAlt || service.title} 
+              onError={(e) => { (e.currentTarget as HTMLImageElement).src = "https://images.unsplash.com/photo-1497366811353-6870744d04b2?q=85&w=1400&auto=format&fit=crop"; }}
+              className="absolute inset-0 w-full h-full object-cover grayscale-[15%]" 
+            />
             <div className="absolute inset-0 bg-gradient-to-r from-white/30 via-transparent to-transparent" />
           </div>
         </div>

@@ -67,15 +67,14 @@ export const SeoStructuredData: React.FC<SeoStructuredDataProps> = ({
     }
     linkEl.setAttribute('href', canonical);
 
-    // 1. Organization & LocalBusiness Schema with AggregateRating & knowsAbout
-    const orgSchema = {
+    // 1. Organization Schema
+    const orgSchema: any = {
       "@context": "https://schema.org",
       "@type": "Organization",
       "name": metadata?.organizationSchema?.name || "Ryzite Software & AI Agency",
       "url": metadata?.organizationSchema?.url || "https://ryzite.com",
       "logo": metadata?.organizationSchema?.logo || "https://ryzite.com/assets/logo.png",
       "image": ogImage,
-      "telephone": metadata?.organizationSchema?.telephone || "+1-800-555-0199",
       "email": metadata?.organizationSchema?.email || "contact@ryzite.com",
       "knowsAbout": [
         "Software Development",
@@ -84,27 +83,26 @@ export const SeoStructuredData: React.FC<SeoStructuredDataProps> = ({
         "Mobile App Development",
         "Answer Engine Optimization"
       ],
-      "address": {
-        "@type": "PostalAddress",
-        "streetAddress": "100 Innovation Way, Suite 400",
-        "addressLocality": "San Francisco",
-        "addressRegion": "CA",
-        "postalCode": "94105",
-        "addressCountry": "US"
-      },
-      "aggregateRating": {
-        "@type": "AggregateRating",
-        "ratingValue": metadata?.serpSnippet?.starRating?.toString() || "4.9",
-        "reviewCount": metadata?.serpSnippet?.reviewCount?.toString() || "142",
-        "bestRating": "5",
-        "worstRating": "1"
-      },
       "sameAs": metadata?.organizationSchema?.sameAs || [
         "https://twitter.com/ryzite_agency",
         "https://linkedin.com/company/ryzite",
         "https://github.com/ryzite"
       ]
     };
+
+    if (metadata?.organizationSchema?.telephone) {
+      orgSchema.telephone = metadata.organizationSchema.telephone;
+    }
+
+    if (metadata?.serpSnippet?.starRating && metadata?.serpSnippet?.reviewCount) {
+      orgSchema.aggregateRating = {
+        "@type": "AggregateRating",
+        "ratingValue": metadata.serpSnippet.starRating.toString(),
+        "reviewCount": metadata.serpSnippet.reviewCount.toString(),
+        "bestRating": "5",
+        "worstRating": "1"
+      };
+    }
 
     // 2. WebSite with Credibility Data & Sitelinks Searchbox
     const websiteSchema = {

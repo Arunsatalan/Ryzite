@@ -1,4 +1,4 @@
-import { ServiceItem, ProjectItem, BlogPost, PageMetadataConfig, LeadItem, SolutionItem, HomeHeroConfig, TrustedClientItem, CompanyStatisticItem } from '../types';
+import { ServiceItem, ProjectItem, BlogPost, PageMetadataConfig, LeadItem, SolutionItem, HomeHeroConfig, TrustedClientItem, CompanyStatisticItem, WhyChooseUsItem } from '../types';
 
 const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
 
@@ -23,12 +23,12 @@ export async function fetchApi<T>(endpoint: string, options: RequestInit = {}): 
 }
 
 export const api = {
-  uploadImage: (file: File): Promise<{ url: string; filename: string; relativePath: string }> => {
+  uploadImage: (file: File): Promise<{ url: string; filename: string; relativePath: string; public_id?: string }> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = async () => {
         try {
-          const res = await fetchApi<{ url: string; filename: string; relativePath: string }>('/api/upload', {
+          const res = await fetchApi<{ url: string; filename: string; relativePath: string; public_id?: string }>('/api/upload', {
             method: 'POST',
             body: JSON.stringify({
               filename: file.name,
@@ -45,6 +45,37 @@ export const api = {
     });
   },
 
+  uploadCloudinaryImage: (file: File, folder: string = 'ryzite/uploads'): Promise<{ url: string; public_id: string; format?: string; width?: number; height?: number }> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          const res = await fetchApi<{ url: string; public_id: string; format?: string; width?: number; height?: number }>('/api/upload/cloudinary', {
+            method: 'POST',
+            body: JSON.stringify({
+              filename: file.name,
+              fileData: reader.result,
+              folder
+            })
+          });
+          resolve(res);
+        } catch (err) {
+          reject(err);
+        }
+      };
+      reader.onerror = (err) => reject(err);
+      reader.readAsDataURL(file);
+    });
+  },
+
+  deleteCloudinaryImage: (publicId: string): Promise<{ success: boolean; message?: string }> => {
+    return fetchApi<{ success: boolean; message?: string }>('/api/upload/cloudinary', {
+      method: 'DELETE',
+      body: JSON.stringify({ publicId })
+    });
+  },
+
+
   getHomeHero: () => fetchApi<HomeHeroConfig>('/api/home/hero', { cache: 'no-store' }),
   updateHomeHero: (data: Partial<HomeHeroConfig>) => fetchApi<HomeHeroConfig>('/api/home/hero', { method: 'PUT', body: JSON.stringify(data) }),
 
@@ -55,6 +86,13 @@ export const api = {
   deleteTrustedClient: (id: string) => fetchApi<{ success: boolean }>(`/api/trusted-clients/${id}`, { method: 'DELETE' }),
   reorderTrustedClients: (orderedIds: string[]) => fetchApi<TrustedClientItem[]>('/api/trusted-clients/reorder', { method: 'PATCH', body: JSON.stringify({ orderedIds }) }),
 
+  getWhyChooseUs: () => fetchApi<WhyChooseUsItem[]>('/api/why-choose-us', { cache: 'no-store' }),
+  getAdminWhyChooseUs: () => fetchApi<WhyChooseUsItem[]>('/api/why-choose-us/admin', { cache: 'no-store' }),
+  createWhyChooseUs: (data: any) => fetchApi<WhyChooseUsItem>('/api/why-choose-us', { method: 'POST', body: JSON.stringify(data) }),
+  updateWhyChooseUs: (id: string, data: any) => fetchApi<WhyChooseUsItem>(`/api/why-choose-us/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
+  deleteWhyChooseUs: (id: string) => fetchApi<{ success: boolean }>(`/api/why-choose-us/${id}`, { method: 'DELETE' }),
+  reorderWhyChooseUs: (orderedIds: string[]) => fetchApi<WhyChooseUsItem[]>('/api/why-choose-us/reorder', { method: 'PATCH', body: JSON.stringify({ orderedIds }) }),
+
   getPublicStatistics: () => fetchApi<CompanyStatisticItem[]>('/api/statistics', { cache: 'no-store' }),
   getAdminStatistics: () => fetchApi<CompanyStatisticItem[]>('/api/admin/statistics', { cache: 'no-store', headers: { 'x-admin-token': 'admin-jwt-token' } }),
   createStatistic: (data: any) => fetchApi<CompanyStatisticItem>('/api/admin/statistics', { method: 'POST', headers: { 'x-admin-token': 'admin-jwt-token' }, body: JSON.stringify(data) }),
@@ -64,12 +102,12 @@ export const api = {
   reorderStatistics: (orderedIds: string[]) => fetchApi<CompanyStatisticItem[]>('/api/admin/statistics/order', { method: 'PATCH', headers: { 'x-admin-token': 'admin-jwt-token' }, body: JSON.stringify({ orderedIds }) }),
 
 
-  uploadServiceImage: (file: File): Promise<{ url: string; filename: string; relativePath: string }> => {
+  uploadServiceImage: (file: File): Promise<{ url: string; filename: string; relativePath: string; public_id?: string }> => {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
       reader.onload = async () => {
         try {
-          const res = await fetchApi<{ url: string; filename: string; relativePath: string }>('/api/upload/service-image', {
+          const res = await fetchApi<{ url: string; filename: string; relativePath: string; public_id?: string }>('/api/upload/service-image', {
             method: 'POST',
             body: JSON.stringify({
               filename: file.name,
@@ -94,11 +132,46 @@ export const api = {
   deleteService: (id: string) => fetchApi<{ success: boolean }>(`/api/services/${id}`, { method: 'DELETE' }),
   reorderServices: (orderedIds: string[]) => fetchApi<ServiceItem[]>('/api/services/reorder', { method: 'PATCH', body: JSON.stringify({ orderedIds }) }),
 
-  getProjects: () => fetchApi<ProjectItem[]>('/api/projects'),
-  getProjectBySlug: (slug: string) => fetchApi<ProjectItem>(`/api/projects/${slug}`),
-  createProject: (data: any) => fetchApi<ProjectItem>('/api/projects', { method: 'POST', body: JSON.stringify(data) }),
-  updateProject: (id: string, data: any) => fetchApi<ProjectItem>(`/api/projects/${id}`, { method: 'PUT', body: JSON.stringify(data) }),
-  deleteProject: (id: string) => fetchApi<{ success: boolean }>(`/api/projects/${id}`, { method: 'DELETE' }),
+  uploadProjectImage: (file: File): Promise<{ url: string; filename: string; relativePath: string; public_id?: string }> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = async () => {
+        try {
+          const res = await fetchApi<{ url: string; filename: string; relativePath: string; public_id?: string }>('/api/upload/project-image', {
+            method: 'POST',
+            body: JSON.stringify({
+              filename: file.name,
+              fileData: reader.result
+            })
+          });
+          resolve(res);
+        } catch (err) {
+          reject(err);
+        }
+      };
+      reader.onerror = (err) => reject(err);
+      reader.readAsDataURL(file);
+    });
+  },
+
+  getProjects: (category?: string) => fetchApi<ProjectItem[]>(`/api/projects${category && category !== 'All' ? `?category=${encodeURIComponent(category)}` : ''}`, { cache: 'no-store' }),
+  getProjectBySlug: (slug: string) => fetchApi<ProjectItem>(`/api/projects/${slug}`, { cache: 'no-store' }),
+  getProjectCounts: () => fetchApi<{ total: number; published: number; featured: number; drafts: number }>('/api/admin/projects/counts', { cache: 'no-store', headers: { 'x-admin-token': 'admin-jwt-token' } }),
+  getAdminProjects: (params: { search?: string; category?: string; status?: string; page?: number; limit?: number }) => {
+    const query = new URLSearchParams();
+    if (params.search) query.append('search', params.search);
+    if (params.category) query.append('category', params.category);
+    if (params.status) query.append('status', params.status);
+    if (params.page) query.append('page', params.page.toString());
+    if (params.limit) query.append('limit', params.limit.toString());
+    return fetchApi<ProjectItem[]>(`/api/admin/projects?${query.toString()}`, { cache: 'no-store', headers: { 'x-admin-token': 'admin-jwt-token' } });
+  },
+  createProject: (data: any) => fetchApi<ProjectItem>('/api/admin/projects', { method: 'POST', headers: { 'x-admin-token': 'admin-jwt-token' }, body: JSON.stringify(data) }),
+  updateProject: (id: string, data: any) => fetchApi<ProjectItem>(`/api/admin/projects/${id}`, { method: 'PUT', headers: { 'x-admin-token': 'admin-jwt-token' }, body: JSON.stringify(data) }),
+  deleteProject: (id: string) => fetchApi<{ success: boolean; message?: string }>(`/api/admin/projects/${id}`, { method: 'DELETE', headers: { 'x-admin-token': 'admin-jwt-token' } }),
+  toggleProjectStatus: (id: string, status: string) => fetchApi<ProjectItem>(`/api/admin/projects/${id}/status`, { method: 'PATCH', headers: { 'x-admin-token': 'admin-jwt-token' }, body: JSON.stringify({ status }) }),
+  toggleProjectFeatured: (id: string, featured: boolean) => fetchApi<ProjectItem>(`/api/admin/projects/${id}/featured`, { method: 'PATCH', headers: { 'x-admin-token': 'admin-jwt-token' }, body: JSON.stringify({ featured }) }),
+  reorderProjects: (items: { id: string; displayOrder: number }[]) => fetchApi<ProjectItem[]>('/api/admin/projects/order', { method: 'PATCH', headers: { 'x-admin-token': 'admin-jwt-token' }, body: JSON.stringify({ items }) }),
 
   getBlogs: () => fetchApi<BlogPost[]>('/api/blogs'),
   getBlogBySlug: (slug: string) => fetchApi<BlogPost>(`/api/blogs/${slug}`),

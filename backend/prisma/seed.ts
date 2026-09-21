@@ -322,9 +322,158 @@ async function main() {
     });
   }
 
+  // 6b. Seed Why Choose Us Pillars (CompanyPrinciples)
+  const initialPrinciplesData = [
+    { id: 'principle-1', badge: 'Zero-Debt Code', title: 'Quality First', description: 'We follow industry best practices to deliver high-quality zero-debt solutions.', iconKey: 'Award', displayOrder: 1, enabled: true },
+    { id: 'principle-2', badge: '2-Week Sprints', title: 'Agile & Transparent', description: 'We work in agile methodology with clear 2-week sprint communication.', iconKey: 'Workflow', displayOrder: 2, enabled: true },
+    { id: 'principle-3', badge: '100% SLA Record', title: 'On-time Delivery', description: 'We value your time and ensure projects are delivered on time with a 100% SLA.', iconKey: 'Clock', displayOrder: 3, enabled: true },
+    { id: 'principle-4', badge: 'Hypercare Warranty', title: 'Long-term Support', description: 'We provide continuous post-launch support and maintenance.', iconKey: 'Headphones', displayOrder: 4, enabled: true }
+  ];
+
+  for (const principleSeed of initialPrinciplesData) {
+    await prisma.companyPrinciple.upsert({
+      where: { id: principleSeed.id },
+      update: {
+        badge: principleSeed.badge,
+        title: principleSeed.title,
+        description: principleSeed.description,
+        iconKey: principleSeed.iconKey,
+        displayOrder: principleSeed.displayOrder,
+        enabled: principleSeed.enabled
+      },
+      create: principleSeed
+    });
+  }
+
+  // 7. Seed Initial Projects / Case Studies
+  const initialProjectsData = [
+    {
+      id: 'proj-1',
+      slug: 'pinegen-ai',
+      title: 'PineGen AI - Generative Platform',
+      clientName: 'PineGen Inc',
+      category: 'AI Platform',
+      shortDescription: 'Enterprise AI content platform designed for scalable content-generation workflows.',
+      fullDescription: 'PineGen AI is a next-generation generative AI workspace engineered for enterprise scale-ups. Powered by high-throughput RAG document pipelines and vector search indexing, the platform enables internal teams to execute complex content generation tasks with zero latency bottleneck.',
+      challenge: 'Handling over 2M daily generative API executions while maintaining sub-100ms vector index retrieval times and zero downtime during traffic spikes.',
+      solution: 'Architected a distributed microservices pipeline using Node.js, Next.js, PostgreSQL, and Redis caching with automated horizontal scaling.',
+      heroImage: 'https://images.unsplash.com/photo-1551288049-bebda4e38f71?q=80&w=1200&auto=format&fit=crop',
+      mockupType: 'DARK_DASHBOARD' as const,
+      featured: true,
+      displayOrder: 1,
+      status: 'PUBLISHED' as const,
+      websiteUrl: 'https://pinegen.ai',
+      metrics: [
+        { label: 'Daily API Calls', value: '2M+', trend: '+340%', displayOrder: 1 },
+        { label: 'System Uptime SLA', value: '99.99%', trend: 'Zero Downtime', displayOrder: 2 },
+        { label: 'Query Latency', value: '0.4s', trend: 'Sub-second', displayOrder: 3 }
+      ],
+      highlights: [
+        { title: 'Asynchronous LLM Worker Pipeline', description: 'Engineered job queues capable of handling thousands of concurrent generation requests.', displayOrder: 1 },
+        { title: 'Vector Database Integration', description: 'Implemented semantic search over multi-gigabyte document repositories.', displayOrder: 2 }
+      ]
+    },
+    {
+      id: 'proj-2',
+      slug: 'dinefy-ai-call-bot',
+      title: 'Dinefy Voice AI Agent',
+      clientName: 'Dinefy Group',
+      category: 'AI Automation',
+      shortDescription: 'Autonomous telephone reservation & multi-line Voice AI call handling assistant.',
+      fullDescription: 'Dinefy Voice AI replaces traditional manual phone booking systems with conversational voice agents that understand complex customer speech, handle multi-party reservations, and sync instantly with POS hardware.',
+      challenge: 'Reducing speech-to-text-to-speech audio latency below 500ms while maintaining human-like natural conversation quality across noisy telephone lines.',
+      solution: 'Deployed custom WebRTC real-time audio streams integrated with streaming LLM inference servers and low-latency voice synthesis.',
+      heroImage: 'https://images.unsplash.com/photo-1516321318423-f06f85e504b3?q=80&w=1200&auto=format&fit=crop',
+      mockupType: 'BOT_INTERFACE' as const,
+      featured: true,
+      displayOrder: 2,
+      status: 'PUBLISHED' as const,
+      websiteUrl: 'https://dinefy.com',
+      metrics: [
+        { label: 'Calls Handled', value: '12k+', trend: '100% Automated', displayOrder: 1 },
+        { label: 'Voice Response Latency', value: '0.4s', trend: 'Real-time Audio', displayOrder: 2 },
+        { label: 'Booking Conversion', value: '94%', trend: '+28% Increase', displayOrder: 3 }
+      ],
+      highlights: [
+        { title: 'Real-Time Audio Stream Processing', description: 'Sub-500ms roundtrip audio pipeline for natural multi-turn conversations.', displayOrder: 1 },
+        { title: 'Multi-POS Integration API', description: 'Instant two-way synchronization with restaurant table management hardware.', displayOrder: 2 }
+      ]
+    },
+    {
+      id: 'proj-3',
+      slug: 'qrbook',
+      title: 'QRBook - Smart Business Identity',
+      clientName: 'QRBook Global',
+      category: 'Digital Business Card',
+      shortDescription: 'Instant contactless digital networking and corporate vCard platform.',
+      fullDescription: 'QRBook replaces paper business cards with dynamic, customizable NFC & QR digital profiles featuring real-time analytics, CRM integration, and instant contact save.',
+      challenge: 'Ensuring instant sub-100ms loading speeds on all mobile browsers worldwide without app installation.',
+      solution: 'Built a lightweight Next.js edge-rendered platform with global CDN caching and localized vCard download streams.',
+      heroImage: 'https://images.unsplash.com/photo-1557804506-669a67965ba0?q=80&w=1200&auto=format&fit=crop',
+      mockupType: 'MOBILE_CARDS' as const,
+      featured: true,
+      displayOrder: 3,
+      status: 'PUBLISHED' as const,
+      websiteUrl: 'https://qrbook.io',
+      metrics: [
+        { label: 'Active Profiles', value: '45k+', trend: 'Global Growth', displayOrder: 1 },
+        { label: 'vCard Save Rate', value: '88%', trend: 'Contact Sync', displayOrder: 2 },
+        { label: 'Page Load Speed', value: '0.2s', trend: 'Ultra Fast', displayOrder: 3 }
+      ],
+      highlights: [
+        { title: 'Edge-Rendered Profiles', description: 'Zero-JS initial render for instantaneous profile loads on cellular networks.', displayOrder: 1 }
+      ]
+    },
+    {
+      id: 'proj-4',
+      slug: 'botloop',
+      title: 'BotLoop - Automated Workflow Engine',
+      clientName: 'BotLoop Inc',
+      category: 'Chatbot Platform',
+      shortDescription: 'Enterprise workflow automation bot managing complex internal ops.',
+      fullDescription: 'BotLoop connects modern SaaS stacks with autonomous bot workflows that automate repetitive approval flows, lead routing, and customer support escalation.',
+      challenge: 'Connecting disparate legacy enterprise APIs into a cohesive low-code visual workflow builder.',
+      solution: 'Engineered an event-driven Node.js microservices bus with resilient webhooks and visual flow node execution.',
+      heroImage: 'https://images.unsplash.com/photo-1518770660439-4636190af475?q=80&w=1200&auto=format&fit=crop',
+      mockupType: 'ANALYTICS_SUITE' as const,
+      featured: true,
+      displayOrder: 4,
+      status: 'PUBLISHED' as const,
+      websiteUrl: 'https://botloop.io',
+      metrics: [
+        { label: 'Workflows Executed', value: '5M+', trend: 'Monthly Executions', displayOrder: 1 },
+        { label: 'Ops Time Saved', value: '65%', trend: 'Efficiency Gain', displayOrder: 2 },
+        { label: 'Webhook Reliability', value: '99.9%', trend: 'Fault Tolerant', displayOrder: 3 }
+      ],
+      highlights: [
+        { title: 'Visual Flow Builder Engine', description: 'Drag-and-drop workflow designer rendering real-time execution graphs.', displayOrder: 1 }
+      ]
+    }
+  ];
+
+  for (const projSeed of initialProjectsData) {
+    const { metrics, highlights, ...projFields } = projSeed;
+    const existing = await prisma.project.findUnique({ where: { slug: projFields.slug } });
+    
+    if (!existing) {
+      await prisma.project.create({
+        data: {
+          ...projFields,
+          metrics: {
+            create: metrics
+          },
+          highlights: {
+            create: highlights
+          }
+        }
+      });
+    }
+  }
+
   console.log('🎉 Backend Seeding Completed Successfully!');
 
 }
+
 
 main()
   .catch((e) => {

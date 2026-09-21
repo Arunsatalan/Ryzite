@@ -14,6 +14,7 @@ export interface ServiceItem {
   fullDescription: string;
   iconName: string;
   imageUrl?: string;
+  imagePublicId?: string;
   imageAlt?: string;
   active?: boolean;
   displayOrder?: number;
@@ -48,32 +49,66 @@ export interface SolutionItem {
   metaDescription: string;
 }
 
+export interface ProjectMetricItem {
+  id?: string;
+  label: string;
+  value: string;
+  trend?: string | null;
+  description?: string | null;
+  displayOrder?: number;
+}
+
+export interface ProjectHighlightItem {
+  id?: string;
+  title: string;
+  description?: string | null;
+  displayOrder?: number;
+}
+
 export interface ProjectItem {
   id: string;
   slug: string;
   title: string;
-  client: string;
+  client?: string;
+  clientName?: string;
   category: string;
-  description: string;
-  longDescription: string;
+  description?: string;
+  shortDescription?: string;
+  longDescription?: string;
+  fullDescription?: string;
   heroImage: string;
-  mockupType: 'dark-dashboard' | 'mobile-cards' | 'bot-interface' | 'analytics-suite';
-  metrics: {
-    label: string;
-    value: string;
-    trend?: string;
-  }[];
-  techStack: string[];
-  challenges: string[];
-  solutions: string[];
+  heroImagePublicId?: string;
+  coverImageUrl?: string;
+  coverImagePublicId?: string;
+  galleryImages?: string[];
+  mockupType: 'dark-dashboard' | 'mobile-cards' | 'bot-interface' | 'analytics-suite' | string;
+  metrics: ProjectMetricItem[];
+  highlights?: ProjectHighlightItem[];
+  techStack?: string[] | { technology: { id: string; name: string; slug: string; iconUrl?: string | null } }[];
+  challenges?: string[];
+  challenge?: string | null;
+  solutions?: string[];
+  solution?: string | null;
+  results?: string | null;
   testimonial?: {
     quote: string;
     author: string;
     role: string;
     avatar?: string;
-  };
+  } | any;
   liveUrl?: string;
+  websiteUrl?: string | null;
+  githubUrl?: string | null;
   featured: boolean;
+  status?: 'PUBLISHED' | 'DRAFT' | 'ARCHIVED';
+  displayOrder?: number;
+  seoTitle?: string;
+  seoDescription?: string;
+  seoMetadata?: {
+    metaTitle?: string;
+    metaDescription?: string;
+    canonicalUrl?: string;
+  } | null;
 }
 
 export interface BlogPost {
@@ -86,12 +121,14 @@ export interface BlogPost {
     name: string;
     role: string;
     avatar: string;
+    avatarPublicId?: string;
   };
   category: string;
   tags: string[];
   publishedAt: string;
   readTime: string;
   coverImage: string;
+  coverImagePublicId?: string;
   metaTitle: string;
   metaDescription: string;
   aeoDirectAnswer: string;
@@ -116,6 +153,7 @@ export interface HomeHeroConfig {
   secondaryCtaOpenNewTab?: boolean;
 
   backgroundImageUrl?: string | null;
+  backgroundImagePublicId?: string | null;
   backgroundImageAlt?: string | null;
 
   enabled: boolean;
@@ -129,6 +167,7 @@ export interface TrustedClientItem {
   companyName?: string | null;
   slug?: string;
   logoUrl?: string | null;
+  logoPublicId?: string | null;
   logoAltText?: string | null;
   websiteUrl?: string | null;
   description?: string | null;
@@ -158,6 +197,18 @@ export interface CompanyStatisticItem {
   updatedAt?: string;
 }
 
+
+export interface WhyChooseUsItem {
+  id: string;
+  badge: string;
+  title: string;
+  description: string;
+  iconKey: string;
+  backgroundImageUrl?: string | null;
+  backgroundImagePublicId?: string | null;
+  enabled: boolean;
+  displayOrder: number;
+}
 
 export type LeadStatus = 'NEW' | 'CONTACTED' | 'IN_DISCUSSION' | 'PROPOSAL_SENT' | 'WON' | 'LOST';
 

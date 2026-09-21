@@ -72,7 +72,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({ project, onClose, on
                 <span>Technical Challenges</span>
               </div>
               <ul className="space-y-2">
-                {project.challenges.map((c, i) => (
+                {(project.challenges || (project.challenge ? project.challenge.split('\n') : [])).map((c, i) => (
                   <li key={i} className="text-xs sm:text-sm text-slate-700 flex items-start gap-2">
                     <span className="text-rose-500 font-bold">•</span>
                     <span>{c}</span>
@@ -88,7 +88,7 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({ project, onClose, on
                 <span>Ryzite Solutions & Architecture</span>
               </div>
               <ul className="space-y-2">
-                {project.solutions.map((s, i) => (
+                {(project.solutions || (project.solution ? project.solution.split('\n') : [])).map((s, i) => (
                   <li key={i} className="text-xs sm:text-sm text-slate-700 flex items-start gap-2">
                     <span className="text-[#0052FF] font-bold">✓</span>
                     <span>{s}</span>
@@ -103,11 +103,15 @@ export const ProjectModal: React.FC<ProjectModalProps> = ({ project, onClose, on
           <div className="space-y-2">
             <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider">Technology Stack</h4>
             <div className="flex flex-wrap gap-2">
-              {project.techStack.map((tech, idx) => (
-                <span key={idx} className="px-3 py-1.5 bg-slate-100 text-slate-700 text-xs font-semibold rounded-xl border border-slate-200">
-                  {tech}
-                </span>
-              ))}
+              {(project.techStack || []).map((tech, idx) => {
+                const techName = typeof tech === 'string' ? tech : (tech && typeof tech === 'object' && 'technology' in tech ? tech.technology?.name : '');
+                if (!techName) return null;
+                return (
+                  <span key={idx} className="px-3 py-1.5 bg-slate-100 text-slate-700 text-xs font-semibold rounded-xl border border-slate-200">
+                    {techName}
+                  </span>
+                );
+              })}
             </div>
           </div>
 

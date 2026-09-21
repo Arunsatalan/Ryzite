@@ -17,7 +17,7 @@ import {
   TrendingUp,
   LucideIcon
 } from 'lucide-react';
-import { CompanyStatisticItem } from '../types';
+import { CompanyStatisticItem, WhyChooseUsItem } from '../types';
 import { api } from '../lib/api';
 import { AnimatedCounter } from './AnimatedCounter';
 
@@ -30,7 +30,12 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Clock,
   Code,
   Shield,
-  TrendingUp
+  TrendingUp,
+  Workflow,
+  Headphones,
+  Zap,
+  CheckCircle2,
+  Sparkles
 };
 
 const DEFAULT_FALLBACK_STATS: CompanyStatisticItem[] = [
@@ -40,12 +45,22 @@ const DEFAULT_FALLBACK_STATS: CompanyStatisticItem[] = [
   { id: '4', value: '3', prefix: '', suffix: '+', label: 'Years of Experience', description: 'Industry Leadership', iconName: 'Globe', iconColor: '#0052FF', animationEnabled: true, displayOrder: 4, status: 'PUBLISHED' }
 ];
 
+const DEFAULT_FALLBACK_PILLARS: WhyChooseUsItem[] = [
+  { id: 'p-1', title: 'Quality First', description: 'We follow industry best practices to deliver high-quality zero-debt solutions.', iconKey: 'Award', badge: 'Zero-Debt Code', enabled: true, displayOrder: 1 },
+  { id: 'p-2', title: 'Agile & Transparent', description: 'We work in agile methodology with clear 2-week sprint communication.', iconKey: 'Workflow', badge: '2-Week Sprints', enabled: true, displayOrder: 2 },
+  { id: 'p-3', title: 'On-time Delivery', description: 'We value your time and ensure projects are delivered on time with a 100% SLA.', iconKey: 'Clock', badge: '100% SLA Record', enabled: true, displayOrder: 3 },
+  { id: 'p-4', title: 'Long-term Support', description: 'We provide continuous post-launch support and maintenance.', iconKey: 'Headphones', badge: 'Hypercare Warranty', enabled: true, displayOrder: 4 }
+];
+
 interface WhyChooseUsProps {
-  onStartConsultation: () => void;
+  onStartConsultation?: () => void;
+  principles?: WhyChooseUsItem[];
+  items?: WhyChooseUsItem[];
 }
 
-export const WhyChooseUs: React.FC<WhyChooseUsProps> = ({ onStartConsultation }) => {
+export const WhyChooseUs: React.FC<WhyChooseUsProps> = ({ onStartConsultation, principles: initialPrinciples, items }) => {
   const [stats, setStats] = useState<CompanyStatisticItem[]>(DEFAULT_FALLBACK_STATS);
+  const [pillars, setPillars] = useState<WhyChooseUsItem[]>(items || initialPrinciples || DEFAULT_FALLBACK_PILLARS);
 
   useEffect(() => {
     let isMounted = true;
@@ -55,40 +70,20 @@ export const WhyChooseUs: React.FC<WhyChooseUsProps> = ({ onStartConsultation })
           setStats(data);
         }
       })
-      .catch((err) => {
-        console.warn('Failed to load dynamic company statistics, using default fallback:', err);
-      });
+      .catch(() => {});
+
+    api.getWhyChooseUs()
+      .then((data) => {
+        if (isMounted && Array.isArray(data) && data.length > 0) {
+          setPillars(data);
+        }
+      })
+      .catch(() => {});
+
     return () => {
       isMounted = false;
     };
   }, []);
-
-  const pillars = [
-    {
-      title: 'Quality First',
-      description: 'We follow industry best practices to deliver high-quality solutions.',
-      icon: Award,
-      tag: 'Zero-Debt Code'
-    },
-    {
-      title: 'Agile & Transparent',
-      description: 'We work in agile methodology with clear communication.',
-      icon: Workflow,
-      tag: '2-Week Sprints'
-    },
-    {
-      title: 'On-time Delivery',
-      description: 'We value your time and ensure projects are delivered on time.',
-      icon: Clock,
-      tag: '100% SLA Record'
-    },
-    {
-      title: 'Long-term Support',
-      description: 'We provide continuous support and maintenance.',
-      icon: Headphones,
-      tag: 'Hypercare Warranty'
-    }
-  ];
 
   return (
     <section 
@@ -180,19 +175,22 @@ export const WhyChooseUs: React.FC<WhyChooseUsProps> = ({ onStartConsultation })
           {/* Right Column: 4 Core Pillars Grid */}
           <div className="lg:col-span-7 grid grid-cols-1 sm:grid-cols-2 gap-5 sm:gap-6 text-left">
             {pillars.map((pillar, idx) => {
-              const IconComp = pillar.icon;
+              const IconComp = pillar.iconKey && ICON_MAP[pillar.iconKey] ? ICON_MAP[pillar.iconKey] : Award;
+              const badgeText = pillar.badge;
               return (
                 <div 
-                  key={idx}
+                  key={pillar.id || idx}
                   className="bg-white/10 hover:bg-white/15 backdrop-blur-md rounded-2xl p-5 sm:p-6 border border-white/15 transition-all duration-300 hover:border-cyan-300/40 hover:-translate-y-1"
                 >
                   <div className="flex items-center justify-between mb-4">
                     <div className="w-11 h-11 rounded-xl bg-white/15 flex items-center justify-center text-cyan-300 shadow-inner">
-                      <IconComp className="w-5 h-5" />
+                      <IconComp className="w-[#20px] h-[#20px]" />
                     </div>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-cyan-200 bg-white/10 px-2 py-0.5 rounded-md">
-                      {pillar.tag}
-                    </span>
+                    {badgeText && (
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-cyan-200 bg-white/10 px-2 py-0.5 rounded-md">
+                        {badgeText}
+                      </span>
+                    )}
                   </div>
 
                   <h3 className="text-lg font-bold text-white mb-2 font-display">

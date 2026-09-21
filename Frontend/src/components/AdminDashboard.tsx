@@ -41,10 +41,11 @@ import {
   EyeOff,
   LucideIcon
 } from 'lucide-react';
-import { LeadItem, ServiceItem, ServiceCategory, ProjectItem, BlogPost, LeadStatus, PageMetadataConfig, HomeHeroConfig, TrustedClientItem, CompanyStatisticItem, StatisticStatus } from '../types';
+import { LeadItem, ServiceItem, ServiceCategory, ProjectItem, BlogPost, LeadStatus, PageMetadataConfig, HomeHeroConfig, TrustedClientItem, CompanyStatisticItem, StatisticStatus, WhyChooseUsItem } from '../types';
 import { SerpOptimizerModal } from './SerpOptimizerModal';
 import { Hero } from './Hero';
 import { TrustedClients } from './TrustedClients';
+import { WhyChooseUs } from './WhyChooseUs';
 import { api } from '../lib/api';
 
 const STAT_ICON_MAP: Record<string, LucideIcon> = {
@@ -82,10 +83,33 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onUpdateProjects,
   onUpdateBlogs
 }) => {
-  const [activeTab, setActiveTab] = useState<'crm' | 'hero' | 'clients' | 'statistics' | 'services' | 'projects' | 'blogs' | 'seo' | 'analytics'>('crm');
+  const [activeTab, setActiveTab] = useState<'crm' | 'hero' | 'clients' | 'principles' | 'statistics' | 'services' | 'projects' | 'blogs' | 'seo' | 'analytics'>('crm');
   const [searchQuery, setSearchQuery] = useState('');
   
   if (!isOpen) return null;
+
+  // Why Choose Us (Principles) CMS state & handlers
+  const [principlesList, setPrinciplesList] = useState<WhyChooseUsItem[]>([]);
+  const [loadingPrinciples, setLoadingPrinciples] = useState(false);
+  const [showPrincipleModal, setShowPrincipleModal] = useState(false);
+  const [editingPrinciple, setEditingPrinciple] = useState<WhyChooseUsItem | null>(null);
+  const [principleSaving, setPrincipleSaving] = useState(false);
+  const [principleError, setPrincipleError] = useState<string | null>(null);
+  const [principleToast, setPrincipleToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+
+  const [principleForm, setPrincipleForm] = useState<{
+    badge: string;
+    title: string;
+    description: string;
+    iconKey: string;
+    enabled: boolean;
+  }>({
+    badge: '',
+    title: '',
+    description: '',
+    iconKey: 'Award',
+    enabled: true
+  });
 
   // Company Statistics CMS state & handlers
   const [companyStatisticsList, setCompanyStatisticsList] = useState<CompanyStatisticItem[]>([]);
@@ -185,6 +209,286 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     featured: true
   });
 
+  // Projects & Case Studies CMS state & handlers
+  const [adminProjectsList, setAdminProjectsList] = useState<ProjectItem[]>([]);
+  const [projectCounts, setProjectCounts] = useState({ total: 0, published: 0, featured: 0, drafts: 0 });
+  const [loadingProjects, setLoadingProjects] = useState(false);
+  const [projectFilterCategory, setProjectFilterCategory] = useState<string>('ALL');
+  const [projectFilterStatus, setProjectFilterStatus] = useState<string>('ALL');
+  const [projectSearchQuery, setProjectSearchQuery] = useState<string>('');
+  const [showProjectModal, setShowProjectModal] = useState(false);
+  const [editingProject, setEditingProject] = useState<ProjectItem | null>(null);
+  const [projectSaving, setProjectSaving] = useState(false);
+  const [projectError, setProjectError] = useState<string | null>(null);
+  const [projectToast, setProjectToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
+  const [uploadingProjectImg, setUploadingProjectImg] = useState(false);
+  const [tempProjectPreviewUrl, setTempProjectPreviewUrl] = useState<string | null>(null);
+
+  const [projectForm, setProjectForm] = useState<{
+    title: string;
+    slug: string;
+    client: string;
+    category: string;
+    mockupType: string;
+    shortDescription: string;
+    fullDescription: string;
+    challenge: string;
+    solution: string;
+    results: string;
+    heroImage: string;
+    websiteUrl: string;
+    githubUrl: string;
+    status: 'PUBLISHED' | 'DRAFT' | 'ARCHIVED';
+    featured: boolean;
+    metrics: { label: string; value: string; trend?: string; description?: string }[];
+    highlights: { title: string; description?: string }[];
+    seoTitle: string;
+    seoDescription: string;
+    testimonialQuote: string;
+    testimonialAuthor: string;
+    testimonialRole: string;
+  }>({
+    title: '',
+    slug: '',
+    client: '',
+    category: 'SaaS Platform',
+    mockupType: 'dark-dashboard',
+    shortDescription: '',
+    fullDescription: '',
+    challenge: '',
+    solution: '',
+    results: '',
+    heroImage: '',
+    websiteUrl: '',
+    githubUrl: '',
+    status: 'PUBLISHED',
+    featured: true,
+    metrics: [{ label: 'Performance Metric', value: '100%', trend: '+40% YoY' }],
+    highlights: [{ title: 'Key Feature Highlighting Architecture' }],
+    seoTitle: '',
+    seoDescription: '',
+    testimonialQuote: '',
+    testimonialAuthor: '',
+    testimonialRole: ''
+  });
+
+  const fetchAdminProjects = async () => {
+    setLoadingProjects(true);
+    try {
+      const [projectsData, countsData] = await Promise.all([
+        api.getAdminProjects({
+          search: projectSearchQuery,
+          category: projectFilterCategory,
+          status: projectFilterStatus
+        }),
+        api.getProjectCounts()
+      ]);
+
+      if (Array.isArray(projectsData)) {
+        setAdminProjectsList(projectsData);
+      }
+      if (countsData) {
+        setProjectCounts(countsData);
+      }
+    } catch (err: any) {
+      console.warn('Failed to fetch admin projects:', err.message);
+    } finally {
+      setLoadingProjects(false);
+    }
+  };
+
+  const handleProjectImageFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 5 * 1024 * 1024) {
+      setProjectError('Image file size exceeds maximum 5MB limit.');
+      return;
+    }
+
+    setUploadingProjectImg(true);
+    setProjectError(null);
+    try {
+      const tempUrl = URL.createObjectURL(file);
+      setTempProjectPreviewUrl(tempUrl);
+
+      const res = await api.uploadProjectImage(file);
+      if (res && res.url) {
+        setProjectForm(prev => ({
+          ...prev,
+          heroImage: res.url,
+          heroImagePublicId: res.public_id || res.filename
+        }));
+        setProjectToast({ message: 'Project hero image uploaded to Cloudinary CDN', type: 'success' });
+        setTimeout(() => setProjectToast(null), 3000);
+      }
+    } catch (err: any) {
+      setProjectError(err.message || 'Failed to upload project hero image file.');
+    } finally {
+      setUploadingProjectImg(false);
+    }
+  };
+
+  const handleOpenAddProject = () => {
+    setEditingProject(null);
+    setTempProjectPreviewUrl(null);
+    setProjectForm({
+      title: '',
+      slug: '',
+      client: '',
+      category: 'SaaS Platform',
+      mockupType: 'dark-dashboard',
+      shortDescription: '',
+      fullDescription: '',
+      challenge: '',
+      solution: '',
+      results: '',
+      heroImage: '',
+      websiteUrl: '',
+      githubUrl: '',
+      status: 'PUBLISHED',
+      featured: true,
+      metrics: [
+        { label: 'Latency Reduction', value: '-85%', trend: 'Real-time' },
+        { label: 'System Throughput', value: '50k RPS', trend: 'Scalable' }
+      ],
+      highlights: [
+        { title: 'Sub-50ms Global Query Optimization' },
+        { title: 'Autonomous Auto-scaling Kubernetes Infrastructure' }
+      ],
+      seoTitle: '',
+      seoDescription: '',
+      testimonialQuote: '',
+      testimonialAuthor: '',
+      testimonialRole: ''
+    });
+    setProjectError(null);
+    setShowProjectModal(true);
+  };
+
+  const handleOpenEditProject = (project: ProjectItem) => {
+    setEditingProject(project);
+    setTempProjectPreviewUrl(null);
+    setProjectForm({
+      title: project.title || '',
+      slug: project.slug || '',
+      client: project.client || project.clientName || '',
+      category: project.category || 'SaaS Platform',
+      mockupType: project.mockupType || 'dark-dashboard',
+      shortDescription: project.shortDescription || project.description || '',
+      fullDescription: project.fullDescription || project.longDescription || project.shortDescription || '',
+      challenge: project.challenge || (project.challenges ? project.challenges.join('\n') : ''),
+      solution: project.solution || (project.solutions ? project.solutions.join('\n') : ''),
+      results: project.results || '',
+      heroImage: project.heroImage || '',
+      websiteUrl: project.websiteUrl || project.liveUrl || '',
+      githubUrl: project.githubUrl || '',
+      status: project.status || 'PUBLISHED',
+      featured: project.featured ?? true,
+      metrics: project.metrics && project.metrics.length > 0
+        ? project.metrics.map(m => ({ label: m.label, value: m.value, trend: m.trend || '', description: m.description || '' }))
+        : [{ label: 'Performance Benchmark', value: '99.9%', trend: 'SLA' }],
+      highlights: project.highlights && project.highlights.length > 0
+        ? project.highlights.map(h => ({ title: h.title, description: h.description || '' }))
+        : [{ title: 'Enterprise Core Architecture' }],
+      seoTitle: project.seoTitle || project.seoMetadata?.metaTitle || '',
+      seoDescription: project.seoDescription || project.seoMetadata?.metaDescription || '',
+      testimonialQuote: project.testimonial?.quote || '',
+      testimonialAuthor: project.testimonial?.author || '',
+      testimonialRole: project.testimonial?.role || ''
+    });
+    setProjectError(null);
+    setShowProjectModal(true);
+  };
+
+  const handleSaveProject = async () => {
+    if (!projectForm.title.trim()) {
+      setProjectError('Project title is required.');
+      return;
+    }
+    const slug = projectForm.slug.trim() || projectForm.title.toLowerCase().replace(/[^a-z0-9]/g, '-');
+    setProjectSaving(true);
+    setProjectError(null);
+    try {
+      const payload: any = {
+        title: projectForm.title,
+        slug,
+        client: projectForm.client || 'Enterprise Partner',
+        category: projectForm.category,
+        mockupType: projectForm.mockupType,
+        description: projectForm.shortDescription,
+        longDescription: projectForm.fullDescription,
+        challenge: projectForm.challenge,
+        solution: projectForm.solution,
+        results: projectForm.results,
+        heroImage: projectForm.heroImage || 'https://images.unsplash.com/photo-1551288049-bebda4e38f71',
+        websiteUrl: projectForm.websiteUrl,
+        githubUrl: projectForm.githubUrl,
+        status: projectForm.status,
+        featured: projectForm.featured,
+        metrics: projectForm.metrics,
+        highlights: projectForm.highlights,
+        seoTitle: projectForm.seoTitle || `${projectForm.title} Case Study | Ryzite`,
+        seoDescription: projectForm.seoDescription || projectForm.shortDescription
+      };
+
+      if (projectForm.testimonialQuote) {
+        payload.testimonial = {
+          quote: projectForm.testimonialQuote,
+          author: projectForm.testimonialAuthor || 'Executive Leader',
+          role: projectForm.testimonialRole || 'VP of Technology'
+        };
+      }
+
+      if (editingProject) {
+        await api.updateProject(editingProject.id, payload);
+        setProjectToast({ message: 'Project case study updated successfully!', type: 'success' });
+      } else {
+        await api.createProject(payload);
+        setProjectToast({ message: 'New project case study created and saved to PostgreSQL!', type: 'success' });
+      }
+
+      setShowProjectModal(false);
+      fetchAdminProjects();
+      setTimeout(() => setProjectToast(null), 3500);
+    } catch (err: any) {
+      setProjectError(err.message || 'Failed to save project.');
+    } finally {
+      setProjectSaving(false);
+    }
+  };
+
+  const handleDeleteProject = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this project case study?')) return;
+    try {
+      await api.deleteProject(id);
+      fetchAdminProjects();
+      setProjectToast({ message: 'Project deleted successfully', type: 'success' });
+      setTimeout(() => setProjectToast(null), 3000);
+    } catch (err: any) {
+      console.error('Failed to delete project:', err);
+    }
+  };
+
+  const handleToggleProjectStatus = async (id: string, currentStatus: string) => {
+    const nextStatus = currentStatus === 'PUBLISHED' ? 'DRAFT' : 'PUBLISHED';
+    try {
+      await api.toggleProjectStatus(id, nextStatus);
+      fetchAdminProjects();
+    } catch (err: any) {
+      console.error('Failed to toggle project status:', err);
+    }
+  };
+
+  const handleToggleProjectFeatured = async (id: string, currentFeatured: boolean) => {
+    try {
+      await api.toggleProjectFeatured(id, !currentFeatured);
+      fetchAdminProjects();
+    } catch (err: any) {
+      console.error('Failed to toggle project featured:', err);
+    }
+  };
+
   const fetchAdminServices = async () => {
     setLoadingServices(true);
     try {
@@ -273,6 +577,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
         setServiceForm(prev => ({
           ...prev,
           imageUrl: res.url,
+          imagePublicId: res.public_id || res.filename,
           imageAlt: prev.imageAlt || `${prev.title || file.name} solution`
         }));
       }
@@ -431,7 +736,8 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
       if (res && res.url) {
         setClientForm(prev => ({
           ...prev,
-          logoUrl: res.url
+          logoUrl: res.url,
+          logoPublicId: res.public_id || res.filename
         }));
       }
     } catch (err: any) {
@@ -441,20 +747,127 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
     }
   };
 
+  const fetchAdminPrinciples = async () => {
+    setLoadingPrinciples(true);
+    try {
+      const data = await api.getAdminWhyChooseUs();
+      if (Array.isArray(data)) {
+        setPrinciplesList(data);
+      }
+    } catch (err: any) {
+      console.warn('Failed to fetch admin principles:', err.message);
+    } finally {
+      setLoadingPrinciples(false);
+    }
+  };
+
+  const handleOpenAddPrinciple = () => {
+    setEditingPrinciple(null);
+    setPrincipleForm({
+      badge: 'Zero-Debt Code',
+      title: '',
+      description: '',
+      iconKey: 'Award',
+      enabled: true
+    });
+    setPrincipleError(null);
+    setShowPrincipleModal(true);
+  };
+
+  const handleOpenEditPrinciple = (principle: WhyChooseUsItem) => {
+    setEditingPrinciple(principle);
+    setPrincipleForm({
+      badge: principle.badge || '',
+      title: principle.title || '',
+      description: principle.description || '',
+      iconKey: principle.iconKey || 'Award',
+      enabled: principle.enabled !== false
+    });
+    setPrincipleError(null);
+    setShowPrincipleModal(true);
+  };
+
+  const handleSavePrinciple = async () => {
+    if (!principleForm.title.trim() || !principleForm.description.trim()) {
+      setPrincipleError('Title and Description are required.');
+      return;
+    }
+    setPrincipleSaving(true);
+    setPrincipleError(null);
+    try {
+      if (editingPrinciple) {
+        await api.updateWhyChooseUs(editingPrinciple.id, principleForm);
+        setPrincipleToast({ message: 'Why Choose Us pillar updated successfully', type: 'success' });
+      } else {
+        await api.createWhyChooseUs(principleForm);
+        setPrincipleToast({ message: 'Why Choose Us pillar created successfully', type: 'success' });
+      }
+      setTimeout(() => setPrincipleToast(null), 3500);
+      setShowPrincipleModal(false);
+      fetchAdminPrinciples();
+    } catch (err: any) {
+      setPrincipleError(err.message || 'Failed to save principle.');
+    } finally {
+      setPrincipleSaving(false);
+    }
+  };
+
+  const handleDeletePrinciple = async (id: string) => {
+    if (!confirm('Are you sure you want to delete this Why Choose Us pillar?')) return;
+    try {
+      await api.deleteWhyChooseUs(id);
+      fetchAdminPrinciples();
+    } catch (err: any) {
+      console.error('Failed to delete principle:', err);
+    }
+  };
+
+  const handleTogglePrincipleEnabled = async (principle: WhyChooseUsItem) => {
+    try {
+      await api.updateWhyChooseUs(principle.id, { ...principle, enabled: !principle.enabled });
+      fetchAdminPrinciples();
+    } catch (err: any) {
+      console.error('Failed to toggle principle status:', err);
+    }
+  };
+
+  const handleMovePrincipleOrder = async (currentIndex: number, direction: 'up' | 'down') => {
+    const targetIndex = direction === 'up' ? currentIndex - 1 : currentIndex + 1;
+    if (targetIndex < 0 || targetIndex >= principlesList.length) return;
+
+    const listCopy = [...principlesList];
+    const temp = listCopy[currentIndex];
+    listCopy[currentIndex] = listCopy[targetIndex];
+    listCopy[targetIndex] = temp;
+
+    setPrinciplesList(listCopy);
+    try {
+      const orderedIds = listCopy.map(p => p.id);
+      await api.reorderWhyChooseUs(orderedIds);
+    } catch (err: any) {
+      console.error('Failed to reorder principles:', err);
+      fetchAdminPrinciples();
+    }
+  };
+
   useEffect(() => {
     fetchLeads(leadFilter);
     fetchSeo(selectedSeoPage);
     fetchAnalytics();
     fetchHero();
     fetchAdminClients();
+    fetchAdminPrinciples();
     fetchAdminServices();
+    fetchAdminProjects();
 
     const handleFocus = () => {
       fetchLeads(leadFilter);
       fetchAnalytics();
       fetchHero();
       fetchAdminClients();
+      fetchAdminPrinciples();
       fetchAdminServices();
+      fetchAdminProjects();
     };
     window.addEventListener('focus', handleFocus);
     return () => window.removeEventListener('focus', handleFocus);
@@ -848,15 +1261,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
 
 
-  const handleDeleteProject = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this project?')) return;
-    try {
-      await api.deleteProject(id);
-      onUpdateProjects(projects.filter(p => p.id !== id));
-    } catch (err) {
-      console.error('Failed to delete project:', err);
-    }
-  };
+
 
   const handleDeleteBlog = async (id: string) => {
     if (!confirm('Are you sure you want to delete this blog post?')) return;
@@ -962,6 +1367,23 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
               <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-bold">
                 {trustedClientsList.length}
+              </span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('principles')}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${
+                activeTab === 'principles' 
+                  ? 'bg-blue-50 text-blue-600 border border-blue-200/60 shadow-xs' 
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+              }`}
+            >
+              <div className="flex items-center gap-3">
+                <ShieldCheck size={18} className={activeTab === 'principles' ? 'text-blue-600' : 'text-slate-400'} />
+                <span>Why Choose Us</span>
+              </div>
+              <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-bold">
+                {principlesList.length}
               </span>
             </button>
 
@@ -1805,6 +2227,197 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
           )}
 
+          {/* TAB: WHY CHOOSE US (PRINCIPLES) CMS */}
+          {activeTab === 'principles' && (
+            <div className="space-y-6">
+              {/* Header Bar */}
+              <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <h2 className="text-lg font-bold text-slate-900">Home Page → Why Choose Us Pillars Showcase</h2>
+                    <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800 border border-blue-300">
+                      {principlesList.filter(p => p.enabled !== false).length} Active Pillars
+                    </span>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-1">Manage core value pillars, badges, titles, descriptions, and icon mappings stored in PostgreSQL.</p>
+                </div>
+
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={fetchAdminPrinciples}
+                    disabled={loadingPrinciples}
+                    className="flex items-center gap-2 px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-xl text-xs font-semibold transition-all disabled:opacity-50"
+                  >
+                    <RefreshCw size={14} className={loadingPrinciples ? 'animate-spin' : ''} />
+                    <span>Refresh</span>
+                  </button>
+
+                  <button
+                    onClick={handleOpenAddPrinciple}
+                    className="flex items-center gap-2 px-5 py-2 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-xl text-xs font-bold shadow-md transition-all"
+                  >
+                    <Plus size={16} />
+                    <span>Add Value Pillar</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Toast Banner */}
+              {principleToast && (
+                <div className={`p-4 rounded-xl text-xs font-bold flex items-center justify-between shadow-md transition-all ${
+                  principleToast.type === 'success' 
+                    ? 'bg-emerald-50 text-emerald-800 border border-emerald-200' 
+                    : 'bg-rose-50 text-rose-800 border border-rose-200'
+                }`}>
+                  <div className="flex items-center gap-2">
+                    {principleToast.type === 'success' ? <CheckCircle2 size={16} className="text-emerald-600" /> : <AlertTriangle size={16} className="text-rose-600" />}
+                    <span>{principleToast.message}</span>
+                  </div>
+                  <button onClick={() => setPrincipleToast(null)} className="hover:opacity-75">✕</button>
+                </div>
+              )}
+
+              {/* Main Content Layout: Table Left, Live Component Preview Right */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                
+                {/* Left Column: Management Table */}
+                <div className="lg:col-span-7 bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs space-y-4">
+                  <div className="flex items-center justify-between border-b border-slate-100 pb-4">
+                    <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider">Core Pillars Directory</h3>
+                    <span className="text-xs font-medium text-slate-500">
+                      Total: {principlesList.length} pillars
+                    </span>
+                  </div>
+
+                  {loadingPrinciples ? (
+                    <div className="py-16 text-center text-slate-500 flex flex-col items-center justify-center gap-3">
+                      <RefreshCw size={24} className="animate-spin text-blue-600" />
+                      <span className="text-xs font-semibold">Loading pillars from PostgreSQL...</span>
+                    </div>
+                  ) : principlesList.length === 0 ? (
+                    <div className="py-12 text-center text-slate-400 space-y-3">
+                      <ShieldCheck size={36} className="mx-auto text-slate-300" />
+                      <p className="text-xs font-semibold">No pillars configured yet.</p>
+                      <button
+                        onClick={handleOpenAddPrinciple}
+                        className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition-all inline-flex items-center gap-1.5"
+                      >
+                        <Plus size={14} /> Add First Pillar
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="overflow-x-auto">
+                      <table className="w-full text-left text-xs text-slate-700">
+                        <thead className="bg-slate-50 text-slate-500 font-semibold uppercase text-[11px] tracking-wider border-b border-slate-200">
+                          <tr>
+                            <th className="py-3 px-3">Order</th>
+                            <th className="py-3 px-3">Badge & Title</th>
+                            <th className="py-3 px-3 text-center">Status</th>
+                            <th className="py-3 px-3 text-right">Actions</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-100">
+                          {principlesList.map((principle, idx) => (
+                            <tr key={principle.id} className="hover:bg-slate-50/80 transition-colors">
+                              {/* Order */}
+                              <td className="py-3 px-3 font-mono font-bold text-slate-400">
+                                <div className="flex items-center gap-1">
+                                  <span className="w-4 text-center">{principle.displayOrder ?? idx + 1}</span>
+                                  <div className="flex flex-col">
+                                    <button
+                                      disabled={idx === 0}
+                                      onClick={() => handleMovePrincipleOrder(idx, 'up')}
+                                      className="p-0.5 hover:bg-slate-200 rounded disabled:opacity-30 text-slate-600"
+                                      title="Move Up"
+                                    >
+                                      <ArrowUp size={12} />
+                                    </button>
+                                    <button
+                                      disabled={idx === principlesList.length - 1}
+                                      onClick={() => handleMovePrincipleOrder(idx, 'down')}
+                                      className="p-0.5 hover:bg-slate-200 rounded disabled:opacity-30 text-slate-600"
+                                      title="Move Down"
+                                    >
+                                      <ArrowDown size={12} />
+                                    </button>
+                                  </div>
+                                </div>
+                              </td>
+
+                              {/* Badge & Title */}
+                              <td className="py-3 px-3">
+                                <div>
+                                  <span className="text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded bg-blue-50 text-blue-700 border border-blue-200 inline-block mb-1">
+                                    {principle.badge}
+                                  </span>
+                                  <div className="font-bold text-slate-900 text-xs">{principle.title}</div>
+                                  <div className="text-[11px] text-slate-400 line-clamp-1 max-w-[240px]">
+                                    {principle.description}
+                                  </div>
+                                </div>
+                              </td>
+
+                              {/* Enabled Toggle */}
+                              <td className="py-3 px-3 text-center">
+                                <button
+                                  onClick={() => handleTogglePrincipleEnabled(principle)}
+                                  className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border transition-colors ${
+                                    principle.enabled !== false
+                                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                      : 'bg-slate-100 text-slate-500 border-slate-200'
+                                  }`}
+                                >
+                                  {principle.enabled !== false ? 'ACTIVE' : 'HIDDEN'}
+                                </button>
+                              </td>
+
+                              {/* Actions */}
+                              <td className="py-3 px-3 text-right space-x-1">
+                                <button
+                                  onClick={() => handleOpenEditPrinciple(principle)}
+                                  className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                  title="Edit Pillar"
+                                >
+                                  <Edit3 size={15} />
+                                </button>
+                                <button
+                                  onClick={() => handleDeletePrinciple(principle.id)}
+                                  className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                                  title="Delete Pillar"
+                                >
+                                  <Trash2 size={15} />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+
+                {/* Right Column: Live Component Preview */}
+                <div className="lg:col-span-5 space-y-4">
+                  <div className="bg-slate-900 text-white rounded-2xl p-4 shadow-sm border border-slate-800 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <Sparkles size={16} className="text-blue-400" />
+                      <span className="text-xs font-bold uppercase tracking-wider">Live Section Preview</span>
+                    </div>
+                    <span className="text-[11px] text-emerald-400 font-medium flex items-center gap-1">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                      PostgreSQL Sync
+                    </span>
+                  </div>
+
+                  <div className="border border-slate-200 rounded-2xl bg-white shadow-lg overflow-hidden">
+                    <WhyChooseUs items={principlesList.filter(p => p.enabled !== false)} />
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          )}
+
           {/* TAB: COMPANY STATISTICS CMS */}
           {activeTab === 'statistics' && (
             <div className="space-y-6">
@@ -2269,7 +2882,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                               <div className="flex items-center gap-3">
                                 <div className="w-12 h-10 rounded-lg bg-slate-900 border border-slate-700 flex items-center justify-center p-0.5 overflow-hidden shrink-0">
                                   {srv.imageUrl ? (
-                                    <img src={srv.imageUrl} alt={srv.imageAlt || srv.title} className="w-full h-full object-cover rounded-md" />
+                                    <img 
+                                      src={srv.imageUrl} 
+                                      alt={srv.imageAlt || srv.title} 
+                                      onError={(e) => { (e.currentTarget as HTMLImageElement).src = "https://images.unsplash.com/photo-1497366811353-6870744d04b2?q=85&w=200&auto=format&fit=crop"; }}
+                                      className="w-full h-full object-cover rounded-md" 
+                                    />
                                   ) : (
                                     <Sparkles size={16} className="text-blue-400" />
                                   )}
@@ -2336,34 +2954,234 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
             </div>
           )}
 
-          {/* TAB 4: PORTFOLIO CMS */}
+          {/* TAB 4: PORTFOLIO & CASE STUDIES CMS */}
           {activeTab === 'projects' && (
-            <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs space-y-6">
-              <div className="flex items-center justify-between border-b border-slate-100 pb-5">
-                <div>
-                  <h2 className="text-lg font-bold text-slate-900">Portfolio & Case Studies ({projects.length})</h2>
-                  <p className="text-xs text-slate-500">Manage client success stories and metrics published on `/portfolio`.</p>
+            <div className="space-y-6">
+              {/* Toast Banner */}
+              {projectToast && (
+                <div className={`p-4 rounded-2xl border text-xs font-semibold flex items-center justify-between animate-fadeIn ${
+                  projectToast.type === 'success' ? 'bg-emerald-50 text-emerald-800 border-emerald-200' : 'bg-rose-50 text-rose-800 border-rose-200'
+                }`}>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle2 size={16} className="shrink-0 text-emerald-600" />
+                    <span>{projectToast.message}</span>
+                  </div>
+                  <button onClick={() => setProjectToast(null)} className="text-slate-400 hover:text-slate-600">✕</button>
+                </div>
+              )}
+
+              {/* KPI Header Bar */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs space-y-2">
+                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Total Case Studies</span>
+                  <div className="flex items-baseline justify-between">
+                    <h3 className="text-2xl font-black text-slate-900">{projectCounts.total || adminProjectsList.length}</h3>
+                    <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">
+                      PostgreSQL DB
+                    </span>
+                  </div>
+                </div>
+
+                <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs space-y-2">
+                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Published Live</span>
+                  <div className="flex items-baseline justify-between">
+                    <h3 className="text-2xl font-black text-emerald-600">{projectCounts.published}</h3>
+                    <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
+                      Publicly Visible
+                    </span>
+                  </div>
+                </div>
+
+                <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs space-y-2">
+                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Featured on Homepage</span>
+                  <div className="flex items-baseline justify-between">
+                    <h3 className="text-2xl font-black text-amber-500">{projectCounts.featured}</h3>
+                    <span className="text-xs font-semibold text-amber-700 bg-amber-50 px-2 py-0.5 rounded-full border border-amber-100">
+                      Orbit Grid
+                    </span>
+                  </div>
+                </div>
+
+                <div className="bg-white border border-slate-200/80 rounded-2xl p-5 shadow-xs space-y-2">
+                  <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider">Drafts / In Review</span>
+                  <div className="flex items-baseline justify-between">
+                    <h3 className="text-2xl font-black text-slate-500">{projectCounts.drafts}</h3>
+                    <span className="text-xs font-semibold text-slate-600 bg-slate-100 px-2 py-0.5 rounded-full border border-slate-200">
+                      Unpublished
+                    </span>
+                  </div>
                 </div>
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-                {projects.map(proj => (
-                  <div key={proj.id} className="p-5 bg-slate-50 border border-slate-200 rounded-xl flex items-start justify-between gap-4">
-                    <div className="space-y-2">
-                      <h4 className="font-bold text-slate-900 text-sm">{proj.title}</h4>
-                      <p className="text-xs text-slate-600 line-clamp-2">{proj.description}</p>
-                      <div className="flex items-center gap-2 text-[11px] text-slate-500 font-medium">
-                        <span>Client: {proj.client || 'Enterprise Partner'}</span>
-                      </div>
-                    </div>
-                    <button
-                      onClick={() => handleDeleteProject(proj.id)}
-                      className="p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors shrink-0"
+              {/* Action Toolbar & Filters */}
+              <div className="bg-white border border-slate-200/80 rounded-2xl p-6 shadow-xs space-y-4">
+                <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-slate-100 pb-5">
+                  <div>
+                    <h2 className="text-lg font-bold text-slate-900">Featured Projects & Case Studies CMS</h2>
+                    <p className="text-xs text-slate-500">Manage client success stories, tech stacks, impact metrics, and SEO metadata.</p>
+                  </div>
+
+                  <button
+                    onClick={handleOpenAddProject}
+                    className="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white rounded-xl text-xs font-bold shadow-md transition-all flex items-center justify-center gap-2"
+                  >
+                    <Plus size={16} />
+                    <span>Add New Case Study</span>
+                  </button>
+                </div>
+
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="relative flex-1 max-w-md">
+                    <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={15} />
+                    <input
+                      type="text"
+                      placeholder="Search by project title, client, slug..."
+                      value={projectSearchQuery}
+                      onChange={(e) => setProjectSearchQuery(e.target.value)}
+                      className="w-full bg-slate-50 border border-slate-200 rounded-xl pl-9 pr-3 py-1.5 text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    />
+                  </div>
+
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={projectFilterCategory}
+                      onChange={(e) => setProjectFilterCategory(e.target.value)}
+                      className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-medium text-slate-700 focus:outline-none cursor-pointer"
                     >
-                      <Trash2 size={16} />
+                      <option value="ALL">All Categories</option>
+                      <option value="SaaS Platform">SaaS Platform</option>
+                      <option value="AI & Automation">AI & Automation</option>
+                      <option value="Mobile Engineering">Mobile Engineering</option>
+                      <option value="Cloud Infrastructure">Cloud Infrastructure</option>
+                    </select>
+
+                    <select
+                      value={projectFilterStatus}
+                      onChange={(e) => setProjectFilterStatus(e.target.value)}
+                      className="bg-slate-50 border border-slate-200 rounded-xl px-3 py-1.5 text-xs font-medium text-slate-700 focus:outline-none cursor-pointer"
+                    >
+                      <option value="ALL">All Statuses</option>
+                      <option value="PUBLISHED">Published</option>
+                      <option value="DRAFT">Draft</option>
+                      <option value="ARCHIVED">Archived</option>
+                    </select>
+                  </div>
+                </div>
+
+                {/* Table View */}
+                {loadingProjects ? (
+                  <div className="py-16 text-center text-slate-500 flex flex-col items-center justify-center gap-3">
+                    <RefreshCw size={24} className="animate-spin text-blue-600" />
+                    <span className="text-xs font-semibold">Loading project case studies from PostgreSQL...</span>
+                  </div>
+                ) : adminProjectsList.length === 0 ? (
+                  <div className="py-12 text-center text-slate-400 space-y-3">
+                    <FolderKanban size={36} className="mx-auto text-slate-300" />
+                    <p className="text-xs font-semibold">No project case studies found.</p>
+                    <button
+                      onClick={handleOpenAddProject}
+                      className="px-4 py-2 bg-blue-600 text-white rounded-xl text-xs font-bold hover:bg-blue-700 transition-all inline-flex items-center gap-1.5"
+                    >
+                      <Plus size={14} /> Add First Project Case Study
                     </button>
                   </div>
-                ))}
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-left text-xs text-slate-700">
+                      <thead className="bg-slate-50 text-slate-500 font-semibold uppercase text-[11px] tracking-wider border-b border-slate-200">
+                        <tr>
+                          <th className="py-3 px-3">Hero & Title</th>
+                          <th className="py-3 px-3">Client</th>
+                          <th className="py-3 px-3">Category</th>
+                          <th className="py-3 px-3 text-center">Featured</th>
+                          <th className="py-3 px-3 text-center">Status</th>
+                          <th className="py-3 px-3 text-right">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100">
+                        {adminProjectsList
+                          .filter(p => projectSearchQuery === '' || p.title.toLowerCase().includes(projectSearchQuery.toLowerCase()) || (p.clientName || p.client || '').toLowerCase().includes(projectSearchQuery.toLowerCase()) || p.slug.toLowerCase().includes(projectSearchQuery.toLowerCase()))
+                          .filter(p => projectFilterCategory === 'ALL' || p.category === projectFilterCategory)
+                          .filter(p => projectFilterStatus === 'ALL' || p.status === projectFilterStatus)
+                          .map(proj => (
+                            <tr key={proj.id} className="hover:bg-slate-50/80 transition-colors">
+                              <td className="py-3 px-3">
+                                <div className="flex items-center gap-3">
+                                  <div className="w-12 h-10 rounded-lg bg-slate-900 border border-slate-700 p-0.5 overflow-hidden shrink-0 flex items-center justify-center">
+                                    {proj.heroImage ? (
+                                      <img src={proj.heroImage} alt={proj.title} className="w-full h-full object-cover rounded-md" />
+                                    ) : (
+                                      <FolderKanban size={16} className="text-purple-400" />
+                                    )}
+                                  </div>
+                                  <div>
+                                    <div className="font-bold text-slate-900 text-xs">{proj.title}</div>
+                                    <div className="text-[11px] text-slate-400 font-mono">
+                                      /portfolio/{proj.slug}
+                                    </div>
+                                  </div>
+                                </div>
+                              </td>
+
+                              <td className="py-3 px-3 font-semibold text-slate-800">
+                                {proj.clientName || proj.client || 'Enterprise Client'}
+                              </td>
+
+                              <td className="py-3 px-3">
+                                <span className="inline-block px-2.5 py-0.5 rounded-md text-[10px] font-bold uppercase bg-purple-50 text-purple-700 border border-purple-200/80">
+                                  {proj.category}
+                                </span>
+                              </td>
+
+                              <td className="py-3 px-3 text-center">
+                                <button
+                                  onClick={() => handleToggleProjectFeatured(proj.id, proj.featured)}
+                                  className={`p-1.5 rounded-lg border transition-colors ${
+                                    proj.featured
+                                      ? 'bg-amber-50 text-amber-500 border-amber-200 hover:bg-amber-100'
+                                      : 'bg-slate-50 text-slate-300 border-slate-200 hover:text-slate-400'
+                                  }`}
+                                  title={proj.featured ? 'Featured on Homepage' : 'Not Featured'}
+                                >
+                                  <Star size={14} fill={proj.featured ? 'currentColor' : 'none'} />
+                                </button>
+                              </td>
+
+                              <td className="py-3 px-3 text-center">
+                                <button
+                                  onClick={() => handleToggleProjectStatus(proj.id, proj.status || 'PUBLISHED')}
+                                  className={`px-2.5 py-0.5 rounded-full text-[10px] font-bold border transition-colors ${
+                                    proj.status === 'PUBLISHED'
+                                      ? 'bg-emerald-50 text-emerald-700 border-emerald-200'
+                                      : 'bg-slate-100 text-slate-500 border-slate-200'
+                                  }`}
+                                >
+                                  {proj.status || 'PUBLISHED'}
+                                </button>
+                              </td>
+
+                              <td className="py-3 px-3 text-right space-x-1">
+                                <button
+                                  onClick={() => handleOpenEditProject(proj)}
+                                  className="p-1.5 text-slate-500 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                                  title="Edit Project"
+                                >
+                                  <Edit3 size={15} />
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteProject(proj.id)}
+                                  className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+                                  title="Delete Project"
+                                >
+                                  <Trash2 size={15} />
+                                </button>
+                              </td>
+                            </tr>
+                          ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
               </div>
             </div>
           )}
@@ -2530,7 +3348,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                   )}
                 </div>
                 <p className="text-[11px] text-slate-400 mt-1">
-                  Uploaded files are saved directly to <code className="text-blue-600 font-mono">backend/uploads/</code> on local disk. No cloud service (S3/Cloudinary) required.
+                  Uploaded logo images are optimized & stored on <code className="text-blue-600 font-mono">Cloudinary CDN</code> with automatic WebP conversion.
                 </p>
               </div>
 
@@ -2729,7 +3547,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
                 <div className="flex items-center justify-between">
                   <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider">
-                    Service Image (Local Server Disk Storage)
+                    Service Image (Cloudinary Cloud Storage)
                   </label>
                   <label className="cursor-pointer text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1 bg-white px-2.5 py-1 rounded-lg border border-blue-200 shadow-2xs">
                     <Plus size={13} />
@@ -3137,6 +3955,512 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </button>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* ADD / EDIT PROJECT CASE STUDY MODAL */}
+      {showProjectModal && (
+        <div className="fixed inset-0 z-[100000] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-4xl w-full shadow-2xl border border-slate-200 overflow-hidden my-8 animate-in fade-in zoom-in-95 duration-200">
+            
+            {/* Modal Header */}
+            <div className="px-6 py-4 bg-slate-900 text-white flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FolderKanban size={18} className="text-purple-400" />
+                <h3 className="font-bold text-sm">
+                  {editingProject ? 'Edit Project Case Study' : 'Create New Project Case Study'}
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowProjectModal(false)}
+                className="text-slate-400 hover:text-white p-1 rounded-lg transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div className="p-6 space-y-6 max-h-[80vh] overflow-y-auto">
+              {projectError && (
+                <div className="p-3.5 bg-rose-50 border border-rose-200 rounded-xl text-xs font-bold text-rose-700 flex items-center gap-2">
+                  <AlertTriangle size={16} />
+                  <span>{projectError}</span>
+                </div>
+              )}
+
+              {/* Basic Fields */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Project Title <span className="text-rose-500">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    value={projectForm.title}
+                    onChange={(e) => setProjectForm({
+                      ...projectForm,
+                      title: e.target.value,
+                      slug: projectForm.slug || e.target.value.toLowerCase().replace(/[^a-z0-9]/g, '-'),
+                      seoTitle: projectForm.seoTitle || `${e.target.value} Case Study | Ryzite`
+                    })}
+                    placeholder="e.g. PineGen AI Platform"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    URL Slug
+                  </label>
+                  <input
+                    type="text"
+                    value={projectForm.slug}
+                    onChange={(e) => setProjectForm({ ...projectForm, slug: e.target.value })}
+                    placeholder="pinegen-ai-platform"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-mono font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Client Name
+                  </label>
+                  <input
+                    type="text"
+                    value={projectForm.client}
+                    onChange={(e) => setProjectForm({ ...projectForm, client: e.target.value })}
+                    placeholder="PineGen Inc."
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-semibold text-slate-900"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Category
+                  </label>
+                  <select
+                    value={projectForm.category}
+                    onChange={(e) => setProjectForm({ ...projectForm, category: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 cursor-pointer"
+                  >
+                    <option value="SaaS Platform">SaaS Platform</option>
+                    <option value="AI & Automation">AI & Automation</option>
+                    <option value="Mobile Engineering">Mobile Engineering</option>
+                    <option value="Cloud Infrastructure">Cloud Infrastructure</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">
+                    Mockup Style
+                  </label>
+                  <select
+                    value={projectForm.mockupType}
+                    onChange={(e) => setProjectForm({ ...projectForm, mockupType: e.target.value })}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 cursor-pointer"
+                  >
+                    <option value="dark-dashboard">Dark Dashboard</option>
+                    <option value="mobile-cards">Mobile Cards</option>
+                    <option value="bot-interface">Bot Interface</option>
+                    <option value="analytics-suite">Analytics Suite</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Local Hero Image Upload */}
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider">
+                    Hero Media (Cloudinary Cloud Storage)
+                  </label>
+                  <label className="cursor-pointer text-xs font-bold text-blue-600 hover:text-blue-700 hover:underline flex items-center gap-1 bg-white px-2.5 py-1 rounded-lg border border-blue-200 shadow-2xs">
+                    <Plus size={13} />
+                    <span>{uploadingProjectImg ? 'Uploading...' : 'Upload Image File'}</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleProjectImageFileUpload}
+                      disabled={uploadingProjectImg}
+                      className="hidden"
+                    />
+                  </label>
+                </div>
+
+                <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-center">
+                  <div className="sm:col-span-8">
+                    <input
+                      type="text"
+                      value={projectForm.heroImage}
+                      onChange={(e) => setProjectForm({ ...projectForm, heroImage: e.target.value })}
+                      placeholder="Upload image file above or paste URL (e.g. /uploads/projects/hero.png)"
+                      className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-mono text-slate-900 focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                    />
+                  </div>
+
+                  <div className="sm:col-span-4 flex flex-col items-center justify-center p-2 bg-slate-900 border border-slate-700 rounded-xl text-center min-h-[80px]">
+                    {tempProjectPreviewUrl ? (
+                      <img src={tempProjectPreviewUrl} alt="Temp Preview" className="max-h-16 max-w-full object-contain mx-auto rounded" />
+                    ) : projectForm.heroImage ? (
+                      <img src={projectForm.heroImage} alt="Saved Preview" className="max-h-16 max-w-full object-contain mx-auto rounded" />
+                    ) : (
+                      <span className="text-slate-500 text-[11px]">No Image Selected</span>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* Descriptions & Story */}
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Short Overview (Teaser)</label>
+                <textarea
+                  rows={2}
+                  value={projectForm.shortDescription}
+                  onChange={(e) => setProjectForm({ ...projectForm, shortDescription: e.target.value })}
+                  placeholder="Bespoke generative AI content engine handling high concurrency..."
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Full Case Study Narrative</label>
+                <textarea
+                  rows={4}
+                  value={projectForm.fullDescription}
+                  onChange={(e) => setProjectForm({ ...projectForm, fullDescription: e.target.value })}
+                  placeholder="Detailed breakdown of system architecture, technology choices, and operational benchmarks..."
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Challenge / Problem</label>
+                  <textarea
+                    rows={3}
+                    value={projectForm.challenge}
+                    onChange={(e) => setProjectForm({ ...projectForm, challenge: e.target.value })}
+                    placeholder="Legacy infrastructure bottlenecked under high request spikes..."
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Engineered Solution</label>
+                  <textarea
+                    rows={3}
+                    value={projectForm.solution}
+                    onChange={(e) => setProjectForm({ ...projectForm, solution: e.target.value })}
+                    placeholder="Migrated to event-driven serverless worker architecture..."
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900"
+                  />
+                </div>
+              </div>
+
+              {/* Dynamic Metrics Repeater */}
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">Key Impact Metrics</span>
+                  <button
+                    type="button"
+                    onClick={() => setProjectForm(prev => ({
+                      ...prev,
+                      metrics: [...prev.metrics, { label: 'Metric Name', value: '100%', trend: '+20%' }]
+                    }))}
+                    className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 bg-white px-2.5 py-1 rounded-lg border border-blue-200"
+                  >
+                    <Plus size={13} /> Add Metric
+                  </button>
+                </div>
+
+                {projectForm.metrics.map((m, idx) => (
+                  <div key={idx} className="grid grid-cols-12 gap-2 items-center bg-white p-2.5 rounded-xl border border-slate-200">
+                    <input
+                      type="text"
+                      value={m.label}
+                      onChange={(e) => {
+                        const updated = [...projectForm.metrics];
+                        updated[idx].label = e.target.value;
+                        setProjectForm({ ...projectForm, metrics: updated });
+                      }}
+                      placeholder="Label (e.g. Uptime)"
+                      className="col-span-4 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 text-xs font-bold text-slate-900"
+                    />
+                    <input
+                      type="text"
+                      value={m.value}
+                      onChange={(e) => {
+                        const updated = [...projectForm.metrics];
+                        updated[idx].value = e.target.value;
+                        setProjectForm({ ...projectForm, metrics: updated });
+                      }}
+                      placeholder="Value (e.g. 99.99%)"
+                      className="col-span-4 bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 text-xs font-bold text-blue-600"
+                    />
+                    <input
+                      type="text"
+                      value={m.trend || ''}
+                      onChange={(e) => {
+                        const updated = [...projectForm.metrics];
+                        updated[idx].trend = e.target.value;
+                        setProjectForm({ ...projectForm, metrics: updated });
+                      }}
+                      placeholder="Trend/Badge"
+                      className="col-span-3 bg-slate-50 border border-slate-200 rounded-lg px-2 py-1 text-xs text-slate-700"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const updated = projectForm.metrics.filter((_, i) => i !== idx);
+                        setProjectForm({ ...projectForm, metrics: updated });
+                      }}
+                      className="col-span-1 text-slate-400 hover:text-rose-600 p-1 flex justify-center"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              {/* Dynamic Highlights Repeater */}
+              <div className="p-4 bg-slate-50 border border-slate-200 rounded-2xl space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-slate-800 uppercase tracking-wider">Architecture Highlights</span>
+                  <button
+                    type="button"
+                    onClick={() => setProjectForm(prev => ({
+                      ...prev,
+                      highlights: [...prev.highlights, { title: 'Highlight Feature Title' }]
+                    }))}
+                    className="text-xs font-bold text-blue-600 hover:text-blue-700 flex items-center gap-1 bg-white px-2.5 py-1 rounded-lg border border-blue-200"
+                  >
+                    <Plus size={13} /> Add Highlight
+                  </button>
+                </div>
+
+                {projectForm.highlights.map((h, idx) => (
+                  <div key={idx} className="flex items-center gap-2 bg-white p-2.5 rounded-xl border border-slate-200">
+                    <input
+                      type="text"
+                      value={h.title}
+                      onChange={(e) => {
+                        const updated = [...projectForm.highlights];
+                        updated[idx].title = e.target.value;
+                        setProjectForm({ ...projectForm, highlights: updated });
+                      }}
+                      placeholder="Highlight feature (e.g. Sub-50ms Global Query Optimization)"
+                      className="w-full bg-slate-50 border border-slate-200 rounded-lg px-2.5 py-1 text-xs font-semibold text-slate-900"
+                    />
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const updated = projectForm.highlights.filter((_, i) => i !== idx);
+                        setProjectForm({ ...projectForm, highlights: updated });
+                      }}
+                      className="text-slate-400 hover:text-rose-600 p-1 shrink-0"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+
+              {/* Testimonial & Links */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">Target Website URL</label>
+                  <input
+                    type="text"
+                    value={projectForm.websiteUrl}
+                    onChange={(e) => setProjectForm({ ...projectForm, websiteUrl: e.target.value })}
+                    placeholder="https://clientwebsite.com"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900"
+                  />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 mb-1">GitHub Repository URL</label>
+                  <input
+                    type="text"
+                    value={projectForm.githubUrl}
+                    onChange={(e) => setProjectForm({ ...projectForm, githubUrl: e.target.value })}
+                    placeholder="https://github.com/org/repo"
+                    className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 font-mono"
+                  />
+                </div>
+              </div>
+
+              {/* SEO & Status Switches */}
+              <div className="p-4 bg-blue-50/50 border border-blue-200/70 rounded-2xl space-y-3">
+                <span className="text-xs font-bold text-blue-900 uppercase tracking-wider text-[11px]">SEO Metadata Settings</span>
+                <input
+                  type="text"
+                  value={projectForm.seoTitle}
+                  onChange={(e) => setProjectForm({ ...projectForm, seoTitle: e.target.value })}
+                  placeholder="Meta Title Tag (e.g. PineGen AI Case Study | Ryzite)"
+                  className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-1.5 text-xs text-slate-900"
+                />
+                <textarea
+                  rows={2}
+                  value={projectForm.seoDescription}
+                  onChange={(e) => setProjectForm({ ...projectForm, seoDescription: e.target.value })}
+                  placeholder="Meta Description..."
+                  className="w-full bg-white border border-slate-200 rounded-xl px-3.5 py-1.5 text-xs text-slate-900"
+                />
+              </div>
+
+              <div className="flex items-center gap-6 pt-2 border-t border-slate-100">
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={projectForm.status === 'PUBLISHED'}
+                    onChange={(e) => setProjectForm({ ...projectForm, status: e.target.checked ? 'PUBLISHED' : 'DRAFT' })}
+                    className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
+                  />
+                  <span className="text-xs font-semibold text-slate-700">Published Live</span>
+                </label>
+
+                <label className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={projectForm.featured}
+                    onChange={(e) => setProjectForm({ ...projectForm, featured: e.target.checked })}
+                    className="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500"
+                  />
+                  <span className="text-xs font-semibold text-slate-700">Featured on Homepage</span>
+                </label>
+              </div>
+            </div>
+
+            {/* Modal Footer */}
+            <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowProjectModal(false)}
+                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 rounded-xl hover:bg-slate-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveProject}
+                disabled={projectSaving}
+                className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-2 disabled:opacity-50"
+              >
+                {projectSaving ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
+                <span>{projectSaving ? 'Saving...' : 'Save Case Study'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: WHY CHOOSE US PILLAR EDIT/ADD */}
+      {showPrincipleModal && (
+        <div className="fixed inset-0 z-[100000] bg-slate-900/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white border border-slate-200 rounded-3xl max-w-lg w-full overflow-hidden shadow-2xl space-y-0 animate-in fade-in zoom-in duration-200">
+            <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-blue-100 text-blue-600 rounded-xl">
+                  <ShieldCheck size={20} />
+                </div>
+                <div>
+                  <h3 className="font-extrabold text-slate-900 text-base">
+                    {editingPrinciple ? 'Edit Why Choose Us Pillar' : 'Add New Pillar'}
+                  </h3>
+                  <p className="text-xs text-slate-500">Configure value proposition pillar for the homepage showcase.</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setShowPrincipleModal(false)}
+                className="text-slate-400 hover:text-slate-600 p-1.5 hover:bg-slate-100 rounded-xl transition-colors"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="p-6 space-y-4">
+              {principleError && (
+                <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-xs font-semibold text-rose-700">
+                  {principleError}
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Badge Text <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={principleForm.badge}
+                  onChange={(e) => setPrincipleForm({ ...principleForm, badge: e.target.value })}
+                  placeholder="e.g. Zero-Debt Code or 99.9% SLA"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Pillar Title <span className="text-rose-500">*</span>
+                </label>
+                <input
+                  type="text"
+                  value={principleForm.title}
+                  onChange={(e) => setPrincipleForm({ ...principleForm, title: e.target.value })}
+                  placeholder="e.g. Enterprise Engineering Standard"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs font-bold text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Pillar Description <span className="text-rose-500">*</span>
+                </label>
+                <textarea
+                  rows={3}
+                  value={principleForm.description}
+                  onChange={(e) => setPrincipleForm({ ...principleForm, description: e.target.value })}
+                  placeholder="Explain why clients choose Ryzite for this specific advantage..."
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-3.5 py-2 text-xs text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-500/20"
+                />
+              </div>
+
+              <div className="flex items-center justify-between p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                <span className="text-xs font-bold text-slate-700">Pillar Active Status</span>
+                <button
+                  type="button"
+                  onClick={() => setPrincipleForm({ ...principleForm, enabled: !principleForm.enabled })}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold border transition-colors ${
+                    principleForm.enabled
+                      ? 'bg-emerald-50 text-emerald-700 border-emerald-300'
+                      : 'bg-slate-100 text-slate-500 border-slate-300'
+                  }`}
+                >
+                  {principleForm.enabled ? 'ACTIVE ON HOMEPAGE' : 'HIDDEN'}
+                </button>
+              </div>
+            </div>
+
+            <div className="px-6 py-4 bg-slate-50 border-t border-slate-200 flex items-center justify-end gap-3">
+              <button
+                type="button"
+                onClick={() => setShowPrincipleModal(false)}
+                className="px-4 py-2 text-xs font-semibold text-slate-600 hover:text-slate-900 rounded-xl hover:bg-slate-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleSavePrinciple}
+                disabled={principleSaving}
+                className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-xl shadow-md transition-all flex items-center gap-2 disabled:opacity-50"
+              >
+                {principleSaving ? <RefreshCw size={14} className="animate-spin" /> : <Save size={14} />}
+                <span>{principleSaving ? 'Saving...' : 'Save Pillar'}</span>
+              </button>
+            </div>
           </div>
         </div>
       )}

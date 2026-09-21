@@ -1,4 +1,5 @@
 import { prisma } from './prisma.js';
+import { cloudinaryService } from '../services/cloudinary.service.js';
 
 export const homeRepository = {
   async getHomePageContent() {
@@ -57,6 +58,7 @@ export const homeRepository = {
       secondaryCtaEnabled: homePage.heroSecondaryCtaEnabled ?? true,
       secondaryCtaOpenNewTab: homePage.heroSecondaryCtaOpenNewTab ?? false,
       backgroundImageUrl: homePage.heroBackgroundImageUrl ?? null,
+      backgroundImagePublicId: homePage.heroImagePublicId ?? null,
       backgroundImageAlt: homePage.heroBackgroundImageAlt ?? null,
       enabled: homePage.heroEnabled ?? true,
       displayOrder: homePage.heroDisplayOrder ?? 1,
@@ -85,6 +87,7 @@ export const homeRepository = {
     const secondaryCtaOpenNewTab = payload.secondaryCtaOpenNewTab ?? false;
 
     const backgroundImageUrl = payload.backgroundImageUrl ? payload.backgroundImageUrl.trim() : null;
+    const backgroundImagePublicId = payload.backgroundImagePublicId ? payload.backgroundImagePublicId.trim() : null;
     const backgroundImageAlt = payload.backgroundImageAlt ? payload.backgroundImageAlt.trim() : null;
     const displayOrder = typeof payload.displayOrder === 'number' && payload.displayOrder > 0 ? payload.displayOrder : 1;
 
@@ -121,6 +124,10 @@ export const homeRepository = {
 
     const existing = await prisma.homePage.findFirst();
 
+    if (existing?.heroImagePublicId && backgroundImagePublicId && backgroundImagePublicId !== existing.heroImagePublicId) {
+      await cloudinaryService.deleteImage(existing.heroImagePublicId).catch(() => {});
+    }
+
     const dataPayload = {
       heroBadgeText: badgeText,
       heroHeadingPrefix: headingPrefix,
@@ -137,6 +144,7 @@ export const homeRepository = {
       heroSecondaryCtaEnabled: secondaryCtaEnabled,
       heroSecondaryCtaOpenNewTab: secondaryCtaOpenNewTab,
       heroBackgroundImageUrl: backgroundImageUrl,
+      heroImagePublicId: backgroundImagePublicId,
       heroBackgroundImageAlt: backgroundImageAlt,
       heroEnabled: enabled,
       heroDisplayOrder: displayOrder,
@@ -200,6 +208,7 @@ export const homeRepository = {
       secondaryCtaEnabled: updated.heroSecondaryCtaEnabled,
       secondaryCtaOpenNewTab: updated.heroSecondaryCtaOpenNewTab,
       backgroundImageUrl: updated.heroBackgroundImageUrl,
+      backgroundImagePublicId: updated.heroImagePublicId,
       backgroundImageAlt: updated.heroBackgroundImageAlt,
       enabled: updated.heroEnabled,
       displayOrder: updated.heroDisplayOrder,
@@ -207,3 +216,4 @@ export const homeRepository = {
     };
   }
 };
+

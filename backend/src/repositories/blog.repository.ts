@@ -1,4 +1,5 @@
 import { prisma } from './prisma.js';
+import { cloudinaryService } from '../services/cloudinary.service.js';
 
 export const blogRepository = {
   async getAllPublished(limit?: number) {
@@ -12,13 +13,14 @@ export const blogRepository = {
         title: true,
         excerpt: true,
         coverImage: true,
+        coverImagePublicId: true,
         category: true,
         readTime: true,
         publishedAt: true,
         aeoDirectAnswer: true,
         authorName: true,
         authorRef: {
-          select: { name: true, role: true, avatarUrl: true }
+          select: { name: true, role: true, avatarUrl: true, avatarPublicId: true }
         },
         tags: {
           select: { tag: { select: { name: true, slug: true } } }
@@ -37,6 +39,7 @@ export const blogRepository = {
         excerpt: true,
         content: true,
         coverImage: true,
+        coverImagePublicId: true,
         category: true,
         readTime: true,
         publishedAt: true,
@@ -45,7 +48,7 @@ export const blogRepository = {
           select: { metaTitle: true, metaDescription: true }
         },
         authorRef: {
-          select: { name: true, role: true, avatarUrl: true }
+          select: { name: true, role: true, avatarUrl: true, avatarPublicId: true }
         },
         tags: {
           select: { tag: { select: { name: true, slug: true } } }
@@ -59,6 +62,10 @@ export const blogRepository = {
   },
 
   async updateBlog(id: string, data: any) {
+    const existing = await prisma.blogPost.findUnique({ where: { id } });
+    if (existing?.coverImagePublicId && data.coverImagePublicId && data.coverImagePublicId !== existing.coverImagePublicId) {
+      await cloudinaryService.deleteImage(existing.coverImagePublicId).catch(() => {});
+    }
     return prisma.blogPost.update({
       where: { id },
       data
@@ -66,8 +73,13 @@ export const blogRepository = {
   },
 
   async deleteBlog(id: string) {
+    const existing = await prisma.blogPost.findUnique({ where: { id } });
+    if (existing?.coverImagePublicId) {
+      await cloudinaryService.deleteImage(existing.coverImagePublicId).catch(() => {});
+    }
     return prisma.blogPost.delete({
       where: { id }
     });
   }
 };
+

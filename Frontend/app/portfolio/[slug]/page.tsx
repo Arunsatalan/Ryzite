@@ -4,8 +4,11 @@ import Link from 'next/link';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
-import { INITIAL_PROJECTS, INITIAL_SERVICES, getProjectBySlug } from '@/data/initialData';
+import { INITIAL_SERVICES } from '@/data/initialData';
 import { ArrowRight, Check, ExternalLink, Quote, Sparkles, TrendingUp, ShieldCheck, Layers } from 'lucide-react';
+import { api } from '@/lib/api';
+
+export const revalidate = 0;
 
 type Props = {
   params: Promise<{
@@ -13,17 +16,11 @@ type Props = {
   }>;
 };
 
-export async function generateStaticParams() {
-  return INITIAL_PROJECTS.map((project) => ({
-    slug: project.slug,
-  }));
-}
-
 export async function generateMetadata(
   { params }: Props
 ): Promise<Metadata> {
   const { slug } = await params;
-  const project = getProjectBySlug(slug);
+  const project = await api.getProjectBySlug(slug).catch(() => null);
 
   if (!project) {
     return {
@@ -31,42 +28,52 @@ export async function generateMetadata(
     };
   }
 
+  const title = project.seoTitle || project.seoMetadata?.metaTitle || `${project.title} Case Study | Ryzite`;
+  const description = project.seoDescription || project.seoMetadata?.metaDescription || project.shortDescription || project.description || '';
+  const heroImage = project.heroImage || 'https://images.unsplash.com/photo-1551288049-bebda4e38f71';
+
   return {
-    title: `${project.title} Case Study | Ryzite`,
-    description: project.description + ' ' + project.longDescription.slice(0, 120),
+    title,
+    description,
     alternates: {
       canonical: `https://ryzite.com/portfolio/${slug}`,
     },
     openGraph: {
-      title: `${project.title} Case Study | Ryzite`,
-      description: project.description,
+      title,
+      description,
       url: `https://ryzite.com/portfolio/${slug}`,
       siteName: 'Ryzite',
-      images: [project.heroImage],
+      images: [heroImage],
     },
     twitter: {
       card: 'summary_large_image',
-      title: `${project.title} Case Study | Ryzite`,
-      description: project.description,
-      images: [project.heroImage],
+      title,
+      description,
+      images: [heroImage],
     },
   };
 }
 
 export default async function ProjectDetailPage({ params }: Props) {
   const { slug } = await params;
-  const project = getProjectBySlug(slug);
+  const project = await api.getProjectBySlug(slug).catch(() => null);
 
   if (!project) {
     notFound();
   }
+
+  const clientName = project.clientName || project.client || 'Enterprise Partner';
+  const fullDesc = project.fullDescription || project.longDescription || project.shortDescription || project.description || '';
+  const challenges = project.challenge ? project.challenge.split('\n').filter(Boolean) : (project.challenges || ['Sub-optimal legacy throughput and concurrency bottlenecks.']);
+  const solutions = project.solution ? project.solution.split('\n').filter(Boolean) : (project.solutions || ['Custom event-driven microservices architecture deployed to cloud.']);
+  const websiteUrl = project.websiteUrl || project.liveUrl || null;
 
   const jsonLd = {
     '@context': 'https://schema.org',
     '@type': 'CreativeWork',
     name: project.title,
     headline: project.title,
-    description: project.longDescription,
+    description: fullDesc,
     image: project.heroImage,
     author: {
       '@type': 'Organization',
@@ -99,7 +106,7 @@ export default async function ProjectDetailPage({ params }: Props) {
               <span className="px-3 py-1 bg-blue-50 text-[#0052FF] text-xs font-bold rounded-full border border-blue-200">
                 {project.category}
               </span>
-              <span className="text-xs font-bold text-slate-400">Client: {project.client}</span>
+              <span className="text-xs font-bold text-slate-400">Client: {clientName}</span>
             </div>
 
             <h1 className="text-4xl sm:text-5xl lg:text-6xl font-black tracking-tight text-[#0F172A] font-display">
@@ -107,12 +114,12 @@ export default async function ProjectDetailPage({ params }: Props) {
             </h1>
 
             <p className="text-lg text-slate-600 leading-relaxed max-w-3xl">
-              {project.longDescription}
+              {fullDesc}
             </p>
 
-            {project.liveUrl && (
+            {websiteUrl && (
               <a
-                href={project.liveUrl}
+                href={websiteUrl}
                 target="_blank"
                 rel="noreferrer"
                 className="inline-flex items-center gap-2 px-5 py-2.5 bg-[#0052FF] text-white text-xs font-bold rounded-full hover:bg-[#0040cc] transition-colors"
@@ -130,15 +137,17 @@ export default async function ProjectDetailPage({ params }: Props) {
           </div>
 
           {/* Metrics Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
-            {project.metrics.map((m, idx) => (
-              <div key={idx} className="p-6 rounded-3xl bg-blue-50/70 border border-blue-100 text-center space-y-1">
-                <div className="text-xs font-bold text-slate-500 uppercase">{m.label}</div>
-                <div className="text-3xl font-black text-[#0052FF]">{m.value}</div>
-                {m.trend && <div className="text-xs font-bold text-emerald-600">{m.trend} Performance Impact</div>}
-              </div>
-            ))}
-          </div>
+          {project.metrics && project.metrics.length > 0 && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-16">
+              {project.metrics.map((m, idx) => (
+                <div key={idx} className="p-6 rounded-3xl bg-blue-50/70 border border-blue-100 text-center space-y-1">
+                  <div className="text-xs font-bold text-slate-500 uppercase">{m.label}</div>
+                  <div className="text-3xl font-black text-[#0052FF]">{m.value}</div>
+                  {m.trend && <div className="text-xs font-bold text-emerald-600">{m.trend} Performance Impact</div>}
+                </div>
+              ))}
+            </div>
+          )}
 
           {/* Challenges vs Solutions */}
           <div className="grid lg:grid-cols-2 gap-12 mb-16">
@@ -150,7 +159,7 @@ export default async function ProjectDetailPage({ params }: Props) {
                 <span>Engineering Challenges</span>
               </h2>
               <div className="space-y-4">
-                {project.challenges.map((c, idx) => (
+                {challenges.map((c, idx) => (
                   <div key={idx} className="flex items-start gap-3 text-sm text-slate-700">
                     <span className="w-5 h-5 rounded-full bg-red-100 text-red-600 font-bold text-xs flex items-center justify-center shrink-0 mt-0.5">
                       !
@@ -168,7 +177,7 @@ export default async function ProjectDetailPage({ params }: Props) {
                 <span>Architectural Solutions Deployed</span>
               </h2>
               <div className="space-y-4">
-                {project.solutions.map((s, idx) => (
+                {solutions.map((s, idx) => (
                   <div key={idx} className="flex items-start gap-3 text-sm text-slate-700">
                     <Check className="w-5 h-5 text-[#0052FF] shrink-0 mt-0.5" strokeWidth={3} />
                     <span className="font-medium">{s}</span>
@@ -192,18 +201,6 @@ export default async function ProjectDetailPage({ params }: Props) {
               </div>
             </div>
           )}
-
-          {/* Tech Stack Pills */}
-          <div className="p-8 rounded-3xl bg-slate-100 border border-slate-200 space-y-4 mb-16">
-            <h2 className="text-xl font-bold text-[#0F172A]">Technologies & Tools Used</h2>
-            <div className="flex flex-wrap gap-2">
-              {project.techStack.map((tech, idx) => (
-                <span key={idx} className="px-4 py-2 bg-white text-slate-700 font-bold text-xs rounded-xl border border-slate-300 shadow-sm">
-                  {tech}
-                </span>
-              ))}
-            </div>
-          </div>
 
           {/* CTA Banner */}
           <div className="p-8 sm:p-12 rounded-3xl bg-gradient-to-r from-[#0052FF] to-blue-700 text-white flex flex-col md:flex-row items-center justify-between gap-6 shadow-xl">

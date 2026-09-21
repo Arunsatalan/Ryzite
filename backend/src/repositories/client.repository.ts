@@ -1,9 +1,11 @@
 import { prisma } from './prisma.js';
+import { cloudinaryService } from '../services/cloudinary.service.js';
 
 function validateClientInput(data: any) {
   const name = (data.name || '').trim();
   const companyName = data.companyName ? data.companyName.trim() : null;
   const logoUrl = data.logoUrl ? data.logoUrl.trim() : null;
+  const logoPublicId = data.logoPublicId ? data.logoPublicId.trim() : null;
   const logoAltText = data.logoAltText ? data.logoAltText.trim() : null;
   const websiteUrl = data.websiteUrl ? data.websiteUrl.trim() : null;
   const description = data.description ? data.description.trim() : null;
@@ -42,6 +44,7 @@ function validateClientInput(data: any) {
     slug,
     companyName: companyName || name,
     logoUrl: logoUrl || null,
+    logoPublicId: logoPublicId || null,
     logoAltText: logoAltText || `${name} company logo`,
     websiteUrl: websiteUrl || null,
     description: description || null,
@@ -62,6 +65,7 @@ export const clientRepository = {
         name: true,
         companyName: true,
         logoUrl: true,
+        logoPublicId: true,
         logoAltText: true,
         websiteUrl: true,
         caseStudySlug: true,
@@ -103,7 +107,13 @@ export const clientRepository = {
   },
 
   async updateClient(id: string, data: any) {
+    const existing = await prisma.client.findUnique({ where: { id } });
     const validated = validateClientInput(data);
+
+    if (existing?.logoPublicId && validated.logoPublicId && validated.logoPublicId !== existing.logoPublicId) {
+      await cloudinaryService.deleteImage(existing.logoPublicId).catch(() => {});
+    }
+
     return prisma.client.update({
       where: { id },
       data: validated
@@ -111,6 +121,10 @@ export const clientRepository = {
   },
 
   async deleteClient(id: string) {
+    const existing = await prisma.client.findUnique({ where: { id } });
+    if (existing?.logoPublicId) {
+      await cloudinaryService.deleteImage(existing.logoPublicId).catch(() => {});
+    }
     return prisma.client.delete({
       where: { id }
     });
@@ -130,3 +144,4 @@ export const clientRepository = {
     return this.getAllAdmin();
   }
 };
+

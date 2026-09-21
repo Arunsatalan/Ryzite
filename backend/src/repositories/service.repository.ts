@@ -1,4 +1,5 @@
 import { prisma } from './prisma.js';
+import { cloudinaryService } from '../services/cloudinary.service.js';
 
 export const serviceRepository = {
   async getAllPublished() {
@@ -20,6 +21,7 @@ export const serviceRepository = {
         timeline: true,
         startingPrice: true,
         imageUrl: true,
+        imagePublicId: true,
         imageAlt: true,
         active: true,
         displayOrder: true,
@@ -62,6 +64,7 @@ export const serviceRepository = {
         timeline: true,
         startingPrice: true,
         imageUrl: true,
+        imagePublicId: true,
         imageAlt: true,
         active: true,
         displayOrder: true,
@@ -90,6 +93,7 @@ export const serviceRepository = {
         timeline: true,
         startingPrice: true,
         imageUrl: true,
+        imagePublicId: true,
         imageAlt: true,
         active: true,
         seoTitle: true,
@@ -129,6 +133,7 @@ export const serviceRepository = {
       createdAt,
       updatedAt,
       categoryName,
+      imagePublicId,
       ...serviceData
     } = data;
 
@@ -145,6 +150,7 @@ export const serviceRepository = {
     return prisma.service.create({
       data: {
         ...serviceData,
+        imagePublicId: imagePublicId || null,
         category: mappedCategory,
         active: active !== undefined ? Boolean(active) : true,
         displayOrder: finalDisplayOrder,
@@ -167,6 +173,8 @@ export const serviceRepository = {
   },
 
   async updateService(id: string, data: any) {
+    const existing = await prisma.service.findUnique({ where: { id }, select: { imagePublicId: true } });
+
     const {
       features,
       deliverables,
@@ -181,6 +189,10 @@ export const serviceRepository = {
       categoryName,
       ...updateData
     } = data;
+
+    if (updateData.imagePublicId && existing?.imagePublicId && updateData.imagePublicId !== existing.imagePublicId) {
+      await cloudinaryService.deleteImage(existing.imagePublicId).catch(() => {});
+    }
 
     const mappedCategory = category ? (
       category === 'web' || category === 'WEB_DEV' ? 'WEB_DEV' :
@@ -205,9 +217,16 @@ export const serviceRepository = {
   },
 
   async deleteService(id: string) {
-    return prisma.service.delete({
+    const existing = await prisma.service.findUnique({ where: { id }, select: { imagePublicId: true } });
+    const deleted = await prisma.service.delete({
       where: { id }
     });
+
+    if (existing?.imagePublicId) {
+      await cloudinaryService.deleteImage(existing.imagePublicId).catch(() => {});
+    }
+
+    return deleted;
   },
 
   async reorderServices(orderedIds: string[]) {
@@ -220,3 +239,4 @@ export const serviceRepository = {
     return prisma.$transaction(updates);
   }
 };
+
