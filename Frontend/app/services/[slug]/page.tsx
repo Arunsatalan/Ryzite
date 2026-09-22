@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
+import { FinalCTA } from '@/components/cta/FinalCTA';
 import { INITIAL_SERVICES, getServiceBySlug } from '@/data/initialData';
 import { ArrowRight, CheckCircle2, Clock, DollarSign, Layers, ShieldCheck, Sparkles, Monitor, Smartphone, Cpu, Cloud } from 'lucide-react';
 
@@ -197,6 +198,9 @@ export default async function ServiceDetailPage({ params }: Props) {
               ))}
             </div>
           </div>
+
+          {/* Final CTA Engine Banner */}
+          <FinalCTA pageType="service" pageId={service.slug} serviceName={service.title} className="mt-16" />
 
         </div>
       </main>

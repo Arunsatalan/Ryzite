@@ -921,6 +921,138 @@ export interface BlogAnalyticsSummary {
   totalAuthors: number;
 }
 
+// ==========================================
+// FINAL CTA SYSTEM TYPES
+// ==========================================
+
+export type CtaActionType =
+  | 'CONTACT_FORM'
+  | 'CONTACT_PAGE'
+  | 'BOOK_CALL'
+  | 'SERVICE_PAGE'
+  | 'PORTFOLIO_PAGE'
+  | 'BLOG_PAGE'
+  | 'CUSTOM_ROUTE'
+  | 'EXTERNAL_URL'
+  | 'DOWNLOAD'
+  | 'EMAIL';
+
+export type CtaBackgroundType = 'SOLID' | 'GRADIENT' | 'IMAGE' | 'IMAGE_GRADIENT' | 'DARK' | 'LIGHT';
+
+export interface FinalCtaItem {
+  id: string;
+  name: string;
+  eyebrow?: string | null;
+  headline: string;
+  highlightedText?: string | null;
+  description?: string | null;
+  supportingText?: string | null;
+  primaryLabel: string;
+  primaryActionType: CtaActionType;
+  primaryActionUrl?: string | null;
+  secondaryLabel?: string | null;
+  secondaryActionType?: CtaActionType | null;
+  secondaryActionUrl?: string | null;
+  tertiaryLabel?: string | null;
+  tertiaryActionType?: CtaActionType | null;
+  tertiaryActionUrl?: string | null;
+  variant?: string;
+  theme?: 'DARK' | 'LIGHT' | string;
+  backgroundType?: CtaBackgroundType;
+  backgroundImageUrl?: string | null;
+  backgroundImagePublicId?: string | null;
+  backgroundImageAlt?: string | null;
+  mobileBackgroundImageUrl?: string | null;
+  mobileBackgroundImagePublicId?: string | null;
+  overlayEnabled?: boolean;
+  overlayOpacity?: number;
+  showTrustLine?: boolean;
+  showTertiaryAction?: boolean;
+  showContactInfo?: boolean;
+  contactEmail?: string | null;
+  contactPhone?: string | null;
+  showTrustedClients?: boolean;
+  showCaseStudies?: boolean;
+  isActive?: boolean;
+  isGlobal?: boolean;
+  priority?: number;
+  status?: 'ACTIVE' | 'INACTIVE' | 'SCHEDULED' | 'ARCHIVED' | string;
+  pageTarget?: string;
+  startAt?: string | null;
+  endAt?: string | null;
+  createdAt?: string;
+  updatedAt?: string;
+  createdBy?: string | null;
+  updatedBy?: string | null;
+  source?: 'OVERRIDE' | 'GLOBAL' | 'FALLBACK';
+  isFallback?: boolean;
+  overrides?: FinalCtaOverrideItem[];
+
+  // Analytics metrics returned by admin APIs
+  impressions?: number;
+  primaryClicks?: number;
+  secondaryClicks?: number;
+  tertiaryClicks?: number;
+  totalClicks?: number;
+  contactStarts?: number;
+  leads?: number;
+  ctr?: number;
+  primaryCtr?: number;
+  secondaryCtr?: number;
+  leadConversionRate?: number;
+}
+
+export interface FinalCtaOverrideItem {
+  id: string;
+  ctaId: string;
+  cta?: FinalCtaItem;
+  pageType: 'home' | 'service' | 'portfolio' | 'blog' | 'case_study' | 'about' | 'contact' | string;
+  pageId?: string | null;
+  isActive: boolean;
+  createdAt?: string;
+}
+
+export interface FinalCtaVersionItem {
+  id: string;
+  ctaId: string;
+  snapshot: Partial<FinalCtaItem>;
+  changedBy: string;
+  changeReason?: string | null;
+  createdAt: string;
+}
+
+export interface CtaAnalyticsSummary {
+  activeCtaCount: number;
+  totalImpressions: number;
+  totalClicks: number;
+  primaryClicks: number;
+  secondaryClicks: number;
+  tertiaryClicks: number;
+  contactStarts: number;
+  leads: number;
+  ctr: number;
+  conversionRate: number;
+  performanceByPage?: Array<{
+    pageType: string;
+    impressions: number;
+    clicks: number;
+    ctr: number;
+  }>;
+}
+
+export interface CtaHealthCheckItem {
+  name: string;
+  passed: boolean;
+  details?: string;
+}
+
+export interface CtaHealthScore {
+  score: number;
+  status: 'HEALTHY' | 'WARNING' | 'CRITICAL' | 'NOT_FOUND';
+  checks: CtaHealthCheckItem[];
+}
+
+
 
 
 

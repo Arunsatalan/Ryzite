@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
+import { FinalCTA } from '@/components/cta/FinalCTA';
 import { INITIAL_SERVICES } from '@/data/initialData';
 import { ArrowRight, CheckCircle2, Monitor, Smartphone, Cpu, Cloud, ShieldCheck, Sparkles } from 'lucide-react';
 import { api } from '@/lib/api';
@@ -163,19 +164,8 @@ export default function ServicesPage() {
             ))}
           </div>
 
-          {/* CTA Box */}
-          <div className="mt-20 p-8 sm:p-12 rounded-3xl bg-gradient-to-r from-[#0F172A] via-[#1E293B] to-[#0052FF] text-white flex flex-col md:flex-row items-center justify-between gap-8">
-            <div className="space-y-2 max-w-xl text-center md:text-left">
-              <h3 className="text-2xl sm:text-3xl font-black font-display">Need a Specialized Enterprise Pod?</h3>
-              <p className="text-sm text-slate-300">Our senior architects will assemble a dedicated pod tailored to your tech stack and SLA needs.</p>
-            </div>
-            <Link
-              href="/"
-              className="px-7 py-3.5 bg-white text-[#0052FF] font-bold text-sm rounded-full hover:bg-blue-50 transition-colors shrink-0 shadow-lg"
-            >
-              Request Custom Proposal
-            </Link>
-          </div>
+          {/* Final CTA Engine Banner */}
+          <FinalCTA pageType="service" />
 
         </div>
       </main>

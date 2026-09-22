@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
+import { FinalCTA } from '@/components/cta/FinalCTA';
 import { INITIAL_SERVICES } from '@/data/initialData';
 import { ArrowRight, Check, ExternalLink, Sparkles, FolderKanban } from 'lucide-react';
 import { api } from '@/lib/api';
@@ -181,6 +182,9 @@ export default async function PortfolioPage() {
               ))}
             </div>
           )}
+
+          {/* Final CTA Engine Banner */}
+          <FinalCTA pageType="portfolio" />
 
         </div>
       </main>

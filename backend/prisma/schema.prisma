@@ -1291,23 +1291,30 @@ model Redirect {
 // ==========================================
 
 model Lead {
-  id              String     @id @default(uuid())
+  id              String           @id @default(uuid())
   name            String
   email           String
   company         String?
   serviceSelected String
   serviceId       String?
-  service         Service?   @relation(fields: [serviceId], references: [id], onDelete: SetNull)
+  service         Service?         @relation(fields: [serviceId], references: [id], onDelete: SetNull)
   budget          String
   timeline        String
-  message         String     @db.Text
-  status          LeadStatus @default(NEW)
-  notes           String?    @db.Text
-  source          String?    @default("Website Consultation Form")
+  message         String           @db.Text
+  status          LeadStatus       @default(NEW)
+  notes           String?          @db.Text
+  source          String?          @default("Website Consultation Form")
+  sourceCtaId     String?
+  sourceCta       FinalCta?        @relation("LeadSourceCta", fields: [sourceCtaId], references: [id], onDelete: SetNull)
+  utmSource       String?
+  utmMedium       String?
+  utmCampaign     String?
+  referrer        String?
   ipAddress       String?
   userAgent       String?
-  createdAt       DateTime   @default(now())
-  updatedAt       DateTime   @updatedAt
+  createdAt       DateTime         @default(now())
+  updatedAt       DateTime         @updatedAt
+  touchpoints     LeadTouchpoint[]
 
   @@index([status, createdAt])
   @@index([createdAt])
@@ -1749,245 +1756,140 @@ model TechnicalLeadershipTeamMember {
   @@index([status, isActive, displayOrder])
 }
 
+
+
 // ==========================================
-// ENTERPRISE BLOG CMS MODULE
+// FINAL CTA / CONVERSION ENGINE
 // ==========================================
 
-enum BlogPostStatus {
-  DRAFT
-  IN_REVIEW
-  APPROVED
-  PUBLISHED
-  SCHEDULED
-  ARCHIVED
+model FinalCta {
+  id                             String               @id @default(uuid())
+  name                           String
+  eyebrow                        String?
+  headline                       String
+  highlightedText                String?
+  description                    String?              @db.Text
+  supportingText                 String?              @db.Text
+  primaryLabel                   String
+  primaryActionType              String               @default("CONTACT_FORM")
+  primaryActionUrl               String?
+  secondaryLabel                 String?
+  secondaryActionType            String?              @default("PORTFOLIO_PAGE")
+  secondaryActionUrl             String?
+  tertiaryLabel                  String?
+  tertiaryActionType             String?              @default("BOOK_CALL")
+  tertiaryActionUrl              String?
+  variant                        String               @default("DEFAULT")
+  theme                          String               @default("DARK")
+  backgroundType                 String               @default("DARK")
+  backgroundImageUrl             String?
+  backgroundImagePublicId        String?
+  backgroundImageAlt             String?
+  mobileBackgroundImageUrl       String?
+  mobileBackgroundImagePublicId String?
+  overlayEnabled                 Boolean              @default(true)
+  overlayOpacity                 Float                @default(0.8)
+  showTrustLine                  Boolean              @default(true)
+  showTertiaryAction             Boolean              @default(false)
+  showContactInfo                Boolean              @default(false)
+  contactEmail                   String?
+  contactPhone                   String?
+  showTrustedClients             Boolean              @default(false)
+  showCaseStudies                Boolean              @default(false)
+  isActive                       Boolean              @default(true)
+  isGlobal                       Boolean              @default(false)
+  priority                       Int                  @default(0)
+  status                         String               @default("ACTIVE")
+  startAt                        DateTime?
+  endAt                          DateTime?
+  createdAt                      DateTime             @default(now())
+  updatedAt                      DateTime             @updatedAt
+  createdBy                      String?
+  updatedBy                      String?
+
+  overrides                      FinalCtaOverride[]
+  analyticsEvents                CtaAnalyticsEvent[]
+  leadTouchpoints                LeadTouchpoint[]
+  leadsGenerated                 Lead[]               @relation("LeadSourceCta")
+  versions                       FinalCtaVersion[]
+  experimentsA                   CtaExperiment[]      @relation("ExperimentCtaA")
+  experimentsB                   CtaExperiment[]      @relation("ExperimentCtaB")
+
+  @@index([status, isActive, priority])
+  @@index([isGlobal, isActive])
 }
 
-enum BlogPostType {
-  ARTICLE
-  GUIDE
-  HOW_TO
-  TUTORIAL
-  NEWS
-  CASE_STUDY
-  TECHNICAL
-  OPINION
-  REPORT
-  ANNOUNCEMENT
-  RESEARCH
-}
-
-enum SearchIntent {
-  INFORMATIONAL
-  COMMERCIAL
-  TRANSACTIONAL
-  NAVIGATIONAL
-  COMPARISON
-  HOW_TO
-}
-
-model BlogCategory {
-  id             String      @id @default(uuid())
-  name           String
-  slug           String      @unique
-  description    String?     @db.Text
-  icon           String?     @default("Sparkles")
-  seoTitle       String?
-  seoDescription String?     @db.Text
-  displayOrder   Int         @default(0)
-  isActive       Boolean     @default(true)
-  createdAt      DateTime    @default(now())
-  updatedAt      DateTime    @updatedAt
-
-  posts          BlogPost[]
-
-  @@index([isActive, displayOrder])
-}
-
-model BlogAuthor {
-  id                   String     @id @default(uuid())
-  name                 String
-  slug                 String     @unique
-  jobTitle             String
-  bio                  String     @db.Text
-  profileImageUrl      String?
-  profileImagePublicId String?
-  linkedInUrl          String?
-  websiteUrl           String?
-  expertise            String?    @db.Text
-  isActive             Boolean    @default(true)
-  createdAt            DateTime   @default(now())
-  updatedAt            DateTime   @updatedAt
-
-  posts                BlogPost[]
-
-  @@index([isActive])
-}
-
-model ContentCluster {
-  id          String     @id @default(uuid())
-  name        String
-  slug        String     @unique
-  description String?    @db.Text
-  createdAt   DateTime   @default(now())
-  updatedAt   DateTime   @updatedAt
-
-  posts       BlogPost[]
-}
-
-model BlogPost {
-  id                  String             @id @default(uuid())
-  title               String
-  slug                String             @unique
-  excerpt             String             @db.Text
-  content             String             @db.Text
-  plainTextContent    String?            @db.Text
-  status              BlogPostStatus     @default(PUBLISHED)
-  postType            BlogPostType       @default(ARTICLE)
-  
-  categoryId          String?
-  category            BlogCategory?      @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  authorId            String?
-  author              BlogAuthor?        @relation(fields: [authorId], references: [id], onDelete: SetNull)
-  contentClusterId    String?
-  contentCluster      ContentCluster?    @relation(fields: [contentClusterId], references: [id], onDelete: SetNull)
-
-  featured            Boolean            @default(false)
-  featuredOrder       Int                @default(0)
-  displayOrder        Int                @default(0)
-  views               Int                @default(0)
-  readingTimeMinutes  Int                @default(5)
-  wordCount           Int                @default(0)
-  qualityScore        Int                @default(80)
-  
-  publishedAt         DateTime?          @default(now())
-  scheduledAt         DateTime?
-  
-  coverImageUrl       String?
-  coverImagePublicId  String?
-  coverImageAlt       String?
-  ogImageUrl          String?
-  ogImagePublicId     String?
-  
-  seoTitle            String?
-  seoDescription      String?            @db.Text
-  canonicalUrl        String?
-  robotsIndex         Boolean            @default(true)
-  robotsFollow        Boolean            @default(true)
-  focusKeyword        String?
-  secondaryKeywords   String?
-  searchIntent        SearchIntent       @default(INFORMATIONAL)
-  
-  sourceUrl           String?
-  sourceName          String?
-  isOriginal          Boolean            @default(true)
-  directAnswer        String?            @db.Text
-  keyTakeaways        Json?
-  
-  createdAt           DateTime           @default(now())
-  updatedAt           DateTime           @updatedAt
-
-  tags                BlogPostTag[]
-  services            BlogServiceRelation[]
-  projects            BlogProjectRelation[]
-  faqs                BlogFaqRelation[]
-  relatedFrom         RelatedBlogPost[]  @relation("RelatedSourcePost")
-  relatedTo           RelatedBlogPost[]  @relation("RelatedTargetPost")
-  versions            BlogPostVersion[]
-
-  @@index([status, publishedAt])
-  @@index([categoryId, status])
-  @@index([authorId, status])
-  @@index([featured, status])
-}
-
-model BlogTag {
-  id        String        @id @default(uuid())
-  name      String        @unique
-  slug      String        @unique
-  createdAt DateTime      @default(now())
-  updatedAt DateTime      @updatedAt
-
-  posts     BlogPostTag[]
-}
-
-model BlogPostTag {
+model FinalCtaOverride {
   id        String   @id @default(uuid())
-  postId    String
-  post      BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
-  tagId     String
-  tag       BlogTag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+  ctaId     String
+  cta       FinalCta @relation(fields: [ctaId], references: [id], onDelete: Cascade)
+  pageType  String
+  pageId    String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
-  @@unique([postId, tagId])
+  @@index([pageType, pageId, isActive])
 }
 
-model BlogServiceRelation {
-  id        String   @id @default(uuid())
-  postId    String
-  post      BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
-  serviceId String
-  service   Service  @relation(fields: [serviceId], references: [id], onDelete: Cascade)
+model CtaAnalyticsEvent {
+  id          String   @id @default(uuid())
+  ctaId       String
+  cta         FinalCta @relation(fields: [ctaId], references: [id], onDelete: Cascade)
+  eventType   String
+  pageUrl     String
+  pageType    String?
+  pageId      String?
+  sessionId   String?
+  deviceType  String?
+  referrer    String?
+  utmSource   String?
+  utmMedium   String?
+  utmCampaign String?
+  timestamp   DateTime @default(now())
 
-  @@unique([postId, serviceId])
+  @@index([ctaId, eventType, timestamp])
+  @@index([pageType, timestamp])
 }
 
-model BlogProjectRelation {
-  id        String   @id @default(uuid())
-  postId    String
-  post      BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
-  projectId String
-  project   Project  @relation(fields: [projectId], references: [id], onDelete: Cascade)
+model LeadTouchpoint {
+  id        String    @id @default(uuid())
+  leadId    String
+  lead      Lead      @relation(fields: [leadId], references: [id], onDelete: Cascade)
+  ctaId     String?
+  cta       FinalCta? @relation(fields: [ctaId], references: [id], onDelete: SetNull)
+  pageUrl   String
+  eventType String
+  timestamp DateTime  @default(now())
 
-  @@unique([postId, projectId])
+  @@index([leadId, timestamp])
 }
 
-model BlogFaqRelation {
-  id        String   @id @default(uuid())
-  postId    String
-  post      BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
-  faqId     String
-  faq       FaqItem  @relation(fields: [faqId], references: [id], onDelete: Cascade)
-
-  @@unique([postId, faqId])
+model CtaExperiment {
+  id                String   @id @default(uuid())
+  name              String
+  ctaAId            String
+  ctaA              FinalCta @relation("ExperimentCtaA", fields: [ctaAId], references: [id], onDelete: Cascade)
+  ctaBId            String
+  ctaB              FinalCta @relation("ExperimentCtaB", fields: [ctaBId], references: [id], onDelete: Cascade)
+  trafficPercentage Int      @default(50)
+  status            String   @default("DRAFT")
+  startAt           DateTime?
+  endAt             DateTime?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
 }
 
-model RelatedBlogPost {
-  id            String   @id @default(uuid())
-  sourcePostId  String
-  sourcePost    BlogPost @relation("RelatedSourcePost", fields: [sourcePostId], references: [id], onDelete: Cascade)
-  relatedPostId String
-  relatedPost   BlogPost @relation("RelatedTargetPost", fields: [relatedPostId], references: [id], onDelete: Cascade)
-
-  @@unique([sourcePostId, relatedPostId])
-}
-
-model BlogPostVersion {
+model FinalCtaVersion {
   id           String   @id @default(uuid())
-  postId       String
-  post         BlogPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  ctaId        String
+  cta          FinalCta @relation(fields: [ctaId], references: [id], onDelete: Cascade)
   snapshot     Json
-  changedBy    String   @default("Admin System")
+  changedBy    String   @default("Admin")
   changeReason String?
   createdAt    DateTime @default(now())
 
-  @@index([postId, createdAt])
-}
-
-model BlogSearchLog {
-  id           String   @id @default(uuid())
-  query        String
-  resultsCount Int      @default(0)
-  searchIntent String?  @default("INFORMATIONAL")
-  createdAt    DateTime @default(now())
-
-  @@index([query, createdAt])
-}
-
-model BlogRedirect {
-  id         String   @id @default(uuid())
-  oldPath    String   @unique
-  newPath    String
-  statusCode Int      @default(301)
-  createdAt  DateTime @default(now())
+  @@index([ctaId, createdAt])
 }
 
 

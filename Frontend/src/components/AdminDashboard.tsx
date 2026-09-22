@@ -56,6 +56,7 @@ import { AboutCmsModule } from './admin/AboutCmsModule';
 import { TeamCmsModule } from './admin/TeamCmsModule';
 import { FaqCmsModule } from './admin/FaqCmsModule';
 import { BlogCmsModule } from './admin/BlogCmsModule';
+import { FinalCtaCmsModule } from './admin/FinalCtaCmsModule';
 import { api } from '../lib/api';
 
 const STAT_ICON_MAP: Record<string, LucideIcon> = {
@@ -74,7 +75,7 @@ const STAT_ICON_MAP: Record<string, LucideIcon> = {
 
 interface AdminDashboardProps {
   isOpen?: boolean;
-  initialTab?: 'crm' | 'hero' | 'clients' | 'principles' | 'statistics' | 'services' | 'projects' | 'blogs' | 'seo' | 'about' | 'team' | 'faq' | 'analytics';
+  initialTab?: 'crm' | 'hero' | 'clients' | 'principles' | 'statistics' | 'services' | 'projects' | 'blogs' | 'seo' | 'about' | 'team' | 'faq' | 'final-cta' | 'analytics';
   onClose: () => void;
   services: ServiceItem[];
   projects: ProjectItem[];
@@ -95,7 +96,7 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
   onUpdateProjects,
   onUpdateBlogs
 }) => {
-  const [activeTab, setActiveTab] = useState<'crm' | 'hero' | 'clients' | 'principles' | 'statistics' | 'services' | 'projects' | 'blogs' | 'seo' | 'about' | 'team' | 'faq' | 'analytics'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'crm' | 'hero' | 'clients' | 'principles' | 'statistics' | 'services' | 'projects' | 'blogs' | 'seo' | 'about' | 'team' | 'faq' | 'final-cta' | 'analytics'>(initialTab);
   const [searchQuery, setSearchQuery] = useState('');
 
   if (!isOpen) return null;
@@ -1658,6 +1659,22 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
               </div>
               <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-bold">
                 {blogs.length}
+              </span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('final-cta')}
+              className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition-all ${activeTab === 'final-cta'
+                  ? 'bg-blue-50 text-blue-600 border border-blue-200/60 shadow-xs'
+                  : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+                }`}
+            >
+              <div className="flex items-center gap-3">
+                <Sparkles size={18} className={activeTab === 'final-cta' ? 'text-blue-600' : 'text-slate-400'} />
+                <span>Final CTA Engine</span>
+              </div>
+              <span className="text-[10px] uppercase tracking-wide bg-[#0052FF] text-white px-1.5 py-0.5 rounded font-bold">
+                CMS
               </span>
             </button>
 
@@ -3400,6 +3417,11 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
                 ))}
               </div>
             </div>
+          )}
+
+          {/* FINAL CTA CONVERSION ENGINE TAB */}
+          {activeTab === 'final-cta' && (
+            <FinalCtaCmsModule />
           )}
 
           {/* TAB 6: REAL-TIME ANALYTICS */}

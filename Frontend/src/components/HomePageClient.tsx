@@ -11,6 +11,7 @@ import { AboutSection } from './AboutSection';
 import { FaqSection } from './FaqSection';
 import { BlogSection } from './BlogSection';
 import { LeadGenBanner } from './LeadGenBanner';
+import { FinalCTA } from './cta/FinalCTA';
 import { Footer } from './Footer';
 import { ProjectModal } from './ProjectModal';
 import { ServiceDetailModal } from './ServiceDetailModal';
@@ -158,10 +159,8 @@ export default function HomePageClient({ initialHero }: HomePageClientProps) {
               blogs={blogs}
             />
 
-            {/* 9. Dual-Tone Liquid Call-to-Action Banner */}
-            <LeadGenBanner
-              onOpenConsultation={() => handleOpenConsultation()}
-            />
+            {/* 9. Final CTA Conversion Engine Banner */}
+            <FinalCTA pageType="home" />
           </>
         )}
       </main>

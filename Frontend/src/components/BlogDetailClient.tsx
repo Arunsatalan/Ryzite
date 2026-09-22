@@ -23,6 +23,7 @@ import {
   FolderKanban,
   HelpCircle
 } from 'lucide-react';
+import { FinalCTA } from './cta/FinalCTA';
 import { BlogPostItem } from '../types';
 
 interface BlogDetailClientProps {
@@ -521,6 +522,9 @@ export const BlogDetailClient: React.FC<BlogDetailClientProps> = ({ post }) => {
             )}
           </aside>
         </div>
+
+        {/* Final CTA Engine Banner */}
+        <FinalCTA pageType="blog" pageId={post.slug} className="mt-16" />
       </div>
     </article>
   );

@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { Navbar } from '@/components/Navbar';
 import { Footer } from '@/components/Footer';
 import { Breadcrumbs } from '@/components/Breadcrumbs';
+import { FinalCTA } from '@/components/cta/FinalCTA';
 import { INITIAL_SERVICES } from '@/data/initialData';
 import {
   ArrowRight,
@@ -578,31 +579,8 @@ export default async function AboutPage(props: PageProps) {
             </div>
           )}
 
-          {/* CTA SECTION */}
-          {page.ctaActive && (
-            <div className="p-8 sm:p-12 rounded-3xl bg-[#0F172A] text-white flex flex-col md:flex-row items-center justify-between gap-6 shadow-2xl">
-              <div className="space-y-2 max-w-xl">
-                <h3 className="text-2xl sm:text-3xl font-black font-display">{page.ctaTitle}</h3>
-                <p className="text-sm text-slate-300">{page.ctaDescription}</p>
-              </div>
-              <div className="flex flex-wrap items-center gap-3 shrink-0">
-                <Link
-                  href={page.ctaButtonUrl || '/#contact'}
-                  className="px-7 py-3.5 bg-[#0052FF] hover:bg-[#0040cc] text-white font-bold text-sm rounded-full transition-all shadow-lg shadow-blue-600/30"
-                >
-                  {page.ctaButtonText}
-                </Link>
-                {page.ctaSecondaryText && (
-                  <Link
-                    href={page.ctaSecondaryUrl || '/portfolio'}
-                    className="px-6 py-3.5 bg-white/10 hover:bg-white/20 text-white font-bold text-sm rounded-full transition-all border border-white/20"
-                  >
-                    {page.ctaSecondaryText}
-                  </Link>
-                )}
-              </div>
-            </div>
-          )}
+          {/* Final CTA Engine Banner */}
+          <FinalCTA pageType="about" />
 
         </div>
       </main>
