@@ -940,7 +940,7 @@ export const FaqCmsModule: React.FC = () => {
                           <div>
                             <div className="font-bold text-slate-900">{v.question}</div>
                             <div className="text-[10px] text-slate-400 font-mono">
-                              {new Date(v.createdAt).toLocaleString()} • {v.changeReason || 'Updated'}
+                              {new Date(v.createdAt).toISOString().replace('T', ' ').slice(0, 19)} UTC • {v.changeReason || 'Updated'}
                             </div>
                           </div>
                           <button

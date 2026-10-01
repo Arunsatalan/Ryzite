@@ -57,6 +57,7 @@ import { TeamCmsModule } from './admin/TeamCmsModule';
 import { FaqCmsModule } from './admin/FaqCmsModule';
 import { BlogCmsModule } from './admin/BlogCmsModule';
 import { FinalCtaCmsModule } from './admin/FinalCtaCmsModule';
+import { WebAnalyticsModule } from './admin/WebAnalyticsModule';
 import { api } from '../lib/api';
 
 const STAT_ICON_MAP: Record<string, LucideIcon> = {
@@ -2981,6 +2982,12 @@ export const AdminDashboard: React.FC<AdminDashboardProps> = ({
 
           {/* TAB: ENTERPRISE BLOG CMS */}
           {activeTab === 'blogs' && <BlogCmsModule />}
+
+          {/* TAB: FINAL CTA CMS */}
+          {activeTab === 'final-cta' && <FinalCtaCmsModule />}
+
+          {/* TAB: PRODUCTION WEB ANALYTICS */}
+          {activeTab === 'analytics' && <WebAnalyticsModule />}
 
           {/* TAB 3: SERVICES CMS */}
           {/* TAB 4: SERVICES OFFERED CMS */}

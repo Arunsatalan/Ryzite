@@ -58,6 +58,8 @@ export const metadata: Metadata = {
   },
 };
 
+import { WebAnalyticsInitializer } from '../src/components/WebAnalyticsInitializer';
+
 export default function RootLayout({
   children,
 }: {
@@ -74,6 +76,7 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-screen bg-white text-[#0F172A] selection:bg-[#0052FF] selection:text-white font-sans" suppressHydrationWarning>
+        <WebAnalyticsInitializer />
         {children}
       </body>
     </html>

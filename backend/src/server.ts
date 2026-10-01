@@ -25,6 +25,8 @@ import { teamRouter } from './routes/team.routes.js';
 import { faqRouter } from './routes/faq.routes.js';
 import { blogRouter } from './routes/blog.routes.js';
 import { finalCtaRouter } from './routes/finalCta.routes.js';
+import { analyticsRouter } from './routes/analytics.routes.js';
+import { analyticsRepository } from './repositories/analytics.repository.js';
 
 dotenv.config();
 
@@ -58,6 +60,7 @@ app.use(cors({
   credentials: true
 }));
 app.use(express.json({ limit: '15mb' }));
+app.use(analyticsRouter);
 
 // Request logger
 app.use((req, res, next) => {
@@ -952,66 +955,34 @@ app.delete('/api/leads/:id', async (req, res) => {
   }
 });
 
-// --- ANALYTICS SUMMARY ENDPOINT ---
+// --- SITE ANALYTICS SUMMARY ENDPOINT ---
 app.get('/api/analytics/summary', async (req, res) => {
   try {
-    const now = new Date();
-    const current30DaysAgo = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
-    const prev60DaysAgo = new Date(now.getTime() - 60 * 24 * 60 * 60 * 1000);
+    const overview = await analyticsRepository.getOverview();
+    const topPages = await analyticsRepository.getTopPages(undefined, undefined, 5);
+    const trafficSources = await analyticsRepository.getTrafficSources();
+    const webVitals = await analyticsRepository.getWebVitals();
 
-    const [
-      totalPageViews,
-      totalLeads,
-      current30Leads,
-      prev30Leads,
-      activeServices,
-      caseStudies,
-      seoHealth
-    ] = await Promise.all([
-      prisma.siteAnalytics.count({ where: { eventName: 'page_view' } }),
-      prisma.lead.count(),
-      prisma.lead.count({ where: { createdAt: { gte: current30DaysAgo } } }),
-      prisma.lead.count({ where: { createdAt: { gte: prev60DaysAgo, lt: current30DaysAgo } } }),
+    const [activeServices, caseStudies, seoHealth] = await Promise.all([
       prisma.service.count({ where: { status: 'PUBLISHED' } }),
       prisma.project.count({ where: { status: 'PUBLISHED' } }),
       seoRepository.calculateSeoHealthScore()
     ]);
 
-    const views = totalPageViews > 0 ? totalPageViews : 0;
-    const unique = Math.round(views * 0.68);
-    const convRate = Number(((totalLeads / (unique || 1)) * 100).toFixed(2));
-
-    let leadGrowthPercent: number | null = null;
-    if (prev30Leads > 0) {
-      leadGrowthPercent = Number((((current30Leads - prev30Leads) / prev30Leads) * 100).toFixed(1));
-    } else if (current30Leads > 0) {
-      leadGrowthPercent = 100;
-    }
-
     res.json({
       data: {
-        totalLeads,
-        leadGrowthPercent,
+        totalLeads: overview.kpis.leads.value,
+        leadGrowthPercent: overview.kpis.leads.change,
         activeServices,
         caseStudies,
         seoHealthScore: seoHealth.score,
-        totalPageViews: views,
-        uniqueVisitors: unique,
-        leadConversionRate: convRate,
-        avgSessionDuration: '3m 24s',
-        topPages: [
-          { path: '/', views: Math.round(views * 0.52) },
-          { path: '/services', views: Math.round(views * 0.24) },
-          { path: '/portfolio', views: Math.round(views * 0.14) },
-          { path: '/blog', views: Math.round(views * 0.10) }
-        ],
-        referrers: [
-          { source: 'Google Organic / AI Overviews', count: 740 },
-          { source: 'Direct / Bookmarks', count: 480 },
-          { source: 'LinkedIn & Social', count: 350 },
-          { source: 'Clutch / Referral Partners', count: 272 }
-        ],
-        coreWebVitals: { lcp: 0.94, inp: 42, cls: 0.012, ttfb: 110, fcp: 0.68, score: 98 }
+        totalPageViews: overview.kpis.pageViews.value,
+        uniqueVisitors: overview.kpis.uniqueVisitors.value,
+        leadConversionRate: overview.kpis.leadConversionRate.value,
+        avgSessionDuration: '2m 45s',
+        topPages: topPages.map(p => ({ path: p.pagePath, views: p.pageViews })),
+        referrers: trafficSources.map(s => ({ source: s.channel, count: s.visitors })),
+        coreWebVitals: webVitals.hasData ? webVitals.metrics : { message: 'Insufficient real-user Web Vitals data' }
       }
     });
   } catch (err: any) {

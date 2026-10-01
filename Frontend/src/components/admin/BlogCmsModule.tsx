@@ -1647,7 +1647,7 @@ export const BlogCmsModule: React.FC = () => {
                             <div className="font-bold text-slate-900 flex items-center space-x-2">
                               <span>Version Snapshot #{ver.versionNumber}</span>
                               <span className="text-[10px] font-mono text-slate-400 font-normal">
-                                ({new Date(ver.createdAt).toLocaleString()})
+                                ({new Date(ver.createdAt).toISOString().replace('T', ' ').slice(0, 19)} UTC)
                               </span>
                             </div>
                             <div className="text-[11px] text-slate-500 mt-0.5">

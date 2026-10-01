@@ -1892,5 +1892,112 @@ model FinalCtaVersion {
   @@index([ctaId, createdAt])
 }
 
+// ==========================================
+// WEB ANALYTICS & CONVERSION INTELLIGENCE SYSTEM
+// ==========================================
+
+model AnalyticsEvent {
+  id           String   @id @default(uuid())
+  eventId      String?
+  eventName    String
+  occurredAt   DateTime @default(now())
+
+  visitorId    String
+  sessionId    String
+
+  pageUrl      String
+  pagePath     String
+  pageTitle    String?
+
+  referrer     String?
+  referrerHost String?
+
+  utmSource    String?
+  utmMedium    String?
+  utmCampaign  String?
+  utmContent   String?
+  utmTerm      String?
+
+  deviceType   String?
+  browser      String?
+  os           String?
+  country      String?
+  language     String?
+
+  entityType   String?
+  entityId     String?
+  ctaId        String?
+
+  metadata     Json?
+
+  createdAt    DateTime @default(now())
+
+  @@index([occurredAt, eventName])
+  @@index([visitorId, sessionId])
+  @@index([pagePath, occurredAt])
+  @@index([referrerHost, occurredAt])
+  @@index([utmSource, utmCampaign])
+  @@index([entityType, entityId])
+}
+
+model AnalyticsDaily {
+  id             String   @id @default(uuid())
+  date           DateTime @unique
+  pageViews      Int      @default(0)
+  uniqueVisitors Int      @default(0)
+  sessions       Int      @default(0)
+  engagedSessions Int     @default(0)
+  ctaClicks      Int      @default(0)
+  contactStarts  Int      @default(0)
+  leads          Int      @default(0)
+  outboundClicks Int      @default(0)
+  downloads      Int      @default(0)
+  error404Count  Int      @default(0)
+  metricsByPage   Json?
+  metricsBySource Json?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+}
+
+model WebVitalMetric {
+  id         String   @id @default(uuid())
+  metricName String
+  value      Float
+  rating     String
+  pagePath   String
+  deviceType String?
+  visitorId  String?
+  occurredAt DateTime @default(now())
+
+  @@index([metricName, occurredAt])
+  @@index([pagePath, metricName])
+}
+
+model AnalyticsSettings {
+  id                   String   @id @default("default-analytics-settings")
+  trackingEnabled      Boolean  @default(true)
+  firstPartyEnabled    Boolean  @default(true)
+  ga4Enabled           Boolean  @default(false)
+  ga4PropertyId        String?
+  ga4MeasurementId     String?
+  searchConsoleEnabled Boolean  @default(false)
+  webVitalsEnabled     Boolean  @default(true)
+  retentionDays        Int      @default(90)
+  updatedAt            DateTime @updatedAt
+}
+
+model BrokenUrl404 {
+  id        String   @id @default(uuid())
+  url       String   @unique
+  referrer  String?
+  hitCount  Int      @default(1)
+  firstSeen DateTime @default(now())
+  lastSeen  DateTime @updatedAt
+  resolved  Boolean  @default(false)
+
+  @@index([hitCount, lastSeen])
+}
+
+
 
 

@@ -1381,7 +1381,7 @@ export const FinalCtaCmsModule: React.FC = () => {
                   <div key={v.id} className="p-4 rounded-xl bg-slate-950 border border-slate-800 flex items-center justify-between gap-4">
                     <div>
                       <div className="text-xs text-slate-400 font-mono">
-                        {new Date(v.createdAt).toLocaleString()} by <span className="text-slate-200 font-semibold">{v.changedBy}</span>
+                        {new Date(v.createdAt).toISOString().replace('T', ' ').slice(0, 19)} UTC by <span className="text-slate-200 font-semibold">{v.changedBy}</span>
                       </div>
                       <div className="text-sm font-semibold text-white mt-1">
                         "{v.snapshot?.headline || 'Version Snapshot'}"

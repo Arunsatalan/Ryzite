@@ -1094,7 +1094,7 @@ export const AeoKnowledgeHubModule: React.FC<AeoKnowledgeHubModuleProps> = ({ re
                   <div key={v.id} className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-1">
                     <div className="flex justify-between text-[11px] text-slate-500 font-medium">
                       <span>Changed by: <strong className="text-slate-800">{v.changedBy}</strong></span>
-                      <span>{new Date(v.createdAt).toLocaleString()}</span>
+                      <span>{new Date(v.createdAt).toISOString().replace('T', ' ').slice(0, 19)} UTC</span>
                     </div>
                     {v.reason && <div className="text-[11px] text-blue-700 font-semibold">Reason: {v.reason}</div>}
                   </div>

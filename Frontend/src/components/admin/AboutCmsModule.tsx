@@ -31,6 +31,17 @@ import {
 import { AboutPageConfig, ServiceItem, StatisticStatus } from '../../types';
 import { api } from '../../lib/api';
 
+const formatUtcDateTime = (d?: string | Date | null) => {
+  if (!d) return 'N/A';
+  try {
+    const date = new Date(d);
+    if (isNaN(date.getTime())) return 'N/A';
+    return date.toISOString().replace('T', ' ').slice(0, 19) + ' UTC';
+  } catch {
+    return 'N/A';
+  }
+};
+
 export const AboutCmsModule: React.FC = () => {
   const [data, setData] = useState<AboutPageConfig | null>(null);
   const [services, setServices] = useState<ServiceItem[]>([]);
@@ -249,7 +260,7 @@ export const AboutCmsModule: React.FC = () => {
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs pt-1">
           <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200/80">
             <span className="text-slate-400 text-[11px] block font-semibold">Last Updated</span>
-            <span className="font-bold text-slate-800">{data.updatedAt ? new Date(data.updatedAt).toLocaleString() : 'N/A'}</span>
+            <span className="font-bold text-slate-800">{data.updatedAt ? formatUtcDateTime(data.updatedAt) : 'N/A'}</span>
           </div>
           <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200/80">
             <span className="text-slate-400 text-[11px] block font-semibold">Published By</span>
@@ -257,7 +268,7 @@ export const AboutCmsModule: React.FC = () => {
           </div>
           <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200/80">
             <span className="text-slate-400 text-[11px] block font-semibold">Published At</span>
-            <span className="font-bold text-slate-800">{data.publishedAt ? new Date(data.publishedAt).toLocaleDateString() : 'Draft Only'}</span>
+            <span className="font-bold text-slate-800">{data.publishedAt ? formatUtcDateTime(data.publishedAt).slice(0, 10) : 'Draft Only'}</span>
           </div>
           <div className="bg-slate-50 p-2.5 rounded-lg border border-slate-200/80">
             <span className="text-slate-400 text-[11px] block font-semibold">Production URL</span>
@@ -1039,7 +1050,7 @@ export const AboutCmsModule: React.FC = () => {
                     <div>
                       <div className="font-bold text-slate-900">{ver.reason || 'Snapshot'}</div>
                       <div className="text-[11px] text-slate-500">
-                        By <strong>{ver.changedBy}</strong> on {new Date(ver.createdAt).toLocaleString()}
+                        By <strong>{ver.changedBy}</strong> on {formatUtcDateTime(ver.createdAt)}
                       </div>
                     </div>
                     <button
